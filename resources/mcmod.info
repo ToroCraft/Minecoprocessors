@@ -1,0 +1,16 @@
+[
+{
+  "modid": "minecoprocessors",
+  "name": "Minecoprocessors",
+  "description": "This mods add a programmable block that functions like a microprocessor.",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["ToroCraft"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
