@@ -47,11 +47,7 @@ public class Processor implements IProcessor {
 		}
 		String line = instructions.get(pc);
 
-		switch (parseInstructionCode(line)) {
-		case MOV:
-			processMov();
-			return;
-		}
+		
 
 		System.out.println("command not found");
 		falt = true;
@@ -61,14 +57,6 @@ public class Processor implements IProcessor {
 
 	}
 
-	private InstructionCode parseInstructionCode(String line) {
-		try {
-			return InstructionCode.valueOf(line.trim().split("\\s+")[0]);
-		}catch(Exception e){
-			e.printStackTrace();
-			return null;
-		}
-	}
 
 	@Override
 	public void setInput(byte b) {
