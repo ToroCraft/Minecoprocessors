@@ -3,6 +3,7 @@ package net.torocraft.minecoprocessors.processor;
 public enum InstructionCode {
 	MOV,
 	ADD,
+	SUB,
 	AND,
 	OR,
 	XOR,
@@ -19,5 +20,5 @@ public enum InstructionCode {
 	PUSH,
 	POP,
 	RET,
-	SUB
+	CALL
 }
