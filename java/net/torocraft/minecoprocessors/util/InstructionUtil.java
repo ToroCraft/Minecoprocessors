@@ -5,11 +5,12 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.management.Query;
-
 import net.torocraft.minecoprocessors.processor.InstructionCode;
 import net.torocraft.minecoprocessors.processor.Register;
 
+//TODO label on same line support
+//TODO detect oversized literal
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class InstructionUtil {
 
 	public static class Label {
@@ -22,17 +23,28 @@ public class InstructionUtil {
 		}
 	}
 
+	public static String compileFile(List instructions, List<Label> labels) {
+		StringBuilder file = new StringBuilder();
+
+		for (short address = 0; address < instructions.size(); address++) {
+			file.append(compileLine((byte[]) instructions.get(address), labels, address));
+			file.append("\n");
+		}
+
+		return file.toString().trim();
+	}
+
 	public static String compileLine(byte[] instruction, List<Label> labels, short lineAddress) {
 		StringBuilder line = new StringBuilder();
 
-		for(Label label : labels){
-			if(label.address == lineAddress){
+		for (Label label : labels) {
+			if (label.address == lineAddress) {
 				line.append(label.name).append(":\n");
 			}
 		}
 
 		InstructionCode command = InstructionCode.values()[instruction[0]];
-		line.append(command);
+		line.append(command.toString().toLowerCase());
 
 		switch (command) {
 		case MOV:
@@ -45,12 +57,12 @@ public class InstructionUtil {
 		case SHR:
 		case SUB:
 			line.append(" ");
-			line.append(Register.values()[instruction[1]]);
+			line.append(lower(Register.values()[instruction[1]]));
 			line.append(", ");
 			if (ByteUtil.getBit(instruction[3], 4)) {
 				line.append(Integer.toString(instruction[2], 10));
-			}else{
-				line.append(Register.values()[instruction[2]]);
+			} else {
+				line.append(lower(Register.values()[instruction[2]]));
 			}
 			break;
 		case JMP:
@@ -58,11 +70,12 @@ public class InstructionUtil {
 		case JZ:
 		case LOOP:
 		case CALL:
-			line.append(" ");
-			line.append(labels.get(instruction[1]));
-			//return parseLabelOperand(line, instruction, labels);
+			Label l = labels.get(instruction[1]);
+			if (l != null) {
+				line.append(" ");
+				line.append(l.name.toLowerCase());
+			}
 			break;
-
 		case MUL:
 		case DIV:
 		case NOT:
@@ -71,20 +84,36 @@ public class InstructionUtil {
 			line.append(" ");
 			if (ByteUtil.getBit(instruction[3], 0)) {
 				line.append(Integer.toString(instruction[1], 10));
-			}else{
-				line.append(Register.values()[instruction[1]]);
+			} else {
+				line.append(lower(Register.values()[instruction[1]]));
 			}
 			break;
 
 		case RET:
 			break;
 		default:
-			//TODO fail somehow?
-			//throw new ParseException(line, "invalid command [" + command + "]");
+
+		}
+		return line.toString();
+	}
+	
+	private static String lower(Enum e) {
+		return e.toString().toLowerCase();
+	}
+
+	public static List parseFile(String file, List<Label> labels) throws ParseException {
+		List instructions = new ArrayList<>();
+
+		String[] lines = file.split("\\n\\r?");
+
+		for (String line : lines) {
+			byte[] instruction = parseLine(line, labels, (short) instructions.size());
+			if (instruction != null) {
+				instructions.add(instruction);
+			}
 		}
 
-
-		return line.toString();
+		return instructions;
 	}
 
 	public static byte[] parseLine(String line, List<Label> labels, short lineAddress) throws ParseException {
@@ -105,7 +134,7 @@ public class InstructionUtil {
 	}
 
 	private static String removeComments(String line) {
-		List<String> l = regex("^([^;]+);.*", line, Pattern.CASE_INSENSITIVE);
+		List<String> l = regex("^([^;]*);.*", line, Pattern.CASE_INSENSITIVE);
 		if (l.size() == 1) {
 			return l.get(0);
 		}
@@ -209,7 +238,7 @@ public class InstructionUtil {
 		if (l.size() != 1) {
 			throw new ParseException(line, "incorrect label format");
 		}
-		instruction[1] = parseLabel(line, l.get(0), labels);
+		instruction[1] = parseLabel(line, l.get(0).toLowerCase(), labels);
 		return instruction;
 	}
 
@@ -272,6 +301,7 @@ public class InstructionUtil {
 		testLabelOperands();
 		testSingleOperands();
 		testCompileLine();
+		testParseFile();
 	}
 
 	private static void testRemoveComments() {
@@ -279,6 +309,7 @@ public class InstructionUtil {
 			assert removeComments("test foo ; and comment; ignore me").equals("test foo");
 			assert removeComments(" ; and comment; ignore me").equals("");
 			assert parseLine("  ;loop \t test_label  \t ", null, (short) 0) == null;
+			assert parseLine(";loop", null, (short) 0) == null;
 		} catch (ParseException e) {
 			throw new AssertionError(e);
 		}
@@ -341,28 +372,57 @@ public class InstructionUtil {
 	private static void testCompileLine() {
 		try {
 			List<Label> labels = new ArrayList<>();
-			labels.add(new Label((short)56, "TEST"));
+			labels.add(new Label((short) 56, "test"));
 
 			byte[] instruction = parseLine("mov AX, oa ; test mov", labels, (short) 0);
-			assert compileLine(instruction, labels, (short) 0).equals("MOV AX, OA");
+			assert compileLine(instruction, labels, (short) 0).equals("mov ax, oa");
 
 			instruction = parseLine("mov AX, 36 ; test mov", labels, (short) 0);
-			assert compileLine(instruction, labels, (short) 0).equals("MOV AX, 36");
+			assert compileLine(instruction, labels, (short) 0).equals("mov ax, 36");
 
 			instruction = parseLine("push AX ; test single op", labels, (short) 0);
-			assert compileLine(instruction, labels, (short) 0).equals("PUSH AX");
+			assert compileLine(instruction, labels, (short) 0).equals("push ax");
 
 			instruction = parseLine("push 89 ; test single op", null, (short) 0);
-			assert compileLine(instruction, labels, (short) 0).equals("PUSH 89");
+			assert compileLine(instruction, labels, (short) 0).equals("push 89");
 
 			instruction = parseLine("push 89", labels, (short) 0);
-			assert compileLine(instruction, labels, (short) 56).equals("TEST:\nPUSH 89");
+			assert compileLine(instruction, labels, (short) 56).equals("test:\npush 89");
 
 			instruction = parseLine("jmp test", labels, (short) 0);
-			System.out.println(compileLine(instruction, labels, (short) 0));
-			assert compileLine(instruction, labels, (short) 0).equals("JMP TEST");
+			assert compileLine(instruction, labels, (short) 0).equals("jmp test");
 
+			instruction = parseLine("ret", labels, (short) 0);
+			assert compileLine(instruction, labels, (short) 0).equals("ret");
 
+		} catch (ParseException e) {
+			throw new AssertionError(e);
+		}
+	}
+
+	private static void testParseFile() {
+		try {
+			String file = "";
+			file += ";test program\n";
+			file += "cmp ax, bx\n";
+			file += "test:\n";
+			file += "mov ax, bx\n";
+			file += "add ax, 50\n";
+			file += "loop test\n";
+			List<Label> labels = new ArrayList<>();
+
+			List instructions = parseFile(file, labels);
+
+			assert instructions.size() == 4;
+			assert labels.size() == 1;
+			assert labels.get(0).name.equals("test");
+			assert labels.get(0).address == (short) 1;
+			assert InstructionCode.values()[((byte[]) instructions.get(0))[0]].equals(InstructionCode.CMP);
+			assert InstructionCode.values()[((byte[]) instructions.get(3))[0]].equals(InstructionCode.LOOP);
+			
+			String reCompiled = compileFile(instructions, labels);
+			assert reCompiled.equals("cmp ax, bx\ntest:\nmov ax, bx\nadd ax, 50\nloop test");
+			
 
 		} catch (ParseException e) {
 			throw new AssertionError(e);

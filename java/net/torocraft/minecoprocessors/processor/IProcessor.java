@@ -7,7 +7,7 @@ public interface IProcessor {
 	void tick();
 	void setInput(byte b);
 	byte getOutput();
-	void setProgram(String program);
+	void load(String program);
 	void readFromNBT(NBTTagCompound c);
 	NBTTagCompound writeToNBT();
 }
