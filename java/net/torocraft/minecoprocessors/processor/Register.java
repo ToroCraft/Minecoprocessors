@@ -1,18 +1,13 @@
 package net.torocraft.minecoprocessors.processor;
 
 public enum Register {
-	AX,
-	BX,
-	CX,
-	DX,
-	PC,
-	SP,
-	IA,
-	IB,
-	IC,
-	ID,
-	OA,
-	OB,
-	OC,
-	OD
+	A,
+	B,
+	C,
+	D,
+	E,
+	W,
+	N,
+	S,
+	PORTS
 }

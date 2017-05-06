@@ -9,19 +9,29 @@ import net.torocraft.minecoprocessors.processor.InstructionCode;
 import net.torocraft.minecoprocessors.processor.Register;
 
 //TODO label on same line support
-//TODO detect oversized literal
+
+//TODO detect over-sized literal
+
+//TODO memory addressing operand [a]
+
+//TODO memory addressing operand with offset [a-3]
+
+//TODO support .'s in labels
+
+//TODO support different number formats: Decimal: 200 ,Decimal: 200d, Hex: 0xA4, Octal: 0o48, Binary: 101b
+
+//TODO INC / DEC
+
+//TODO MUL / DIV
+
+//TODO DB define byte
+
+//TODO DP define port? dp east input
+
+//TODO port addressing? mov east, 1
+
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class InstructionUtil {
-
-	public static class Label {
-		public final short address;
-		public final String name;
-
-		public Label(short address, String name) {
-			this.address = address;
-			this.name = name;
-		}
-	}
 
 	public static String compileFile(List instructions, List<Label> labels) {
 		StringBuilder file = new StringBuilder();
@@ -35,6 +45,11 @@ public class InstructionUtil {
 	}
 
 	public static String compileLine(byte[] instruction, List<Label> labels, short lineAddress) {
+		
+		if(instruction == null){
+			return "";
+		}
+		
 		StringBuilder line = new StringBuilder();
 
 		for (Label label : labels) {
@@ -329,24 +344,24 @@ public class InstructionUtil {
 
 	private static void testStandardOperands() {
 		try {
-			byte[] instruction = parseLine("mov AX, oa ; test mov", null, (short) 0);
+			byte[] instruction = parseLine("mov A, B ; test mov", null, (short) 0);
 			assert instruction[0] == (byte) InstructionCode.MOV.ordinal();
-			assert instruction[1] == (byte) Register.AX.ordinal();
-			assert instruction[2] == (byte) Register.OA.ordinal();
+			assert instruction[1] == (byte) Register.A.ordinal();
+			assert instruction[2] == (byte) Register.B.ordinal();
 			assert instruction[3] == (byte) 0b00000000;
-			instruction = parseLine("moV \t ib  \t , oa", null, (short) 0);
+			instruction = parseLine("moV \t D  \t , d", null, (short) 0);
 			assert instruction[0] == (byte) InstructionCode.MOV.ordinal();
-			assert instruction[1] == (byte) Register.IB.ordinal();
-			assert instruction[2] == (byte) Register.OA.ordinal();
+			assert instruction[1] == (byte) Register.D.ordinal();
+			assert instruction[2] == (byte) Register.D.ordinal();
 			assert instruction[3] == (byte) 0b00000000;
-			instruction = parseLine("add ax,bx", null, (short) 0);
+			instruction = parseLine("add a,b", null, (short) 0);
 			assert instruction[0] == (byte) InstructionCode.ADD.ordinal();
-			assert instruction[1] == (byte) Register.AX.ordinal();
-			assert instruction[2] == (byte) Register.BX.ordinal();
+			assert instruction[1] == (byte) Register.A.ordinal();
+			assert instruction[2] == (byte) Register.B.ordinal();
 			assert instruction[3] == (byte) 0b00000000;
-			instruction = parseLine("Sub ax,25", null, (short) 0);
+			instruction = parseLine("Sub a,25", null, (short) 0);
 			assert instruction[0] == (byte) InstructionCode.SUB.ordinal();
-			assert instruction[1] == (byte) Register.AX.ordinal();
+			assert instruction[1] == (byte) Register.A.ordinal();
 			assert instruction[2] == (byte) 25;
 			assert instruction[3] == (byte) 0b00010000;
 		} catch (ParseException e) {
@@ -358,7 +373,7 @@ public class InstructionUtil {
 		try {
 			byte[] instruction = parseLine("push AX", null, (short) 0);
 			assert instruction[0] == (byte) InstructionCode.PUSH.ordinal();
-			assert instruction[1] == (byte) Register.AX.ordinal();
+			assert instruction[1] == (byte) Register.A.ordinal();
 			assert instruction[3] == (byte) 0b00000000;
 			instruction = parseLine("push 35", null, (short) 0);
 			assert instruction[0] == (byte) InstructionCode.PUSH.ordinal();

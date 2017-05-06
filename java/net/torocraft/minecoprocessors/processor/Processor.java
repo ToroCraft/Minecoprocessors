@@ -3,34 +3,71 @@ package net.torocraft.minecoprocessors.processor;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.minecraft.nbt.NBTTagByteArray;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.torocraft.minecoprocessors.util.ByteUtil;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
-import net.torocraft.minecoprocessors.util.InstructionUtil.Label;
+import net.torocraft.minecoprocessors.util.Label;
 import net.torocraft.minecoprocessors.util.ParseException;
 
-@SuppressWarnings({ "rawtypes" })
+//TODO support carry
+
+//TODO support call / ret
+
+//TODO add memory
+
+@SuppressWarnings({ "rawtypes", "unchecked" })
 public class Processor implements IProcessor {
 
+	private static final String NBT_STACK = "stack";
+	private static final String NBT_REGISTERS = "registers";
 	private static final String NBT_PROGRAM = "program";
+	private static final String NBT_LABELS = "labels";
+	private static final String NBT_FLAGS = "flags";
 
+	/*
+	 * program
+	 */
 	private List<Label> labels = new ArrayList<>();
-	private byte[] instruction;
 	private List program = new ArrayList();
+
+	/*
+	 * state
+	 */
+	private byte[] instruction;
 	private byte[] stack = new byte[64];
 	private byte[] registers = new byte[Register.values().length];
-	private boolean overflow;
-	private boolean zero;
-	private boolean falt;
-	private short pc;
+
+	/*
+	 * pointers
+	 */
+	private short ip;
 	private byte sp;
+	
+	/*
+	 * flags
+	 */
+	private boolean fault;
+	private boolean zero;
+	private boolean overflow;
+	private boolean carry;
+
+	private void flush() {
+		reset();
+		stack = new byte[64];
+		registers = new byte[Register.values().length];
+		labels = new ArrayList<>();
+		program = new ArrayList();
+	}
 
 	@Override
 	public void reset() {
-		falt = false;
+		fault = false;
 		zero = false;
 		overflow = false;
-		pc = 0;
+		carry = false;
+		ip = 0;
 		sp = -1;
 	}
 
@@ -45,33 +82,81 @@ public class Processor implements IProcessor {
 	}
 
 	@Override
-	public void load(String program) {
+	public void load(String file) {
 		labels = new ArrayList<>();
 		try {
-			InstructionUtil.parseFile(program, labels);
+			program = InstructionUtil.parseFile(file, labels);
 		} catch (ParseException e) {
 			e.printStackTrace();
-			falt = true;
+			fault = true;
 		}
 		reset();
 	}
 
+	private long packFlags() {
+		long flags = 0;
+		flags = ByteUtil.setShort(flags, ip, 3);
+		flags = ByteUtil.setByteInLong(flags, sp, 5);
+		flags = ByteUtil.setBitInLong(flags, fault, 0);
+		flags = ByteUtil.setBitInLong(flags, zero, 1);
+		flags = ByteUtil.setBitInLong(flags, overflow, 2);
+		flags = ByteUtil.setBitInLong(flags, carry, 3);
+		return flags;
+	}
+
+	private void unPackFlags(long flags) {
+		ip = ByteUtil.getShort(flags, 3);
+		sp = ByteUtil.getByteInLong(flags, 5);
+		fault = ByteUtil.getBitInLong(flags, 0);
+		zero = ByteUtil.getBitInLong(flags, 1);
+		overflow = ByteUtil.getBitInLong(flags, 2);
+		carry = ByteUtil.getBitInLong(flags, 3);
+	}
+
 	@Override
 	public void readFromNBT(NBTTagCompound c) {
-		// c.setb
-		// program = c.getString(NBT_PROGRAM);
+		stack = c.getByteArray(NBT_STACK);
+		registers = c.getByteArray(NBT_REGISTERS);
+		unPackFlags(c.getLong(NBT_FLAGS));
+
+		NBTTagList programTag = (NBTTagList) c.getTag(NBT_PROGRAM);
+		program = new ArrayList();
+		for (int i = 0; i < programTag.tagCount(); i++) {
+			program.add(((NBTTagByteArray) programTag.get(i)).getByteArray());
+		}
+
+		NBTTagList labelTag = (NBTTagList) c.getTag(NBT_LABELS);
+		labels = new ArrayList<>();
+		for (int i = 0; i < labelTag.tagCount(); i++) {
+			labels.add(Label.fromNbt((NBTTagCompound) labelTag.get(i)));
+		}
 	}
 
 	@Override
 	public NBTTagCompound writeToNBT() {
 		NBTTagCompound c = new NBTTagCompound();
-		// c.setString(NBT_PROGRAM, program);
+		c.setByteArray(NBT_STACK, stack);
+		c.setByteArray(NBT_REGISTERS, registers);
+		c.setLong(NBT_FLAGS, packFlags());
+
+		NBTTagList programTag = new NBTTagList();
+		for (Object b : program) {
+			programTag.appendTag(new NBTTagByteArray((byte[]) b));
+		}
+		c.setTag(NBT_PROGRAM, programTag);
+
+		NBTTagList labelTag = new NBTTagList();
+		for (Label label : labels) {
+			labelTag.appendTag(label.toNbt());
+		}
+		c.setTag(NBT_LABELS, labelTag);
+
 		return c;
 	}
 
 	@Override
 	public void tick() {
-		if (falt) {
+		if (fault) {
 			return;
 		}
 		process();
@@ -79,17 +164,20 @@ public class Processor implements IProcessor {
 
 	private void process() {
 
-		if (pc >= program.size()) {
-			falt = true;
+		if (ip >= program.size()) {
+			fault = true;
 			return;
 		}
 
-		if (pc < 0) {
-			pc = 0;
+		if (ip < 0) {
+			ip = 0;
 		}
 
-		instruction = (byte[]) program.get(pc);
-		pc++;
+		instruction = (byte[]) program.get(ip);
+		
+		System.out.println(pinchDump());
+		
+		ip++;
 
 		switch (InstructionCode.values()[instruction[0]]) {
 		case ADD:
@@ -150,7 +238,7 @@ public class Processor implements IProcessor {
 			return;
 		}
 
-		falt = true;
+		fault = true;
 	}
 
 	private void processMov() {
@@ -237,7 +325,7 @@ public class Processor implements IProcessor {
 	}
 
 	private void processJmp() {
-		pc = labels.get(instruction[1]).address;
+		ip = labels.get(instruction[1]).address;
 	}
 
 	private void processJz() {
@@ -256,7 +344,7 @@ public class Processor implements IProcessor {
 		byte a = getVariableOperand(0);
 		sp++;
 		if (sp >= stack.length) {
-			falt = true;
+			fault = true;
 			return;
 		}
 		stack[sp] = a;
@@ -264,7 +352,7 @@ public class Processor implements IProcessor {
 
 	private void processPop() {
 		if (sp < 0) {
-			falt = true;
+			fault = true;
 			return;
 		}
 		registers[instruction[1]] = stack[sp];
@@ -304,6 +392,74 @@ public class Processor implements IProcessor {
 		testProcessShr();
 		testProcessXor();
 		testProcessPushPop();
+		testPackFlags();
+		testUnpackFlags();
+		testNbt();
+	}
+
+	private void testNbt() {
+		flush();
+		labels.add(new Label((short) 189, "foobar"));
+		program.add(new byte[] { 0x00, 0x01, 0x02, 0x03 });
+		stack[0] = (byte) 0x99;
+		registers[0] = (byte) 0xee;
+		registers[4] = (byte) 0xcc;
+		zero = true;
+
+		NBTTagCompound c = writeToNBT();
+		flush();
+		assert !zero;
+		assert labels.size() == 0;
+		assert program.size() == 0;
+		assert registers[0] == 0;
+		assert registers[4] == 0;
+
+		readFromNBT(c);
+
+		assert zero;
+		assert labels.size() == 1;
+		assert labels.get(0).address == (short) 189;
+		assert labels.get(0).name.equals("foobar");
+		assert program.size() == 1;
+		byte[] instruction = (byte[]) program.get(0);
+		assert instruction[0] == 0x00;
+		assert instruction[1] == 0x01;
+		assert instruction[2] == 0x02;
+		assert instruction[3] == 0x03;
+		assert registers[0] == (byte) 0xee;
+		assert registers[4] == (byte) 0xcc;
+
+	}
+
+	private void testPackFlags() {
+		reset();
+		assert packFlags() == Long.parseUnsignedLong("0000ff0000000000", 16);
+		fault = true;
+		assert packFlags() == Long.parseUnsignedLong("0000ff0000000001", 16);
+		zero = true;
+		assert packFlags() == Long.parseUnsignedLong("0000ff0000000003", 16);
+		overflow = true;
+		assert packFlags() == Long.parseUnsignedLong("0000ff0000000007", 16);
+		sp = (byte) 0xee;
+		ip = (short) 0xabcd;
+		assert packFlags() == Long.parseUnsignedLong("abcdee0000000007", 16);
+	}
+
+	private void testUnpackFlags() {
+		reset();
+		unPackFlags(Long.parseUnsignedLong("abcdee0000000007", 16));
+		assert sp == (byte) 0xee;
+		assert ip == (short) 0xabcd;
+		assert zero;
+		assert overflow;
+		assert fault;
+
+		unPackFlags(Long.parseUnsignedLong("0000ff0000000000", 16));
+		assert sp == -1;
+		assert ip == 0;
+		assert !zero;
+		assert !overflow;
+		assert !fault;
 	}
 
 	private void testTestOverFlow() {
@@ -494,7 +650,7 @@ public class Processor implements IProcessor {
 			setupTest(0, 0, 0, 0, "jmp test_label");
 			processJmp();
 			assertRegisters(0, 0, 0, 0);
-			assert pc == (short) 111;
+			assert ip == (short) 111;
 
 		} catch (Exception e) {
 			throw new AssertionError(e);
@@ -503,17 +659,18 @@ public class Processor implements IProcessor {
 
 	private void testProcessJz() {
 		try {
-			zero = true;
-			setupTest(0, 0, 0, 0, "jz test_label");
-			processJz();
-			assertRegisters(0, 0, 0, 0);
-			assert pc == (short) 111;
 
-			zero = false;
 			setupTest(0, 0, 0, 0, "jz test_label");
+			zero = true;
 			processJz();
 			assertRegisters(0, 0, 0, 0);
-			assert pc == 0;
+			assert ip == (short) 111;
+
+			setupTest(0, 0, 0, 0, "jz test_label");
+			zero = false;
+			processJz();
+			assertRegisters(0, 0, 0, 0);
+			assert ip == 0;
 
 		} catch (Exception e) {
 			throw new AssertionError(e);
@@ -522,17 +679,17 @@ public class Processor implements IProcessor {
 
 	private void testProcessJnz() {
 		try {
+			setupTest(0, 0, 0, 0, "jnz test_label");
 			zero = false;
-			setupTest(0, 0, 0, 0, "jnz test_label");
 			processJnz();
 			assertRegisters(0, 0, 0, 0);
-			assert pc == (short) 111;
+			assert ip == (short) 111;
 
-			zero = true;
 			setupTest(0, 0, 0, 0, "jnz test_label");
+			zero = true;
 			processJnz();
 			assertRegisters(0, 0, 0, 0);
-			assert pc == 0;
+			assert ip == 0;
 
 		} catch (Exception e) {
 			throw new AssertionError(e);
@@ -592,8 +749,8 @@ public class Processor implements IProcessor {
 	private void testProcessPushPop() {
 		try {
 			reset();
-			registers[Register.AX.ordinal()] = 30;
-			registers[Register.BX.ordinal()] = 0;
+			registers[Register.A.ordinal()] = 30;
+			registers[Register.B.ordinal()] = 0;
 			instruction = InstructionUtil.parseLine("push ax", new ArrayList<Label>(), (short) 0);
 			processPush();
 
@@ -608,7 +765,7 @@ public class Processor implements IProcessor {
 			instruction = InstructionUtil.parseLine("pop bx", new ArrayList<Label>(), (short) 0);
 			processPop();
 			assert sp == 0;
-			assert registers[Register.BX.ordinal()] == (byte) 30;
+			assert registers[Register.B.ordinal()] == (byte) 30;
 
 		} catch (Exception e) {
 			throw new AssertionError(e);
@@ -616,20 +773,65 @@ public class Processor implements IProcessor {
 	}
 
 	private void assertRegisters(int ax, int bx, int cx, int dx) {
-		assert registers[Register.AX.ordinal()] == (byte) ax;
-		assert registers[Register.BX.ordinal()] == (byte) bx;
-		assert registers[Register.CX.ordinal()] == (byte) cx;
-		assert registers[Register.DX.ordinal()] == (byte) dx;
+		assert registers[Register.A.ordinal()] == (byte) ax;
+		assert registers[Register.B.ordinal()] == (byte) bx;
+		assert registers[Register.C.ordinal()] == (byte) cx;
+		assert registers[Register.D.ordinal()] == (byte) dx;
 	}
 
 	private void setupTest(int ax, int bx, int cx, int dx, String line) throws ParseException {
 		reset();
 		labels = new ArrayList<>();
 		labels.add(new Label((short) 111, "test_label"));
-		registers[Register.AX.ordinal()] = (byte) ax;
-		registers[Register.BX.ordinal()] = (byte) bx;
-		registers[Register.CX.ordinal()] = (byte) cx;
-		registers[Register.DX.ordinal()] = (byte) dx;
+		registers[Register.A.ordinal()] = (byte) ax;
+		registers[Register.B.ordinal()] = (byte) bx;
+		registers[Register.C.ordinal()] = (byte) cx;
+		registers[Register.D.ordinal()] = (byte) dx;
 		instruction = InstructionUtil.parseLine(line, labels, (short) 0);
 	}
+
+	public boolean isFault() {
+		return fault;
+	}
+	
+	private String pad(String s) {
+		if(s.length() == 1){
+			return "0" + s;
+		}
+		return s;
+	}
+	
+	private void dumpRegister(StringBuilder s, Register reg) {
+		s.append(reg.toString().toLowerCase());
+		s.append("[");
+		s.append(pad(Integer.toUnsignedString(registers[reg.ordinal()], 16)));
+		s.append("] ");
+	}
+
+	public String pinchDump() {
+		StringBuilder s = new StringBuilder();
+
+		
+
+		dumpRegister(s, Register.A);
+		dumpRegister(s, Register.B);
+		dumpRegister(s, Register.C);
+		dumpRegister(s, Register.D);
+		
+
+		if (fault) {
+			s.append("FAULT ");
+		}
+		if (zero) {
+			s.append("ZF ");
+		}
+		if (overflow) {
+			s.append("OF ");
+		}
+		
+		s.append("(").append(InstructionUtil.compileLine(instruction, labels, (short) -1)).append(")");
+
+		return s.toString();
+	}
+
 }
