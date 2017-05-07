@@ -22,6 +22,7 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.Mirror;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Rotation;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
@@ -29,6 +30,7 @@ import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 
 public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEntityProvider {
+	protected static final AxisAlignedBB AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 0.25D, 1.0D);
 
 	public static final String NAME = "minecoprocessor";
 
@@ -47,6 +49,10 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 		GameRegistry.register(ITEM_INSTANCE);
 
 		// GameRegistry.addRecipe(new ChessControlRecipe());
+	}
+
+	public AxisAlignedBB getBoundingBox(IBlockState state, IBlockAccess source, BlockPos pos) {
+		return AABB;
 	}
 
 	@Override
