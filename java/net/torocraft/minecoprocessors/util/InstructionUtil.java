@@ -371,7 +371,7 @@ public class InstructionUtil {
 
 	private static void testSingleOperands() {
 		try {
-			byte[] instruction = parseLine("push AX", null, (short) 0);
+			byte[] instruction = parseLine("push A", null, (short) 0);
 			assert instruction[0] == (byte) InstructionCode.PUSH.ordinal();
 			assert instruction[1] == (byte) Register.A.ordinal();
 			assert instruction[3] == (byte) 0b00000000;
@@ -389,14 +389,14 @@ public class InstructionUtil {
 			List<Label> labels = new ArrayList<>();
 			labels.add(new Label((short) 56, "test"));
 
-			byte[] instruction = parseLine("mov AX, oa ; test mov", labels, (short) 0);
-			assert compileLine(instruction, labels, (short) 0).equals("mov ax, oa");
+			byte[] instruction = parseLine("mov A, e ; test mov", labels, (short) 0);
+			assert compileLine(instruction, labels, (short) 0).equals("mov a, e");
 
-			instruction = parseLine("mov AX, 36 ; test mov", labels, (short) 0);
-			assert compileLine(instruction, labels, (short) 0).equals("mov ax, 36");
+			instruction = parseLine("mov A, 36 ; test mov", labels, (short) 0);
+			assert compileLine(instruction, labels, (short) 0).equals("mov a, 36");
 
-			instruction = parseLine("push AX ; test single op", labels, (short) 0);
-			assert compileLine(instruction, labels, (short) 0).equals("push ax");
+			instruction = parseLine("push a ; test single op", labels, (short) 0);
+			assert compileLine(instruction, labels, (short) 0).equals("push a");
 
 			instruction = parseLine("push 89 ; test single op", null, (short) 0);
 			assert compileLine(instruction, labels, (short) 0).equals("push 89");
@@ -419,10 +419,10 @@ public class InstructionUtil {
 		try {
 			String file = "";
 			file += ";test program\n";
-			file += "cmp ax, bx\n";
+			file += "cmp a, b\n";
 			file += "test:\n";
-			file += "mov ax, bx\n";
-			file += "add ax, 50\n";
+			file += "mov a, b\n";
+			file += "add a, 50\n";
 			file += "loop test\n";
 			List<Label> labels = new ArrayList<>();
 
@@ -436,7 +436,7 @@ public class InstructionUtil {
 			assert InstructionCode.values()[((byte[]) instructions.get(3))[0]].equals(InstructionCode.LOOP);
 			
 			String reCompiled = compileFile(instructions, labels);
-			assert reCompiled.equals("cmp ax, bx\ntest:\nmov ax, bx\nadd ax, 50\nloop test");
+			assert reCompiled.equals("cmp a, b\ntest:\nmov a, b\nadd a, 50\nloop test");
 			
 
 		} catch (ParseException e) {

@@ -1,0 +1,8 @@
+{
+    "variants": {
+        "facing=south": { "model": "minecoprocessors:minecoprocessor" },
+        "facing=west": { "model": "minecoprocessors:minecoprocessor", "y": 90 },
+        "facing=north": { "model": "minecoprocessors:minecoprocessor", "y": 180 },
+        "facing=east": { "model": "minecoprocessors:minecoprocessor", "y": 270 }
+    }
+}

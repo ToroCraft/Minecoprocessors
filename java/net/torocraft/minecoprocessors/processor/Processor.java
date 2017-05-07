@@ -44,7 +44,7 @@ public class Processor implements IProcessor {
 	 */
 	private short ip;
 	private byte sp;
-	
+
 	/*
 	 * flags
 	 */
@@ -71,15 +71,14 @@ public class Processor implements IProcessor {
 		sp = -1;
 	}
 
-	@Override
-	public void setInput(byte b) {
-
-	}
-
-	@Override
-	public byte getOutput() {
-		return 0;
-	}
+	/*
+	 * @Override public void setInput(byte e, byte w, byte n, byte s) { //TODO
+	 * input/output routing registers[Register.E.ordinal()] = e;
+	 * registers[Register.W.ordinal()] = w; //registers[Register.N.ordinal()] =
+	 * n; registers[Register.S.ordinal()] = s; }
+	 * 
+	 * @Override public Byte[] getOutput() { return new Byte[]{}; }
+	 */
 
 	@Override
 	public void load(String file) {
@@ -119,16 +118,20 @@ public class Processor implements IProcessor {
 		registers = c.getByteArray(NBT_REGISTERS);
 		unPackFlags(c.getLong(NBT_FLAGS));
 
-		NBTTagList programTag = (NBTTagList) c.getTag(NBT_PROGRAM);
 		program = new ArrayList();
-		for (int i = 0; i < programTag.tagCount(); i++) {
-			program.add(((NBTTagByteArray) programTag.get(i)).getByteArray());
+		NBTTagList programTag = (NBTTagList) c.getTag(NBT_PROGRAM);
+		if (programTag != null) {
+			for (int i = 0; i < programTag.tagCount(); i++) {
+				program.add(((NBTTagByteArray) programTag.get(i)).getByteArray());
+			}
 		}
 
-		NBTTagList labelTag = (NBTTagList) c.getTag(NBT_LABELS);
 		labels = new ArrayList<>();
-		for (int i = 0; i < labelTag.tagCount(); i++) {
-			labels.add(Label.fromNbt((NBTTagCompound) labelTag.get(i)));
+		NBTTagList labelTag = (NBTTagList) c.getTag(NBT_LABELS);
+		if (labelTag != null) {
+			for (int i = 0; i < labelTag.tagCount(); i++) {
+				labels.add(Label.fromNbt((NBTTagCompound) labelTag.get(i)));
+			}
 		}
 	}
 
@@ -174,9 +177,9 @@ public class Processor implements IProcessor {
 		}
 
 		instruction = (byte[]) program.get(ip);
-		
+
 		System.out.println(pinchDump());
-		
+
 		ip++;
 
 		switch (InstructionCode.values()[instruction[0]]) {
@@ -484,11 +487,11 @@ public class Processor implements IProcessor {
 
 	private void testProcessMov() {
 		try {
-			setupTest(0, 30, 0, 0, "mov ax, bx");
+			setupTest(0, 30, 0, 0, "mov a, b");
 			processMov();
 			assertRegisters(30, 30, 0, 0);
 
-			setupTest(0, 30, 0, 0, "mov ax, 51");
+			setupTest(0, 30, 0, 0, "mov a, 51");
 			processMov();
 			assertRegisters(51, 30, 0, 0);
 		} catch (Exception e) {
@@ -498,25 +501,25 @@ public class Processor implements IProcessor {
 
 	private void testProcessAdd() {
 		try {
-			setupTest(3, 30, 0, 0, "add ax, bx");
+			setupTest(3, 30, 0, 0, "add a, b");
 			processAdd();
 			assertRegisters(33, 30, 0, 0);
 			assert !overflow;
 			assert !zero;
 
-			setupTest(11, 0, 0, 0, "add ax, 51");
+			setupTest(11, 0, 0, 0, "add a, 51");
 			processAdd();
 			assertRegisters(62, 0, 0, 0);
 			assert !overflow;
 			assert !zero;
 
-			setupTest(-51, 0, 0, 0, "add ax, 51");
+			setupTest(-51, 0, 0, 0, "add a, 51");
 			processAdd();
 			assertRegisters(0, 0, 0, 0);
 			assert !overflow;
 			assert zero;
 
-			setupTest(130, 0, 130, 0, "add ax, cx");
+			setupTest(130, 0, 130, 0, "add a, c");
 			processAdd();
 			assertRegisters(4, 0, 130, 0);
 			assert overflow;
@@ -529,19 +532,19 @@ public class Processor implements IProcessor {
 
 	private void testProcessSub() {
 		try {
-			setupTest(50, 0, 0, 10, "sub ax, dx");
+			setupTest(50, 0, 0, 10, "sub a, d");
 			processSub();
 			assertRegisters(40, 0, 0, 10);
 			assert !overflow;
 			assert !zero;
 
-			setupTest(-130, 0, 0, 130, "sub ax, dx");
+			setupTest(-130, 0, 0, 130, "sub a, d");
 			processSub();
 			assertRegisters(-4, 0, 0, 130);
 			assert overflow;
 			assert !zero;
 
-			setupTest(130, 0, 0, 130, "sub ax, dx");
+			setupTest(130, 0, 0, 130, "sub a, d");
 			processSub();
 			assertRegisters(0, 0, 0, 130);
 			assert !overflow;
@@ -554,19 +557,19 @@ public class Processor implements IProcessor {
 
 	private void testProcessCmp() {
 		try {
-			setupTest(50, 0, 0, 10, "cmp ax, dx");
+			setupTest(50, 0, 0, 10, "cmp a, d");
 			processCmp();
 			assertRegisters(50, 0, 0, 10);
 			assert !overflow;
 			assert !zero;
 
-			setupTest(-130, 0, 0, 130, "cmp ax, dx");
+			setupTest(-130, 0, 0, 130, "cmp a, d");
 			processCmp();
 			assertRegisters(-130, 0, 0, 130);
 			assert overflow;
 			assert !zero;
 
-			setupTest(130, 0, 0, 130, "cmp ax, dx");
+			setupTest(130, 0, 0, 130, "cmp a, d");
 			processCmp();
 			assertRegisters(130, 0, 0, 130);
 			assert !overflow;
@@ -579,12 +582,12 @@ public class Processor implements IProcessor {
 
 	private void testProcessAnd() {
 		try {
-			setupTest(0b011111, 0b010, 0, 0, "and ax, bx");
+			setupTest(0b011111, 0b010, 0, 0, "and a, b");
 			processAnd();
 			assertRegisters(0b010, 0b010, 0, 0);
 			assert !zero;
 
-			setupTest(0b011101, 0b010, 0, 0, "and ax, bx");
+			setupTest(0b011101, 0b010, 0, 0, "and a, b");
 			processAnd();
 			assertRegisters(0, 0b010, 0, 0);
 			assert zero;
@@ -596,12 +599,12 @@ public class Processor implements IProcessor {
 
 	private void testProcessXor() {
 		try {
-			setupTest(0b0101, 0b0110, 0, 0, "xor ax, bx");
+			setupTest(0b0101, 0b0110, 0, 0, "xor a, b");
 			processXor();
 			assertRegisters(0b011, 0b0110, 0, 0);
 			assert !zero;
 
-			setupTest(0b0101, 0b0101, 0, 0, "xor ax, bx");
+			setupTest(0b0101, 0b0101, 0, 0, "xor a, b");
 			processXor();
 			assertRegisters(0, 0b0101, 0, 0);
 			assert zero;
@@ -613,12 +616,12 @@ public class Processor implements IProcessor {
 
 	private void testProcessOr() {
 		try {
-			setupTest(0b01000, 0, 0, 0b0111, "or dx, ax");
+			setupTest(0b01000, 0, 0, 0b0111, "or d, a");
 			processOr();
 			assertRegisters(0b01000, 0, 0, 0b01111);
 			assert !zero;
 
-			setupTest(0, 0, 0, 0, "or dx, ax");
+			setupTest(0, 0, 0, 0, "or d, a");
 			processOr();
 			assertRegisters(0, 0, 0, 0);
 			assert zero;
@@ -630,12 +633,12 @@ public class Processor implements IProcessor {
 
 	private void testProcessNot() {
 		try {
-			setupTest(0, 0, 0b1010, 0, "not cx");
+			setupTest(0, 0, 0b1010, 0, "not c");
 			processNot();
 			assertRegisters(0, 0, 0b11110101, 0);
 			assert !zero;
 
-			setupTest(0, 0, 0b11111111, 0, "not cx");
+			setupTest(0, 0, 0b11111111, 0, "not c");
 			processNot();
 			assertRegisters(0, 0, 0, 0);
 			assert zero;
@@ -698,22 +701,22 @@ public class Processor implements IProcessor {
 
 	private void testProcessShl() {
 		try {
-			setupTest(0b01, 4, 0, 0, "shl ax, bx");
+			setupTest(0b01, 4, 0, 0, "shl a, b");
 			processShl();
 			assertRegisters(0b010000, 4, 0, 0);
 			assert !zero;
 
-			setupTest(0b01, 20, 0, 0, "shl ax, bx");
+			setupTest(0b01, 20, 0, 0, "shl a, b");
 			processShl();
 			assertRegisters(0, 20, 0, 0);
 			assert zero;
 
-			setupTest(0, 2, 0, 0, "shl ax, bx");
+			setupTest(0, 2, 0, 0, "shl a, b");
 			processShl();
 			assertRegisters(0, 2, 0, 0);
 			assert zero;
 
-			setupTest(0b01, 20, 0, 0, "shl ax, 1");
+			setupTest(0b01, 20, 0, 0, "shl a, 1");
 			processShl();
 			assertRegisters(0b010, 20, 0, 0);
 			assert !zero;
@@ -726,17 +729,17 @@ public class Processor implements IProcessor {
 	private void testProcessShr() {
 
 		try {
-			setupTest(0b10000000, 1, 0, 0, "shr ax, bx");
+			setupTest(0b10000000, 1, 0, 0, "shr a, b");
 			processShr();
 			assertRegisters(0b01000000, 1, 0, 0);
 			assert !zero;
 
-			setupTest(0b10000000, 100, 0, 0, "shr ax, bx");
+			setupTest(0b10000000, 100, 0, 0, "shr a, b");
 			processShr();
 			assertRegisters(0, 100, 0, 0);
 			assert zero;
 
-			setupTest(0xff, 8, 0, 0, "shr ax, bx");
+			setupTest(0xff, 8, 0, 0, "shr a, b");
 			processShr();
 			assertRegisters(0, 8, 0, 0);
 			assert zero;
@@ -751,7 +754,7 @@ public class Processor implements IProcessor {
 			reset();
 			registers[Register.A.ordinal()] = 30;
 			registers[Register.B.ordinal()] = 0;
-			instruction = InstructionUtil.parseLine("push ax", new ArrayList<Label>(), (short) 0);
+			instruction = InstructionUtil.parseLine("push a", new ArrayList<Label>(), (short) 0);
 			processPush();
 
 			assert sp == 0;
@@ -762,7 +765,7 @@ public class Processor implements IProcessor {
 			assert sp == 1;
 			assert stack[1] == (byte) 30;
 
-			instruction = InstructionUtil.parseLine("pop bx", new ArrayList<Label>(), (short) 0);
+			instruction = InstructionUtil.parseLine("pop b", new ArrayList<Label>(), (short) 0);
 			processPop();
 			assert sp == 0;
 			assert registers[Register.B.ordinal()] == (byte) 30;
@@ -793,14 +796,14 @@ public class Processor implements IProcessor {
 	public boolean isFault() {
 		return fault;
 	}
-	
+
 	private String pad(String s) {
-		if(s.length() == 1){
+		if (s.length() == 1) {
 			return "0" + s;
 		}
 		return s;
 	}
-	
+
 	private void dumpRegister(StringBuilder s, Register reg) {
 		s.append(reg.toString().toLowerCase());
 		s.append("[");
@@ -811,13 +814,17 @@ public class Processor implements IProcessor {
 	public String pinchDump() {
 		StringBuilder s = new StringBuilder();
 
-		
-
 		dumpRegister(s, Register.A);
 		dumpRegister(s, Register.B);
 		dumpRegister(s, Register.C);
 		dumpRegister(s, Register.D);
-		
+
+		dumpRegister(s, Register.E);
+		dumpRegister(s, Register.W);
+		dumpRegister(s, Register.N);
+		dumpRegister(s, Register.S);
+
+		s.append("(").append(InstructionUtil.compileLine(instruction, labels, (short) -1)).append(") ");
 
 		if (fault) {
 			s.append("FAULT ");
@@ -828,10 +835,13 @@ public class Processor implements IProcessor {
 		if (overflow) {
 			s.append("OF ");
 		}
-		
-		s.append("(").append(InstructionUtil.compileLine(instruction, labels, (short) -1)).append(")");
 
 		return s.toString();
+	}
+
+	@Override
+	public byte[] getRegisters() {
+		return registers;
 	}
 
 }
