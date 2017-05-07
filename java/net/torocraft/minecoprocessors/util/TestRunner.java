@@ -1,5 +1,6 @@
 package net.torocraft.minecoprocessors.util;
 
+import net.torocraft.minecoprocessors.blocks.BlockMinecoprocessor;
 import net.torocraft.minecoprocessors.processor.Processor;
 
 @SuppressWarnings("unused")
@@ -9,6 +10,7 @@ public class TestRunner {
 		ByteUtil.test();
 		InstructionUtil.test();
 		testProcessor();
+		BlockMinecoprocessor.test();
 		//runProcessor();
 		System.out.println("pass!");
 	}

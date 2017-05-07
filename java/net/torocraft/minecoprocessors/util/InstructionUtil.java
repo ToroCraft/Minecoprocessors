@@ -30,6 +30,10 @@ import net.torocraft.minecoprocessors.processor.Register;
 
 //TODO port addressing? mov east, 1
 
+//TODO add int CODE to allow pausing the processor
+
+//TODO add NOP
+
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class InstructionUtil {
 
@@ -389,8 +393,8 @@ public class InstructionUtil {
 			List<Label> labels = new ArrayList<>();
 			labels.add(new Label((short) 56, "test"));
 
-			byte[] instruction = parseLine("mov A, e ; test mov", labels, (short) 0);
-			assert compileLine(instruction, labels, (short) 0).equals("mov a, e");
+			byte[] instruction = parseLine("mov A, pr ; test mov", labels, (short) 0);
+			assert compileLine(instruction, labels, (short) 0).equals("mov a, pr");
 
 			instruction = parseLine("mov A, 36 ; test mov", labels, (short) 0);
 			assert compileLine(instruction, labels, (short) 0).equals("mov a, 36");

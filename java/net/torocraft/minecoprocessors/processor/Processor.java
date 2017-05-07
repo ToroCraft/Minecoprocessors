@@ -36,8 +36,8 @@ public class Processor implements IProcessor {
 	 * state
 	 */
 	private byte[] instruction;
-	private byte[] stack = new byte[64];
-	private byte[] registers = new byte[Register.values().length];
+	private final byte[] stack = new byte[64];
+	private final byte[] registers = new byte[Register.values().length];
 
 	/*
 	 * pointers
@@ -55,10 +55,16 @@ public class Processor implements IProcessor {
 
 	private void flush() {
 		reset();
-		stack = new byte[64];
-		registers = new byte[Register.values().length];
-		labels = new ArrayList<>();
-		program = new ArrayList();
+		reset(stack);
+		
+		labels.clear();
+		program.clear();
+	}
+
+	private static void reset(byte[] a) {
+		for (int i = 0; i < a.length; i++) {
+			a[i] = 0;
+		}
 	}
 
 	@Override
@@ -69,6 +75,8 @@ public class Processor implements IProcessor {
 		carry = false;
 		ip = 0;
 		sp = -1;
+		reset(registers);
+		registers[Register.PORTS.ordinal()] = (byte) 0xb01;
 	}
 
 	/*
@@ -82,14 +90,13 @@ public class Processor implements IProcessor {
 
 	@Override
 	public void load(String file) {
-		labels = new ArrayList<>();
 		try {
+			flush();
 			program = InstructionUtil.parseFile(file, labels);
 		} catch (ParseException e) {
 			e.printStackTrace();
 			fault = true;
 		}
-		reset();
 	}
 
 	private long packFlags() {
@@ -112,10 +119,16 @@ public class Processor implements IProcessor {
 		carry = ByteUtil.getBitInLong(flags, 3);
 	}
 
+	private static void copy(byte[] a, byte[] b) {
+		for (int i = 0; i < Math.min(a.length, b.length); i++) {
+			a[i] = b[i];
+		}
+	}
+
 	@Override
 	public void readFromNBT(NBTTagCompound c) {
-		stack = c.getByteArray(NBT_STACK);
-		registers = c.getByteArray(NBT_REGISTERS);
+		copy(stack, c.getByteArray(NBT_STACK));
+		copy(registers, c.getByteArray(NBT_REGISTERS));
 		unPackFlags(c.getLong(NBT_FLAGS));
 
 		program = new ArrayList();
@@ -178,7 +191,7 @@ public class Processor implements IProcessor {
 
 		instruction = (byte[]) program.get(ip);
 
-		System.out.println(pinchDump());
+		// System.out.println(pinchDump());
 
 		ip++;
 
@@ -819,10 +832,12 @@ public class Processor implements IProcessor {
 		dumpRegister(s, Register.C);
 		dumpRegister(s, Register.D);
 
-		dumpRegister(s, Register.E);
-		dumpRegister(s, Register.W);
-		dumpRegister(s, Register.N);
-		dumpRegister(s, Register.S);
+		dumpRegister(s, Register.PF);
+		dumpRegister(s, Register.PB);
+		dumpRegister(s, Register.PL);
+		dumpRegister(s, Register.PR);
+
+		dumpRegister(s, Register.PORTS);
 
 		s.append("(").append(InstructionUtil.compileLine(instruction, labels, (short) -1)).append(") ");
 
