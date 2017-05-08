@@ -33,6 +33,8 @@ import net.torocraft.minecoprocessors.gui.MinecoprocessorGuiHandler;
 
 //TODO create recipe
 
+//TODO get repeater program working
+
 public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEntityProvider {
 	protected static final AxisAlignedBB AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 0.1875D, 1.0D);
 

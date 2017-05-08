@@ -7,8 +7,8 @@ public class Label {
 	private static final String NBT_ADDRESS = "address";
 	private static final String NBT_NAME = "name";
 
-	public final short address;
-	public final String name;
+	public short address;
+	public String name;
 
 	public Label(short address, String name) {
 		this.address = address;

@@ -20,5 +20,8 @@ public enum InstructionCode {
 	PUSH,
 	POP,
 	RET,
-	CALL
+	CALL,
+	NOP,
+	INT,
+	WFE
 }

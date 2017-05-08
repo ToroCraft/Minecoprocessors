@@ -54,11 +54,12 @@ public class Processor implements IProcessor {
 	private boolean zero;
 	private boolean overflow;
 	private boolean carry;
+	private boolean wait;
 
 	private void flush() {
 		reset();
 		reset(stack);
-		
+
 		labels.clear();
 		program.clear();
 	}
@@ -75,20 +76,17 @@ public class Processor implements IProcessor {
 		zero = false;
 		overflow = false;
 		carry = false;
+		wait = false;
 		ip = 0;
 		sp = -1;
 		reset(registers);
 		registers[Register.PORTS.ordinal()] = (byte) 0xb01;
 	}
 
-	/*
-	 * @Override public void setInput(byte e, byte w, byte n, byte s) { //TODO
-	 * input/output routing registers[Register.E.ordinal()] = e;
-	 * registers[Register.W.ordinal()] = w; //registers[Register.N.ordinal()] =
-	 * n; registers[Register.S.ordinal()] = s; }
-	 * 
-	 * @Override public Byte[] getOutput() { return new Byte[]{}; }
-	 */
+	@Override
+	public void wake() {
+		wait = false;
+	}
 
 	@Override
 	public void load(String file) {
@@ -109,6 +107,7 @@ public class Processor implements IProcessor {
 		flags = ByteUtil.setBitInLong(flags, zero, 1);
 		flags = ByteUtil.setBitInLong(flags, overflow, 2);
 		flags = ByteUtil.setBitInLong(flags, carry, 3);
+		flags = ByteUtil.setBitInLong(flags, wait, 4);
 		return flags;
 	}
 
@@ -119,6 +118,7 @@ public class Processor implements IProcessor {
 		zero = ByteUtil.getBitInLong(flags, 1);
 		overflow = ByteUtil.getBitInLong(flags, 2);
 		carry = ByteUtil.getBitInLong(flags, 3);
+		wait = ByteUtil.getBitInLong(flags, 4);
 	}
 
 	private static void copy(byte[] a, byte[] b) {
@@ -174,7 +174,7 @@ public class Processor implements IProcessor {
 
 	@Override
 	public void tick() {
-		if (fault) {
+		if (fault || wait) {
 			return;
 		}
 		process();
@@ -242,6 +242,8 @@ public class Processor implements IProcessor {
 			return;
 		case RET:
 			break;
+		case NOP:
+			return;
 		case SHL:
 			processShl();
 			return;
@@ -253,6 +255,9 @@ public class Processor implements IProcessor {
 			return;
 		case XOR:
 			processXor();
+			return;
+		case WFE:
+			processWfe();
 			return;
 		}
 
@@ -340,6 +345,10 @@ public class Processor implements IProcessor {
 		byte z = (byte) (a >>> b);
 		zero = z == 0;
 		registers[instruction[1]] = z;
+	}
+
+	private void processWfe() {
+		wait = true;
 	}
 
 	private void processJmp() {
@@ -448,6 +457,8 @@ public class Processor implements IProcessor {
 		assert registers[4] == (byte) 0xcc;
 
 	}
+
+	//TODO test copy and reset array methods
 
 	private void testPackFlags() {
 		reset();

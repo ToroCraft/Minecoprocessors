@@ -38,10 +38,6 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 		GameRegistry.registerTileEntity(TileEntityMinecoprocessor.class, NAME);
 	}
 
-	public TileEntityMinecoprocessor() {
-
-	}
-
 	@Override
 	public void readFromNBT(NBTTagCompound c) {
 		super.readFromNBT(c);
@@ -53,7 +49,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 		loadTime = c.getShort(NBT_LOAD_TIME);
 
 		if (c.hasKey(NBT_CUSTOM_NAME, 8)) {
-			this.customName = c.getString("CustomName");
+			this.customName = c.getString(NBT_CUSTOM_NAME);
 		}
 	}
 
@@ -74,21 +70,18 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
 	@Override
 	public void update() {
-		if (world.isRemote || world.getTotalWorldTime() % 10 != 0) {
+		if (world.isRemote) {
 			return;
 		}
 		processor.tick();
 		detectOutputChanges();
 	}
 
-	private boolean detectOutputChanges() {
-		boolean updated = false;
-		updated = updated || detectOutputChange(0);
-		updated = updated || detectOutputChange(1);
-		updated = updated || detectOutputChange(2);
-		updated = updated || detectOutputChange(3);
-
-		return updated;
+	private void detectOutputChanges() {
+		detectOutputChange(0);
+		detectOutputChange(1);
+		detectOutputChange(2);
+		detectOutputChange(3);
 	}
 
 	private boolean detectOutputChange(int portIndex) {

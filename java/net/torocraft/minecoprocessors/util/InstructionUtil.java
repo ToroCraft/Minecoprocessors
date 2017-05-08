@@ -8,19 +8,10 @@ import java.util.regex.Pattern;
 import net.torocraft.minecoprocessors.processor.InstructionCode;
 import net.torocraft.minecoprocessors.processor.Register;
 
-//TODO support labels later! maybe with a 2 pass system?
 
-//TODO label on same line support
-
-//TODO detect over-sized literal
-
-//TODO memory addressing operand [a]
-
-//TODO memory addressing operand with offset [a-3]
+//TODO add int CODE to allow pausing the processor
 
 //TODO support .'s in labels
-
-//TODO support different number formats: Decimal: 200 ,Decimal: 200d, Hex: 0xA4, Octal: 0o48, Binary: 101b
 
 //TODO INC / DEC
 
@@ -28,13 +19,19 @@ import net.torocraft.minecoprocessors.processor.Register;
 
 //TODO DB define byte
 
-//TODO DP define port? dp east input
+
 
 //TODO port addressing? mov east, 1
 
-//TODO add int CODE to allow pausing the processor
 
-//TODO add NOP
+
+
+
+//TODO test with windows encodings
+
+//TODO memory addressing operand [a]
+
+//TODO memory addressing operand with offset [a-3]
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class InstructionUtil {
@@ -51,11 +48,11 @@ public class InstructionUtil {
 	}
 
 	public static String compileLine(byte[] instruction, List<Label> labels, short lineAddress) {
-		
-		if(instruction == null){
+
+		if (instruction == null) {
 			return "";
 		}
-		
+
 		StringBuilder line = new StringBuilder();
 
 		for (Label label : labels) {
@@ -102,6 +99,7 @@ public class InstructionUtil {
 		case NOT:
 		case POP:
 		case PUSH:
+		case INT:
 			line.append(" ");
 			if (ByteUtil.getBit(instruction[3], 0)) {
 				line.append(Integer.toString(instruction[1], 10));
@@ -111,13 +109,15 @@ public class InstructionUtil {
 			break;
 
 		case RET:
+		case NOP:
+		case WFE:
 			break;
 		default:
 
 		}
 		return line.toString();
 	}
-	
+
 	private static String lower(Enum e) {
 		return e.toString().toLowerCase();
 	}
@@ -126,6 +126,10 @@ public class InstructionUtil {
 		List instructions = new ArrayList<>();
 
 		String[] lines = file.split("\\n\\r?");
+
+		for (String line : lines) {
+			parseLineForLabels(line, labels, (short) instructions.size());
+		}
 
 		for (String line : lines) {
 			byte[] instruction = parseLine(line, labels, (short) instructions.size());
@@ -137,17 +141,30 @@ public class InstructionUtil {
 		return instructions;
 	}
 
+	public static void parseLineForLabels(String line, List<Label> labels, short lineAddress) throws ParseException {
+		line = removeComments(line);
+		if (line.trim().length() < 1) {
+			return;
+		}
+		if (isLabelInstruction(line)) {
+			parseLabelLine(line, labels, lineAddress);
+			return;
+		}
+	}
+
 	public static byte[] parseLine(String line, List<Label> labels, short lineAddress) throws ParseException {
 		byte[] instruction = new byte[4];
-
 		line = removeComments(line);
-
 		if (line.trim().length() < 1) {
 			return null;
 		}
-
 		if (isLabelInstruction(line)) {
-			parseLabelLine(line, labels, lineAddress);
+			setLabelAddress(line, labels, lineAddress);
+		}
+
+		line = removeLabels(line);
+
+		if (line.trim().length() < 1) {
 			return null;
 		}
 
@@ -162,14 +179,41 @@ public class InstructionUtil {
 		return line;
 	}
 
+	private static String removeLabels(String line) {
+		List<String> l = regex("^\\s*[A-Za-z0-9-_]+:\\s*(.*)$", line, Pattern.CASE_INSENSITIVE);
+		if (l.size() == 1) {
+			return l.get(0);
+		}
+		return line;
+	}
+
+	private static void setLabelAddress(String line, List<Label> labels, short lineAddress) throws ParseException {
+		List<String> l = regex("^\\s*([A-Za-z0-9-_]+):.*$", line, Pattern.CASE_INSENSITIVE);
+		if (l.size() != 1) {
+			throw new ParseException(line, "incorrect label format");
+		}
+		String label = l.get(0).toLowerCase();
+		setLabelAddress(line, labels, label, lineAddress);
+	}
+
 	private static void parseLabelLine(String line, List<Label> labels, short lineAddress) throws ParseException {
-		List<String> l = regex("^\\s*([A-Za-z-_]+):\\s*$", line, Pattern.CASE_INSENSITIVE);
+		List<String> l = regex("^\\s*([A-Za-z0-9-_]+):.*$", line, Pattern.CASE_INSENSITIVE);
 		if (l.size() != 1) {
 			throw new ParseException(line, "incorrect label format");
 		}
 		String label = l.get(0).toLowerCase();
 		verifyLabelIsUnique(line, labels, label);
 		labels.add(new Label(lineAddress, label));
+	}
+
+	private static void setLabelAddress(String line, List<Label> labels, String label, short address) throws ParseException {
+		for (Label l : labels) {
+			if (l.name.equalsIgnoreCase(label)) {
+				l.address = address;
+				return;
+			}
+		}
+		throw new ParseException(line, "label not found");
 	}
 
 	private static void verifyLabelIsUnique(String line, List<Label> labels, String label) throws ParseException {
@@ -181,7 +225,7 @@ public class InstructionUtil {
 	}
 
 	private static boolean isLabelInstruction(String line) {
-		return line.matches("^\\s*[A-Za-z-_]+:\\s*$");
+		return line.matches("^\\s*[A-Za-z0-9-_]+:.*$");
 	}
 
 	private static byte[] parseCommandLine(String line, List<Label> labels, byte[] instruction) throws ParseException {
@@ -212,9 +256,12 @@ public class InstructionUtil {
 		case NOT:
 		case POP:
 		case PUSH:
+		case INT:
 			return parseSingleOperand(line, instruction);
 
 		case RET:
+		case NOP:
+		case WFE:
 			return instruction;
 		default:
 			throw new ParseException(line, "invalid command [" + instructionCode + "]");
@@ -241,17 +288,13 @@ public class InstructionUtil {
 	}
 
 	private static byte[] parseVariableOperand(String line, byte[] instruction, String operand, int operandIndex) throws ParseException {
-		if (isNumeric(operand)) {
+		if (isLiteral(operand)) {
 			instruction[operandIndex + 1] = parseLiteral(line, operand);
 			instruction[3] = ByteUtil.setBit(instruction[3], true, operandIndex * 4);
 		} else {
 			instruction[operandIndex + 1] = (byte) parseRegister(line, operand).ordinal();
 		}
 		return instruction;
-	}
-
-	private static boolean isNumeric(String s) {
-		return s.trim().matches("[0-9]+");
 	}
 
 	private static byte[] parseLabelOperand(String line, byte[] instruction, List<Label> labels) throws ParseException {
@@ -284,12 +327,116 @@ public class InstructionUtil {
 		}
 	}
 
-	private static byte parseLiteral(String line, String s) throws ParseException {
-		try {
-			return Byte.valueOf(s.trim(), 10);
-		} catch (Exception e) {
-			throw new ParseException(line, "[" + s + "] is not a valid constant", e);
+	private static boolean isLiteral(String s) {
+		s = s.trim();
+
+		if (s.matches("^[0-9-]+$")) {
+			return true;
 		}
+
+		if (s.matches("^0o[0-7]+$")) {
+			return true;
+		}
+
+		if (s.matches("^0x[0-9A-Fa-f]+$")) {
+			return true;
+		}
+
+		if (s.matches("^[0-9-]+d$")) {
+			return true;
+		}
+
+		if (s.matches("^[0-1]+b$")) {
+			return true;
+		}
+		return false;
+	}
+
+	private static void testIsLiteral() {
+		assert !isLiteral("abc");
+		assert isLiteral("15");
+		assert isLiteral("-15");
+		assert isLiteral("0x15");
+		assert isLiteral("0o15");
+		assert !isLiteral("0o18");
+		assert isLiteral("0o10");
+		assert isLiteral("0x00015");
+		assert isLiteral("0x0aF");
+		assert !isLiteral("-0x0aF");
+		assert isLiteral("101b");
+		assert !isLiteral("1012b");
+		assert isLiteral("015d");
+	}
+
+	private static byte parseLiteral(String line, String s) throws ParseException {
+		int i = parseLiteralToInt(line, s);
+
+		if (i < 0) {
+			i += 256;
+		}
+
+		if (i > 255 || i < 0) {
+			throw new ParseException(line, "operand too large [" + s + "]");
+		}
+
+		return (byte) i;
+	}
+
+	private static int parseLiteralToInt(String line, String s) throws ParseException {
+		try {
+			s = s.trim();
+			List<String> l;
+
+			l = regex("^([0-9-]+)d?$", s, Pattern.CASE_INSENSITIVE);
+			if (l.size() == 1) {
+				return Integer.parseInt(l.get(0), 10);
+			}
+
+			l = regex("^0o([0-7]+)$", s, Pattern.CASE_INSENSITIVE);
+			if (l.size() == 1) {
+				return Integer.parseInt(l.get(0), 8);
+			}
+
+			l = regex("^0x([0-9A-Fa-f]+)$", s, Pattern.CASE_INSENSITIVE);
+			if (l.size() == 1) {
+				return Integer.parseInt(l.get(0), 16);
+			}
+
+			l = regex("^([0-1]+)b$", s, Pattern.CASE_INSENSITIVE);
+			if (l.size() == 1) {
+				return Integer.parseInt(l.get(0), 2);
+			}
+
+			throw new ParseException(line, "invalid operand literal type [" + s + "]");
+		} catch (ParseException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new ParseException(line, "[" + s + "] is not a valid operand literal", e);
+		}
+	}
+
+	private static void testParseLiteral() {
+		try {
+			assert parseLiteral(null, " -120 ") == (byte) -120;
+			assert parseLiteral(null, " 120d") == (byte) 120;
+			assert parseLiteral(null, " -15 ") == (byte) -15;
+			assert parseLiteral(null, " 0o10 ") == (byte) 8;
+			assert parseLiteral(null, "0x0ff") == (byte) 0x0ff;
+			assert parseLiteral(null, "1111b") == (byte) 0x0f;
+			assert parseLiteral(null, "10000000b") == (byte) 0b10000000;
+		} catch (ParseException e) {
+			throw new AssertionError(e);
+		}
+	}
+
+	private static void testParseLiteralOversized() {
+		ParseException e = null;
+		try {
+			parseLiteral(null, "100000000b");
+		} catch (ParseException t) {
+			e = t;
+		}
+		assert e != null;
 	}
 
 	private static List<String> regex(final String pattern, final String screen, int flags) {
@@ -317,12 +464,23 @@ public class InstructionUtil {
 	}
 
 	public static void test() {
+		testIsLiteral();
+		testParseLiteral();
+		testParseLiteralOversized();
+		testRemoveLabels();
 		testRemoveComments();
 		testStandardOperands();
 		testLabelOperands();
 		testSingleOperands();
+		testNoOperands();
 		testCompileLine();
 		testParseFile();
+	}
+
+	private static void testRemoveLabels() {
+		assert removeLabels("testfoo: mov a, 5 ; and comment; ignore me").equals("mov a, 5 ; and comment; ignore me");
+		assert removeLabels("testfoo:").equals("");
+		assert removeLabels(" testfoo: ").equals("");
 	}
 
 	private static void testRemoveComments() {
@@ -390,6 +548,17 @@ public class InstructionUtil {
 		}
 	}
 
+	private static void testNoOperands() {
+		try {
+			byte[] instruction = parseLine("nop", null, (short) 0);
+			assert instruction[0] == (byte) InstructionCode.NOP.ordinal();
+			instruction = parseLine("ret  \t", null, (short) 0);
+			assert instruction[0] == (byte) InstructionCode.RET.ordinal();
+		} catch (ParseException e) {
+			throw new AssertionError(e);
+		}
+	}
+
 	private static void testCompileLine() {
 		try {
 			List<Label> labels = new ArrayList<>();
@@ -426,24 +595,45 @@ public class InstructionUtil {
 			String file = "";
 			file += ";test program\n";
 			file += "cmp a, b\n";
-			file += "test:\n";
-			file += "mov a, b\n";
-			file += "add a, 50\n";
-			file += "loop test\n";
+			file += "jmp end\n";
+			file += "test:mov a, b\n";
+			file += "test1: add a, 50\n";
+			file += "test2:  loop test\n";
+			file += "end:\n";
+			file += "jmp test\n";
 			List<Label> labels = new ArrayList<>();
 
 			List instructions = parseFile(file, labels);
 
-			assert instructions.size() == 4;
-			assert labels.size() == 1;
+			assert instructions.size() == 6;
+			assert labels.size() == 4;
 			assert labels.get(0).name.equals("test");
-			assert labels.get(0).address == (short) 1;
+			assert labels.get(0).address == (short) 2;
+
+			assert labels.get(1).name.equals("test1");
+			assert labels.get(1).address == (short) 3;
+
+			assert labels.get(2).name.equals("test2");
+			assert labels.get(2).address == (short) 4;
+
 			assert InstructionCode.values()[((byte[]) instructions.get(0))[0]].equals(InstructionCode.CMP);
-			assert InstructionCode.values()[((byte[]) instructions.get(3))[0]].equals(InstructionCode.LOOP);
-			
+			assert InstructionCode.values()[((byte[]) instructions.get(4))[0]].equals(InstructionCode.LOOP);
+
 			String reCompiled = compileFile(instructions, labels);
-			assert reCompiled.equals("cmp a, b\ntest:\nmov a, b\nadd a, 50\nloop test");
-			
+
+			String expected = "";
+			expected += "cmp a, b\n";
+			expected += "jmp end\n";
+			expected += "test:\n";
+			expected += "mov a, b\n";
+			expected += "test1:\n";
+			expected += "add a, 50\n";
+			expected += "test2:\n";
+			expected += "loop test\n";
+			expected += "end:\n";
+			expected += "jmp test";
+
+			assert reCompiled.equals(expected);
 
 		} catch (ParseException e) {
 			throw new AssertionError(e);
