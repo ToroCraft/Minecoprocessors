@@ -31,10 +31,10 @@ import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.gui.MinecoprocessorGuiHandler;
 
-//TODO front and back seem to be reversed
+//TODO create recipe
 
 public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEntityProvider {
-	protected static final AxisAlignedBB AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 0.25D, 1.0D);
+	protected static final AxisAlignedBB AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 0.1875D, 1.0D);
 
 	public static final String NAME = "minecoprocessor";
 
@@ -55,6 +55,7 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 		// GameRegistry.addRecipe(new ChessControlRecipe());
 	}
 
+	@Override
 	public AxisAlignedBB getBoundingBox(IBlockState state, IBlockAccess source, BlockPos pos) {
 		return AABB;
 	}
@@ -153,46 +154,6 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 		return facing;
 	}
 
-	public static void test() {
-		testRotateFacing();
-		testConvertFacingToPortIndex();
-		testConvertPortIndexToFacing();
-	}
-
-	private static void testConvertPortIndexToFacing() {
-		int f = 0;
-		int b = 1;
-		int l = 2;
-		int r = 3;
-		assert convertPortIndexToFacing(EnumFacing.NORTH, f).equals(EnumFacing.NORTH);
-		assert convertPortIndexToFacing(EnumFacing.NORTH, r).equals(EnumFacing.EAST);
-		assert convertPortIndexToFacing(EnumFacing.NORTH, b).equals(EnumFacing.SOUTH);
-		assert convertPortIndexToFacing(EnumFacing.EAST, f).equals(EnumFacing.EAST);
-		assert convertPortIndexToFacing(EnumFacing.EAST, b).equals(EnumFacing.WEST);
-		assert convertPortIndexToFacing(EnumFacing.EAST, l).equals(EnumFacing.NORTH);
-		assert convertPortIndexToFacing(EnumFacing.SOUTH, b).equals(EnumFacing.NORTH);
-		assert convertPortIndexToFacing(EnumFacing.WEST, r).equals(EnumFacing.NORTH);
-	}
-
-	private static void testConvertFacingToPortIndex() {
-		int f = 0;
-		int b = 1;
-		int l = 2;
-		int r = 3;
-		assert convertFacingToPortIndex(EnumFacing.NORTH, EnumFacing.NORTH) == f;
-		assert convertFacingToPortIndex(EnumFacing.NORTH, EnumFacing.SOUTH) == b;
-		assert convertFacingToPortIndex(EnumFacing.EAST, EnumFacing.SOUTH) == r;
-		assert convertFacingToPortIndex(EnumFacing.WEST, EnumFacing.NORTH) == r;
-		assert convertFacingToPortIndex(EnumFacing.SOUTH, EnumFacing.EAST) == l;
-	}
-
-	private static void testRotateFacing() {
-		assert rotateFacing(EnumFacing.NORTH, -3).equals(EnumFacing.EAST);
-		assert rotateFacing(EnumFacing.NORTH, 0).equals(EnumFacing.NORTH);
-		assert rotateFacing(EnumFacing.EAST, 0).equals(EnumFacing.EAST);
-		assert rotateFacing(EnumFacing.WEST, -2).equals(EnumFacing.EAST);
-	}
-
 	private static int getRotation(EnumFacing facing) {
 		switch (facing) {
 		case NORTH:
@@ -208,6 +169,7 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 		}
 	}
 
+	@Override
 	public void onBlockPlacedBy(World worldIn, BlockPos pos, IBlockState state, EntityLivingBase placer, ItemStack stack) {
 		super.onBlockPlacedBy(worldIn, pos, state, placer, stack);
 		if (stack.hasDisplayName()) {
@@ -258,28 +220,16 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 		return pos.offset((EnumFacing) blockAccess.getBlockState(pos).getValue(FACING));
 	}
 
-	/**
-	 * Returns the blockstate with the given rotation from the passed
-	 * blockstate. If inapplicable, returns the passed blockstate.
-	 */
 	@Override
 	public IBlockState withRotation(IBlockState state, Rotation rot) {
-		// TODO determine if the processor block should have a facing
 		return state.withProperty(FACING, rot.rotate((EnumFacing) state.getValue(FACING)));
 	}
 
-	/**
-	 * Returns the blockstate with the given mirror of the passed blockstate. If
-	 * inapplicable, returns the passed blockstate.
-	 */
 	@Override
 	public IBlockState withMirror(IBlockState state, Mirror mirrorIn) {
 		return state.withRotation(mirrorIn.toRotation((EnumFacing) state.getValue(FACING)));
 	}
 
-	/**
-	 * Called when the block is right clicked by a player.
-	 */
 	@Override
 	public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, EnumFacing facing, float hitX,
 			float hitY, float hitZ) {
@@ -292,41 +242,42 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 		return true;
 	}
 
+	@Override
 	protected int getDelay(IBlockState state) {
 		return 0;
 	}
 
+	@Override
 	protected IBlockState getPoweredState(IBlockState unpoweredState) {
 		return unpoweredState;
 	}
 
+	@Override
 	protected IBlockState getUnpoweredState(IBlockState poweredState) {
 		return poweredState;
 	}
 
-	/**
-	 * Get the Item that this Block should drop when harvested.
-	 */
+	@Override
 	public Item getItemDropped(IBlockState state, Random rand, int fortune) {
 		return ITEM_INSTANCE;
 	}
 
+	@Override
 	public ItemStack getItem(World worldIn, BlockPos pos, IBlockState state) {
 		return new ItemStack(ITEM_INSTANCE);
 	}
 
+	@Override
 	public boolean isLocked(IBlockAccess worldIn, BlockPos pos, IBlockState state) {
 		return true;
 	}
 
+	@Override
 	protected boolean isAlternateInput(IBlockState state) {
 		return true;
 	}
 
-	/**
-	 * Called serverside after this block is replaced with another in Chunk, but
-	 * before the Tile Entity is updated
-	 */
+	@Override
 	public void breakBlock(World worldIn, BlockPos pos, IBlockState state) {
 		notifyNeighbors(worldIn, pos, state);
 
@@ -337,30 +288,61 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 		super.breakBlock(worldIn, pos, state);
 	}
 
-	/**
-	 * Convert the given metadata into a BlockState for this Block
-	 */
+	@Override
 	public IBlockState getStateFromMeta(int meta) {
 		return this.getDefaultState().withProperty(FACING, EnumFacing.getHorizontal(meta));
 	}
 
-	/**
-	 * Convert the BlockState into the correct metadata value
-	 */
+	@Override
 	public int getMetaFromState(IBlockState state) {
 		int i = 0;
 		i = i | ((EnumFacing) state.getValue(FACING)).getHorizontalIndex();
 		return i;
 	}
 
+	@Override
 	protected BlockStateContainer createBlockState() {
 		return new BlockStateContainer(this, new IProperty[] { FACING });
 	}
 
-	@Override
-	public IBlockState getStateForPlacement(World worldIn, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ, int meta,
-			EntityLivingBase placer) {
-		return this.getDefaultState().withProperty(FACING, placer.getHorizontalFacing());
+	public static void test() {
+		testRotateFacing();
+		testConvertFacingToPortIndex();
+		testConvertPortIndexToFacing();
+	}
+
+	private static void testConvertPortIndexToFacing() {
+		int f = 0;
+		int b = 1;
+		int l = 2;
+		int r = 3;
+		assert convertPortIndexToFacing(EnumFacing.NORTH, f).equals(EnumFacing.NORTH);
+		assert convertPortIndexToFacing(EnumFacing.NORTH, r).equals(EnumFacing.EAST);
+		assert convertPortIndexToFacing(EnumFacing.NORTH, b).equals(EnumFacing.SOUTH);
+		assert convertPortIndexToFacing(EnumFacing.EAST, f).equals(EnumFacing.EAST);
+		assert convertPortIndexToFacing(EnumFacing.EAST, b).equals(EnumFacing.WEST);
+		assert convertPortIndexToFacing(EnumFacing.EAST, l).equals(EnumFacing.NORTH);
+		assert convertPortIndexToFacing(EnumFacing.SOUTH, b).equals(EnumFacing.NORTH);
+		assert convertPortIndexToFacing(EnumFacing.WEST, r).equals(EnumFacing.NORTH);
+	}
+
+	private static void testConvertFacingToPortIndex() {
+		int f = 0;
+		int b = 1;
+		int l = 2;
+		int r = 3;
+		assert convertFacingToPortIndex(EnumFacing.NORTH, EnumFacing.NORTH) == f;
+		assert convertFacingToPortIndex(EnumFacing.NORTH, EnumFacing.SOUTH) == b;
+		assert convertFacingToPortIndex(EnumFacing.EAST, EnumFacing.SOUTH) == r;
+		assert convertFacingToPortIndex(EnumFacing.WEST, EnumFacing.NORTH) == r;
+		assert convertFacingToPortIndex(EnumFacing.SOUTH, EnumFacing.EAST) == l;
+	}
+
+	private static void testRotateFacing() {
+		assert rotateFacing(EnumFacing.NORTH, -3).equals(EnumFacing.EAST);
+		assert rotateFacing(EnumFacing.NORTH, 0).equals(EnumFacing.NORTH);
+		assert rotateFacing(EnumFacing.EAST, 0).equals(EnumFacing.EAST);
+		assert rotateFacing(EnumFacing.WEST, -2).equals(EnumFacing.EAST);
 	}
 
 }

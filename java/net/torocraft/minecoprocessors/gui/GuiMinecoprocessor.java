@@ -7,6 +7,20 @@ import net.minecraft.util.math.MathHelper;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.blocks.ContainerMinecoprocessor;
 
+//TODO loading arrow support
+
+//TODO fault and paused light
+
+//TODO processor diagram
+
+//TODO register readout current line
+
+//TODO clock mode (20hz vs manual)
+
+//TODO step button
+
+//TODO reset and pause button
+
 public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiContainer {
 
 	private static final ResourceLocation BREWING_STAND_GUI_TEXTURES = new ResourceLocation(Minecoprocessors.MODID, "textures/gui/minecoprocessor.png");

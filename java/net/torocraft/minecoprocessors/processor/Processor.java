@@ -17,6 +17,8 @@ import net.torocraft.minecoprocessors.util.ParseException;
 
 //TODO add memory
 
+//TODO int call: 00: pause, 01: world.getWorldTime(), 
+
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class Processor implements IProcessor {
 

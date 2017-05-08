@@ -34,18 +34,14 @@ public class ContainerMinecoprocessor extends Container {
 			super(iInventoryIn, index, xPosition, yPosition);
 		}
 
+		@Override
 		public boolean isItemValid(ItemStack stack) {
 			return TileEntityMinecoprocessor.isBook(stack.getItem());
 		}
 
+		@Override
 		public int getSlotStackLimit() {
 			return 1;
-		}
-		
-		@Override
-		public void onSlotChange(ItemStack p_75220_1_, ItemStack p_75220_2_) {
-			// TODO Auto-generated method stub
-			super.onSlotChange(p_75220_1_, p_75220_2_);
 		}
 	}
 
