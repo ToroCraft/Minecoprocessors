@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.InventoryHelper;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
@@ -28,6 +29,9 @@ import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.torocraft.minecoprocessors.Minecoprocessors;
+import net.torocraft.minecoprocessors.gui.MinecoprocessorGuiHandler;
+
+//TODO front and back seem to be reversed
 
 public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEntityProvider {
 	protected static final AxisAlignedBB AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 0.25D, 1.0D);
@@ -204,6 +208,17 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 		}
 	}
 
+	public void onBlockPlacedBy(World worldIn, BlockPos pos, IBlockState state, EntityLivingBase placer, ItemStack stack) {
+		super.onBlockPlacedBy(worldIn, pos, state, placer, stack);
+		if (stack.hasDisplayName()) {
+			TileEntity tileentity = worldIn.getTileEntity(pos);
+
+			if (tileentity instanceof TileEntityMinecoprocessor) {
+				((TileEntityMinecoprocessor) tileentity).setName(stack.getDisplayName());
+			}
+		}
+	}
+
 	@Override
 	public int getStrongPower(IBlockState blockState, IBlockAccess blockAccess, BlockPos pos, EnumFacing side) {
 		return blockState.getWeakPower(blockAccess, pos, side);
@@ -266,14 +281,15 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 	 * Called when the block is right clicked by a player.
 	 */
 	@Override
-	public boolean onBlockActivated(World worldIn, BlockPos pos, IBlockState state, EntityPlayer playerIn, EnumHand hand, EnumFacing facing,
-			float hitX, float hitY, float hitZ) {
+	public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, EnumFacing facing, float hitX,
+			float hitY, float hitZ) {
 
-		// TODO GUI!
+		if (!world.isRemote) {
+			player.openGui(Minecoprocessors.INSTANCE, MinecoprocessorGuiHandler.MINECOPROCESSOR_ENTITY_GUI, world, pos.getX(), pos.getY(),
+					pos.getZ());
+		}
 
-		((TileEntityMinecoprocessor) worldIn.getTileEntity(pos)).reset();
-
-		return false;
+		return true;
 	}
 
 	protected int getDelay(IBlockState state) {
@@ -312,8 +328,13 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 	 * before the Tile Entity is updated
 	 */
 	public void breakBlock(World worldIn, BlockPos pos, IBlockState state) {
+		notifyNeighbors(worldIn, pos, state);
+
+		TileEntity tileentity = worldIn.getTileEntity(pos);
+		if (tileentity instanceof TileEntityMinecoprocessor) {
+			InventoryHelper.dropInventoryItems(worldIn, pos, (TileEntityMinecoprocessor) tileentity);
+		}
 		super.breakBlock(worldIn, pos, state);
-		this.notifyNeighbors(worldIn, pos, state);
 	}
 
 	/**

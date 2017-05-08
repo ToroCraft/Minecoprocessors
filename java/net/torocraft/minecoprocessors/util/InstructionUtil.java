@@ -8,6 +8,8 @@ import java.util.regex.Pattern;
 import net.torocraft.minecoprocessors.processor.InstructionCode;
 import net.torocraft.minecoprocessors.processor.Register;
 
+//TODO support labels later! maybe with a 2 pass system?
+
 //TODO label on same line support
 
 //TODO detect over-sized literal
