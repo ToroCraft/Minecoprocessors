@@ -64,9 +64,17 @@ public class Processor implements IProcessor {
 		program.clear();
 	}
 
-	private static void reset(byte[] a) {
+	// TODO move to util class
+	public static void reset(byte[] a) {
 		for (int i = 0; i < a.length; i++) {
 			a[i] = 0;
+		}
+	}
+
+	// TODO move to util class
+	public static void reset(boolean[] a) {
+		for (int i = 0; i < a.length; i++) {
+			a[i] = false;
 		}
 	}
 
@@ -193,7 +201,7 @@ public class Processor implements IProcessor {
 
 		instruction = (byte[]) program.get(ip);
 
-		// System.out.println(pinchDump());
+		System.out.println(pinchDump());
 
 		ip++;
 
@@ -259,6 +267,10 @@ public class Processor implements IProcessor {
 		case WFE:
 			processWfe();
 			return;
+		case INT:
+			break;
+		default:
+			break;
 		}
 
 		fault = true;
@@ -458,7 +470,7 @@ public class Processor implements IProcessor {
 
 	}
 
-	//TODO test copy and reset array methods
+	// TODO test copy and reset array methods
 
 	private void testPackFlags() {
 		reset();
@@ -831,28 +843,39 @@ public class Processor implements IProcessor {
 	}
 
 	private void dumpRegister(StringBuilder s, Register reg) {
-		s.append(reg.toString().toLowerCase());
-		s.append("[");
+		
+		//s.append(reg.toString().toLowerCase());
+		//s.append("[");
 		s.append(pad(Integer.toUnsignedString(registers[reg.ordinal()], 16)));
-		s.append("] ");
+		//s.append("] ");
 	}
 
 	public String pinchDump() {
 		StringBuilder s = new StringBuilder();
 
+		s.append("a|b|c|d[");
 		dumpRegister(s, Register.A);
+		s.append(" ");
 		dumpRegister(s, Register.B);
+		s.append(" ");
 		dumpRegister(s, Register.C);
+		s.append(" ");
 		dumpRegister(s, Register.D);
+		s.append("]  ");
 
+		s.append("f|b|l|r[");
 		dumpRegister(s, Register.PF);
+		s.append(" ");
 		dumpRegister(s, Register.PB);
+		s.append(" ");
 		dumpRegister(s, Register.PL);
+		s.append(" ");
 		dumpRegister(s, Register.PR);
+		s.append("]   ");
 
 		dumpRegister(s, Register.PORTS);
 
-		s.append("(").append(InstructionUtil.compileLine(instruction, labels, (short) -1)).append(") ");
+		s.append("  (").append(InstructionUtil.compileLine(instruction, labels, (short) -1)).append(") ");
 
 		if (fault) {
 			s.append("FAULT ");

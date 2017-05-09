@@ -33,7 +33,6 @@ import net.torocraft.minecoprocessors.gui.MinecoprocessorGuiHandler;
 
 //TODO create recipe
 
-//TODO get repeater program working
 
 public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEntityProvider {
 	protected static final AxisAlignedBB AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 0.1875D, 1.0D);
@@ -92,7 +91,7 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 	@Override
 	protected void updateState(World worldIn, BlockPos pos, IBlockState state) {
 		int priority = -1;
-		worldIn.updateBlockTick(pos, this, this.getDelay(state), priority);
+		worldIn.updateBlockTick(pos, this, 0, priority);
 	}
 
 	public void onPortChange(World worldIn, BlockPos pos, IBlockState state, int portIndex) {
@@ -111,7 +110,11 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 	@Override
 	public void updateTick(World world, BlockPos pos, IBlockState state, Random rand) {
 		super.updateTick(world, pos, state, rand);
-		EnumFacing facing = (EnumFacing) state.getValue(FACING);
+		updateInputPorts(world, pos, state);
+	}
+
+	public void updateInputPorts(World world, BlockPos pos, IBlockState state) {
+		EnumFacing facing = (EnumFacing) state.getValue(FACING).getOpposite();
 
 		boolean e = getPowerOnSide(world, pos.offset(EnumFacing.EAST), EnumFacing.EAST) > 0;
 		boolean w = getPowerOnSide(world, pos.offset(EnumFacing.WEST), EnumFacing.WEST) > 0;
@@ -125,9 +128,8 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 		values[convertFacingToPortIndex(facing, EnumFacing.WEST)] = w;
 		values[convertFacingToPortIndex(facing, EnumFacing.EAST)] = e;
 
-		// System.out.println("updateTick E[" + e + "] W[" + w + "] N[" + n + "]
-		// S[" + s + "] --- F[" + values[0] + "] B[" + values[1] + "] L["
-		// + values[2] + "] R[" + values[3] + "]");
+		//System.out.println("updateTick E[" + e + "] W[" + w + "] N[" + n + "] S[" + s + "] --- F[" + values[0] + "] B[" + values[1] + "] L["
+		//		+ values[2] + "] R[" + values[3] + "]");
 
 		((TileEntityMinecoprocessor) world.getTileEntity(pos)).updateInputPorts(values);
 	}
@@ -138,6 +140,7 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 	}
 
 	private static int convertFacingToPortIndex(EnumFacing facing, EnumFacing side) {
+		//TODO
 		int rotation = getRotation(facing);
 		return rotateFacing(side, -rotation).getIndex() - 2;
 	}

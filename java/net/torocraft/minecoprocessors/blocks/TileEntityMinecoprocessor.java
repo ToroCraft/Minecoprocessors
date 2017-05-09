@@ -28,11 +28,14 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 	private static final String NBT_CUSTOM_NAME = "CustomName";
 
 	private final IProcessor processor = new Processor();
+	
 	private NonNullList<ItemStack> codeItemStacks = NonNullList.<ItemStack> withSize(1, ItemStack.EMPTY);
 	private String customName;
 	private int loadTime;
+	private boolean loaded;
 
 	private final boolean[] prevPortValues = new boolean[4];
+	private byte prevPortsRegister = 0x0f;
 
 	public static void init() {
 		GameRegistry.registerTileEntity(TileEntityMinecoprocessor.class, NAME);
@@ -73,8 +76,25 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 		if (world.isRemote) {
 			return;
 		}
+
+		//if (world.getTotalWorldTime() % 10 != 0) {
+		//	return;
+		//}
+
+		if (!loaded) {
+			Processor.reset(prevPortValues);
+			prevPortsRegister = 0x0f;
+			BlockMinecoprocessor.INSTANCE.updateInputPorts(world, pos, world.getBlockState(pos));
+			loaded = true;
+		}
+
 		processor.tick();
 		detectOutputChanges();
+
+		if (prevPortsRegister != processor.getRegisters()[Register.PORTS.ordinal()]) {
+			BlockMinecoprocessor.INSTANCE.updateInputPorts(world, pos, world.getBlockState(pos));
+			prevPortsRegister = processor.getRegisters()[Register.PORTS.ordinal()];
+		}
 	}
 
 	private void detectOutputChanges() {
@@ -101,11 +121,10 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 	public boolean updateInputPorts(boolean[] values) {
 		boolean updated = false;
 		for (int i = 0; i < 4; i++) {
-			updated = updated || updateInputPort(i, values[i]);
+			updated = updateInputPort(i, values[i]) || updated;
 		}
 		if (updated) {
-			// TODO edge trigger support
-			// TODO interrupt processor
+			processor.wake();
 		}
 		return updated;
 	}
@@ -113,9 +132,14 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 	private boolean updateInputPort(int portIndex, boolean value) {
 		byte[] registers = processor.getRegisters();
 		byte ports = registers[Register.PORTS.ordinal()];
+
 		if (!ByteUtil.getBit(ports, portIndex) && prevPortValues[portIndex] != value) {
 			prevPortValues[portIndex] = value;
+
 			registers[Register.PF.ordinal() + portIndex] = value ? (byte) 1 : 0;
+
+			//System.out.println("update port reg: " + Register.values()[Register.PF.ordinal() + portIndex] + " => "
+			//		+ registers[Register.PF.ordinal() + portIndex]);
 			return true;
 		}
 		return false;
@@ -149,11 +173,11 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 		if (world.isRemote) {
 			return;
 		}
-		System.out.println("reset");
 		processor.reset();
 		for (int portIndex = 0; portIndex < 4; portIndex++) {
 			detectOutputChange(portIndex);
 		}
+		loaded = false;
 	}
 
 	@Override
@@ -201,8 +225,10 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 		StringBuilder code = new StringBuilder();
 		for (int i = 0; i < pages.tagCount(); ++i) {
 			code.append(pages.getStringTagAt(i));
+			code.append("\n");
 		}
 		processor.load(code.toString());
+		loaded = false;
 	}
 
 	@Override

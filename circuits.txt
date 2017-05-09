@@ -1,0 +1,84 @@
+;;
+;; Repeater
+;;
+mov ports, 1101b
+start:
+mov pf, pb
+wfe
+jmp start
+
+;;
+;; Delayed
+;; Repeater
+;;
+mov ports, 1101b
+start:
+mov c, 20 ;delay
+loop:
+sub c, 1
+jnz loop
+mov pf, pb
+wfe
+jmp start
+
+;;
+;; 3 Input
+;; AND gate
+;;
+mov ports, 0x01
+start:
+mov a, pb
+and a, pl
+and a, pr
+mov pf, a
+wfe
+jmp start
+
+;;
+;; Dispenser
+;; Double-Pulser
+;;
+mov ports, 1101b
+start:
+wfe
+cmp pb, 0
+jz start
+mov pf, 1
+nop
+mov pf, 0
+nop
+mov pf, 1
+nop
+mov pf, 0
+jmp start
+
+;;
+;; Enabled-clock
+;; pulse multiplier
+;;
+mov ports, 1101b
+sleep:
+wfe
+start:
+cmp pb, 0
+jz sleep
+mov pf, 1
+nop
+mov pf, 0
+jmp start
+
+;;
+;; pulse extender
+;;
+mov ports, 1101b
+sleep:
+wfe
+cmp pb, 0
+jz sleep
+mov pf, 1
+mov c, 40 ;delay
+loop:
+sub c, 1
+jnz loop
+mov pf, 0
+jmp sleep
