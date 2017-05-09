@@ -20,6 +20,8 @@ import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
 import net.torocraft.minecoprocessors.util.ByteUtil;
 
+// update clock to redstone tick
+
 public class TileEntityMinecoprocessor extends TileEntity implements ITickable, IInventory {
 
 	private static final String NAME = "minecoprocessor_tile_entity";

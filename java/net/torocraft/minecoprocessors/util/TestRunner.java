@@ -9,7 +9,7 @@ public class TestRunner {
 	public static void main(String[] args) {
 		ByteUtil.test();
 		InstructionUtil.test();
-		//testProcessor();
+		testProcessor();
 		BlockMinecoprocessor.test();
 		//runProcessor();
 		System.out.println("pass!");

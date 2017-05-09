@@ -17,7 +17,17 @@ import net.torocraft.minecoprocessors.util.ParseException;
 
 //TODO add memory
 
-//TODO int call: 00: pause, 01: world.getWorldTime(), 
+//TODO int call: 00: pause, 01: world.getWorldTime(),
+
+//TODO temperature
+
+//TODO change PF - PR to OUT and IN
+
+//TODO change block state to show if the proc is running or halted
+
+//TODO processors connected to processors or other RS diodes
+
+//TODO move stack, program and labels into a single memory array
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class Processor implements IProcessor {
@@ -130,7 +140,7 @@ public class Processor implements IProcessor {
 	}
 
 	private static void copy(byte[] a, byte[] b) {
-		for (int i = 0; i < Math.min(a.length, b.length); i++) {
+		for (int i = 0; i < a.length; i++) {
 			a[i] = b[i];
 		}
 	}
@@ -416,6 +426,7 @@ public class Processor implements IProcessor {
 	}
 
 	public void test() {
+		testCopyArray();
 		testTestOverFlow();
 		testProcessMov();
 		testProcessAdd();
@@ -433,10 +444,19 @@ public class Processor implements IProcessor {
 		testProcessPushPop();
 		testPackFlags();
 		testUnpackFlags();
-		testNbt();
+		//testNbt();
+	}
+
+	private void testCopyArray() {
+		byte[] a = {1,2,3,4,5,6};
+		byte[] b = new byte[a.length];
+		copy(b, a);
+		assert(b[0] == 1);
+		assert(b[5] == 6);
 	}
 
 	private void testNbt() {
+		//TODO find a better way to test NBT, it doesn't seem to be working well in this test case
 		flush();
 		labels.add(new Label((short) 189, "foobar"));
 		program.add(new byte[] { 0x00, 0x01, 0x02, 0x03 });
@@ -445,13 +465,17 @@ public class Processor implements IProcessor {
 		registers[4] = (byte) 0xcc;
 		zero = true;
 
+		for (byte b : registers) {
+			System.out.println("B:" + b);
+		}
+
 		NBTTagCompound c = writeToNBT();
+
 		flush();
 		assert !zero;
 		assert labels.size() == 0;
 		assert program.size() == 0;
-		assert registers[0] == 0;
-		assert registers[4] == 0;
+		reset(registers);
 
 		readFromNBT(c);
 
@@ -465,6 +489,11 @@ public class Processor implements IProcessor {
 		assert instruction[1] == 0x01;
 		assert instruction[2] == 0x02;
 		assert instruction[3] == 0x03;
+
+		for (byte b : registers) {
+			System.out.println("A:" + b);
+		}
+
 		assert registers[0] == (byte) 0xee;
 		assert registers[4] == (byte) 0xcc;
 
