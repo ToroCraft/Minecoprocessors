@@ -12,6 +12,8 @@ import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
 import net.minecraft.inventory.InventoryHelper;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
@@ -30,9 +32,6 @@ import net.minecraft.world.World;
 import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.gui.MinecoprocessorGuiHandler;
-
-//TODO create recipe
-
 
 public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEntityProvider {
 	protected static final AxisAlignedBB AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 0.1875D, 1.0D);
@@ -53,7 +52,10 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 		ITEM_INSTANCE.setRegistryName(resourceName);
 		GameRegistry.register(ITEM_INSTANCE);
 
-		// GameRegistry.addRecipe(new ChessControlRecipe());
+		GameRegistry.addRecipe(new ItemStack(BlockMinecoprocessor.INSTANCE), "tct", "crc", "tct", 't', Blocks.REDSTONE_TORCH, 'r',
+				Blocks.REDSTONE_BLOCK, 'c', Items.COMPARATOR
+
+		);
 	}
 
 	@Override
@@ -128,8 +130,9 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 		values[convertFacingToPortIndex(facing, EnumFacing.WEST)] = w;
 		values[convertFacingToPortIndex(facing, EnumFacing.EAST)] = e;
 
-		//System.out.println("updateTick E[" + e + "] W[" + w + "] N[" + n + "] S[" + s + "] --- F[" + values[0] + "] B[" + values[1] + "] L["
-		//		+ values[2] + "] R[" + values[3] + "]");
+		// System.out.println("updateTick E[" + e + "] W[" + w + "] N[" + n + "]
+		// S[" + s + "] --- F[" + values[0] + "] B[" + values[1] + "] L["
+		// + values[2] + "] R[" + values[3] + "]");
 
 		((TileEntityMinecoprocessor) world.getTileEntity(pos)).updateInputPorts(values);
 	}
@@ -140,7 +143,7 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 	}
 
 	private static int convertFacingToPortIndex(EnumFacing facing, EnumFacing side) {
-		//TODO
+		// TODO
 		int rotation = getRotation(facing);
 		return rotateFacing(side, -rotation).getIndex() - 2;
 	}
