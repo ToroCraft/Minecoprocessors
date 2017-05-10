@@ -11,31 +11,33 @@ import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 
 @Mod(modid = Minecoprocessors.MODID, version = Minecoprocessors.VERSION, name = Minecoprocessors.MODNAME)
 public class Minecoprocessors {
-	public static final String MODID = "minecoprocessors";
-	public static final String VERSION = "1.0";
-	public static final String MODNAME = "Minecoprocessors";
 
-	@Mod.Instance(MODID)
-	public static Minecoprocessors INSTANCE;
+  public static final String MODID = "minecoprocessors";
+  public static final String VERSION = "1.0";
+  public static final String MODNAME = "Minecoprocessors";
 
-	public static SimpleNetworkWrapper NETWORK = NetworkRegistry.INSTANCE.newSimpleChannel(Minecoprocessors.MODID);
+  @Mod.Instance(MODID)
+  public static Minecoprocessors INSTANCE;
 
-	@SidedProxy(clientSide = "net.torocraft.minecoprocessors.ClientProxy", serverSide = "net.torocraft.minecoprocessors.ServerProxy")
-	public static CommonProxy proxy;
+  public static SimpleNetworkWrapper NETWORK = NetworkRegistry.INSTANCE
+      .newSimpleChannel(Minecoprocessors.MODID);
 
-	@EventHandler
-	public void preInit(FMLPreInitializationEvent e) {
-		proxy.preInit(e);
-	}
+  @SidedProxy(clientSide = "net.torocraft.minecoprocessors.ClientProxy", serverSide = "net.torocraft.minecoprocessors.ServerProxy")
+  public static CommonProxy proxy;
 
-	@EventHandler
-	public void init(FMLInitializationEvent e) {
-		proxy.init(e);
-	}
+  @EventHandler
+  public void preInit(FMLPreInitializationEvent e) {
+    proxy.preInit(e);
+  }
 
-	@EventHandler
-	public void postInit(FMLPostInitializationEvent e) {
-		proxy.postInit(e);
-	}
+  @EventHandler
+  public void init(FMLInitializationEvent e) {
+    proxy.init(e);
+  }
+
+  @EventHandler
+  public void postInit(FMLPostInitializationEvent e) {
+    proxy.postInit(e);
+  }
 
 }

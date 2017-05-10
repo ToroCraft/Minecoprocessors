@@ -22,334 +22,338 @@ import net.torocraft.minecoprocessors.util.ByteUtil;
 
 public class TileEntityMinecoprocessor extends TileEntity implements ITickable, IInventory {
 
-	private static final String NAME = "minecoprocessor_tile_entity";
-	private static final String NBT_PROCESSOR = "processor";
-	private static final String NBT_LOAD_TIME = "loadTime";
-	private static final String NBT_CUSTOM_NAME = "CustomName";
+  private static final String NAME = "minecoprocessor_tile_entity";
+  private static final String NBT_PROCESSOR = "processor";
+  private static final String NBT_LOAD_TIME = "loadTime";
+  private static final String NBT_CUSTOM_NAME = "CustomName";
 
-	private final IProcessor processor = new Processor();
-	
-	private NonNullList<ItemStack> codeItemStacks = NonNullList.<ItemStack> withSize(1, ItemStack.EMPTY);
-	private String customName;
-	private int loadTime;
-	private boolean loaded;
+  private final IProcessor processor = new Processor();
 
-	private final boolean[] prevPortValues = new boolean[4];
-	private byte prevPortsRegister = 0x0f;
+  private NonNullList<ItemStack> codeItemStacks = NonNullList.<ItemStack>withSize(1,
+      ItemStack.EMPTY);
+  private String customName;
+  private int loadTime;
+  private boolean loaded;
 
-	public static void init() {
-		GameRegistry.registerTileEntity(TileEntityMinecoprocessor.class, NAME);
-	}
+  private final boolean[] prevPortValues = new boolean[4];
+  private byte prevPortsRegister = 0x0f;
 
-	@Override
-	public void readFromNBT(NBTTagCompound c) {
-		super.readFromNBT(c);
-		processor.readFromNBT(c.getCompoundTag(NBT_PROCESSOR));
+  public static void init() {
+    GameRegistry.registerTileEntity(TileEntityMinecoprocessor.class, NAME);
+  }
 
-		codeItemStacks = NonNullList.<ItemStack> withSize(this.getSizeInventory(), ItemStack.EMPTY);
-		ItemStackHelper.loadAllItems(c, codeItemStacks);
+  @Override
+  public void readFromNBT(NBTTagCompound c) {
+    super.readFromNBT(c);
+    processor.readFromNBT(c.getCompoundTag(NBT_PROCESSOR));
 
-		loadTime = c.getShort(NBT_LOAD_TIME);
+    codeItemStacks = NonNullList.<ItemStack>withSize(this.getSizeInventory(), ItemStack.EMPTY);
+    ItemStackHelper.loadAllItems(c, codeItemStacks);
 
-		if (c.hasKey(NBT_CUSTOM_NAME, 8)) {
-			this.customName = c.getString(NBT_CUSTOM_NAME);
-		}
-	}
+    loadTime = c.getShort(NBT_LOAD_TIME);
 
-	@Override
-	public NBTTagCompound writeToNBT(NBTTagCompound cIn) {
-		NBTTagCompound c = super.writeToNBT(cIn);
-		c.setTag(NBT_PROCESSOR, processor.writeToNBT());
+    if (c.hasKey(NBT_CUSTOM_NAME, 8)) {
+      this.customName = c.getString(NBT_CUSTOM_NAME);
+    }
+  }
 
-		c.setShort(NBT_LOAD_TIME, (short) loadTime);
-		ItemStackHelper.saveAllItems(c, codeItemStacks);
+  @Override
+  public NBTTagCompound writeToNBT(NBTTagCompound cIn) {
+    NBTTagCompound c = super.writeToNBT(cIn);
+    c.setTag(NBT_PROCESSOR, processor.writeToNBT());
 
-		if (this.hasCustomName()) {
-			c.setString(NBT_CUSTOM_NAME, this.customName);
-		}
+    c.setShort(NBT_LOAD_TIME, (short) loadTime);
+    ItemStackHelper.saveAllItems(c, codeItemStacks);
 
-		return c;
-	}
+    if (this.hasCustomName()) {
+      c.setString(NBT_CUSTOM_NAME, this.customName);
+    }
 
-	@Override
-	public void update() {
-		if (world.isRemote) {
-			return;
-		}
+    return c;
+  }
 
-		if (world.getTotalWorldTime() % 2 != 0) {
-			return;
-		}
+  @Override
+  public void update() {
+    if (world.isRemote) {
+      return;
+    }
 
-		if (!loaded) {
-			Processor.reset(prevPortValues);
-			prevPortsRegister = 0x0f;
-			BlockMinecoprocessor.INSTANCE.updateInputPorts(world, pos, world.getBlockState(pos));
-			loaded = true;
-		}
+    if (world.getTotalWorldTime() % 2 != 0) {
+      return;
+    }
 
-		processor.tick();
-		detectOutputChanges();
+    if (!loaded) {
+      Processor.reset(prevPortValues);
+      prevPortsRegister = 0x0f;
+      BlockMinecoprocessor.INSTANCE.updateInputPorts(world, pos, world.getBlockState(pos));
+      loaded = true;
+    }
 
-		if (prevPortsRegister != processor.getRegisters()[Register.PORTS.ordinal()]) {
-			BlockMinecoprocessor.INSTANCE.updateInputPorts(world, pos, world.getBlockState(pos));
-			prevPortsRegister = processor.getRegisters()[Register.PORTS.ordinal()];
-		}
-	}
+    processor.tick();
+    detectOutputChanges();
 
-	private void detectOutputChanges() {
-		detectOutputChange(0);
-		detectOutputChange(1);
-		detectOutputChange(2);
-		detectOutputChange(3);
-	}
+    if (prevPortsRegister != processor.getRegisters()[Register.PORTS.ordinal()]) {
+      BlockMinecoprocessor.INSTANCE.updateInputPorts(world, pos, world.getBlockState(pos));
+      prevPortsRegister = processor.getRegisters()[Register.PORTS.ordinal()];
+    }
+  }
 
-	private boolean detectOutputChange(int portIndex) {
-		byte[] registers = processor.getRegisters();
-		byte ports = registers[Register.PORTS.ordinal()];
+  private void detectOutputChanges() {
+    detectOutputChange(0);
+    detectOutputChange(1);
+    detectOutputChange(2);
+    detectOutputChange(3);
+  }
 
-		boolean curVal = ByteUtil.getBit(registers[Register.PF.ordinal() + portIndex], 0);
+  private boolean detectOutputChange(int portIndex) {
+    byte[] registers = processor.getRegisters();
+    byte ports = registers[Register.PORTS.ordinal()];
 
-		if (isInOutputMode(ports, portIndex) && prevPortValues[portIndex] != curVal) {
-			prevPortValues[portIndex] = curVal;
-			BlockMinecoprocessor.INSTANCE.onPortChange(world, pos, world.getBlockState(pos), portIndex);
-			return true;
-		}
-		return false;
-	}
+    boolean curVal = ByteUtil.getBit(registers[Register.PF.ordinal() + portIndex], 0);
 
-	public boolean updateInputPorts(boolean[] values) {
-		boolean updated = false;
-		for (int i = 0; i < 4; i++) {
-			updated = updateInputPort(i, values[i]) || updated;
-		}
-		if (updated) {
-			processor.wake();
-		}
-		return updated;
-	}
+    if (isInOutputMode(ports, portIndex) && prevPortValues[portIndex] != curVal) {
+      prevPortValues[portIndex] = curVal;
+      BlockMinecoprocessor.INSTANCE.onPortChange(world, pos, world.getBlockState(pos), portIndex);
+      return true;
+    }
+    return false;
+  }
 
-	private static boolean isInInputMode(byte ports, int portIndex) {
-		return ByteUtil.getBit(ports, portIndex) && !ByteUtil.getBit(ports, portIndex + 4);
-	}
-	
-	private static boolean isInOutputMode(byte ports, int portIndex) {
-		return !ByteUtil.getBit(ports, portIndex) && !ByteUtil.getBit(ports, portIndex + 4);
-	}
-	
-	//TODO support clock mode
-	@SuppressWarnings("unused")
-	private static boolean isInClockMode(byte ports, int portIndex) {
-		return !ByteUtil.getBit(ports, portIndex) && ByteUtil.getBit(ports, portIndex + 4);
-	}
-	
-	private static boolean isInResetMode(byte ports, int portIndex) {
-		return ByteUtil.getBit(ports, portIndex) && ByteUtil.getBit(ports, portIndex + 4);
-	}
-	
-	private boolean updateInputPort(int portIndex, boolean value) {
-		byte[] registers = processor.getRegisters();
-		byte ports = registers[Register.PORTS.ordinal()];
+  public boolean updateInputPorts(boolean[] values) {
+    boolean updated = false;
+    for (int i = 0; i < 4; i++) {
+      updated = updateInputPort(i, values[i]) || updated;
+    }
+    if (updated) {
+      processor.wake();
+    }
+    return updated;
+  }
 
-		if (isInInputMode(ports, portIndex) && prevPortValues[portIndex] != value) {
-			prevPortValues[portIndex] = value;
+  private static boolean isInInputMode(byte ports, int portIndex) {
+    return ByteUtil.getBit(ports, portIndex) && !ByteUtil.getBit(ports, portIndex + 4);
+  }
 
-			registers[Register.PF.ordinal() + portIndex] = value ? (byte) 1 : 0;
+  private static boolean isInOutputMode(byte ports, int portIndex) {
+    return !ByteUtil.getBit(ports, portIndex) && !ByteUtil.getBit(ports, portIndex + 4);
+  }
 
-			//System.out.println("update port reg: " + Register.values()[Register.PF.ordinal() + portIndex] + " => "
-			//		+ registers[Register.PF.ordinal() + portIndex]);
-			return true;
-		}
-		
-		if (isInResetMode(ports, portIndex) && prevPortValues[portIndex] != value) {
-			prevPortValues[portIndex] = value;
-			
-			if(value){
-				processor.reset();
-				return true;
-			}
-			return false;
-		}
-		
-		return false;
-	}
+  //TODO support clock mode
+  @SuppressWarnings("unused")
+  private static boolean isInClockMode(byte ports, int portIndex) {
+    return !ByteUtil.getBit(ports, portIndex) && ByteUtil.getBit(ports, portIndex + 4);
+  }
 
-	private boolean getPortSignal(int portIndex) {
-		if (!isInOutputMode(processor.getRegisters()[Register.PORTS.ordinal()], portIndex)) {
-			return false;
-		}
-		return ByteUtil.getBit(processor.getRegisters()[Register.PF.ordinal() + portIndex], 0);
-	}
+  private static boolean isInResetMode(byte ports, int portIndex) {
+    return ByteUtil.getBit(ports, portIndex) && ByteUtil.getBit(ports, portIndex + 4);
+  }
 
-	public boolean getFrontPortSignal() {
-		return getPortSignal(0);
-	}
+  private boolean updateInputPort(int portIndex, boolean value) {
+    byte[] registers = processor.getRegisters();
+    byte ports = registers[Register.PORTS.ordinal()];
 
-	public boolean getBackPortSignal() {
-		return getPortSignal(1);
-	}
+    if (isInInputMode(ports, portIndex) && prevPortValues[portIndex] != value) {
+      prevPortValues[portIndex] = value;
 
-	public boolean getLeftPortSignal() {
-		return getPortSignal(2);
-	}
+      registers[Register.PF.ordinal() + portIndex] = value ? (byte) 1 : 0;
 
-	public boolean getRightPortSignal() {
-		return getPortSignal(3);
-	}
+      //System.out.println("update port reg: " + Register.values()[Register.PF.ordinal() + portIndex] + " => "
+      //		+ registers[Register.PF.ordinal() + portIndex]);
+      return true;
+    }
 
-	public void reset() {
-		if (world.isRemote) {
-			return;
-		}
-		processor.reset();
-		for (int portIndex = 0; portIndex < 4; portIndex++) {
-			detectOutputChange(portIndex);
-		}
-		loaded = false;
-	}
+    if (isInResetMode(ports, portIndex) && prevPortValues[portIndex] != value) {
+      prevPortValues[portIndex] = value;
 
-	@Override
-	public ItemStack getStackInSlot(int index) {
-		return index >= 0 && index < codeItemStacks.size() ? (ItemStack) codeItemStacks.get(index) : ItemStack.EMPTY;
-	}
+      if (value) {
+        processor.reset();
+        return true;
+      }
+      return false;
+    }
 
-	@Override
-	public ItemStack decrStackSize(int index, int count) {
-		markDirty();
-		return ItemStackHelper.getAndSplit(codeItemStacks, index, count);
-	}
+    return false;
+  }
 
-	@Override
-	public ItemStack removeStackFromSlot(int index) {
-		markDirty();
-		return ItemStackHelper.getAndRemove(codeItemStacks, index);
-	}
+  private boolean getPortSignal(int portIndex) {
+    if (!isInOutputMode(processor.getRegisters()[Register.PORTS.ordinal()], portIndex)) {
+      return false;
+    }
+    return ByteUtil.getBit(processor.getRegisters()[Register.PF.ordinal() + portIndex], 0);
+  }
 
-	@Override
-	public void setInventorySlotContents(int index, ItemStack stack) {
-		if (index >= 0 && index < this.codeItemStacks.size()) {
-			codeItemStacks.set(index, stack);
-			// TODO setup with load time delay
-			loadBook(stack);
-			markDirty();
-		}
-	}
+  public boolean getFrontPortSignal() {
+    return getPortSignal(0);
+  }
 
-	private void loadBook(ItemStack stack) {
-		if (world.isRemote) {
-			return;
-		}
+  public boolean getBackPortSignal() {
+    return getPortSignal(1);
+  }
 
-		if (!isBook(stack.getItem()) || !stack.hasTagCompound()) {
-			return;
-		}
+  public boolean getLeftPortSignal() {
+    return getPortSignal(2);
+  }
 
-		NBTTagList pages = stack.getTagCompound().getTagList("pages", 8);
+  public boolean getRightPortSignal() {
+    return getPortSignal(3);
+  }
 
-		if (pages == null) {
-			return;
-		}
+  public void reset() {
+    if (world.isRemote) {
+      return;
+    }
+    processor.reset();
+    for (int portIndex = 0; portIndex < 4; portIndex++) {
+      detectOutputChange(portIndex);
+    }
+    loaded = false;
+  }
 
-		StringBuilder code = new StringBuilder();
-		for (int i = 0; i < pages.tagCount(); ++i) {
-			code.append(pages.getStringTagAt(i));
-			code.append("\n");
-		}
-		processor.load(code.toString());
-		loaded = false;
-	}
+  @Override
+  public ItemStack getStackInSlot(int index) {
+    return index >= 0 && index < codeItemStacks.size() ? (ItemStack) codeItemStacks.get(index)
+        : ItemStack.EMPTY;
+  }
 
-	@Override
-	public int getInventoryStackLimit() {
-		return 64;
-	}
+  @Override
+  public ItemStack decrStackSize(int index, int count) {
+    markDirty();
+    return ItemStackHelper.getAndSplit(codeItemStacks, index, count);
+  }
 
-	@Override
-	public boolean isUsableByPlayer(EntityPlayer player) {
-		return world.getTileEntity(pos) != this ? false
-				: player.getDistanceSq((double) pos.getX() + 0.5D, (double) pos.getY() + 0.5D, (double) pos.getZ() + 0.5D) <= 64.0D;
-	}
+  @Override
+  public ItemStack removeStackFromSlot(int index) {
+    markDirty();
+    return ItemStackHelper.getAndRemove(codeItemStacks, index);
+  }
 
-	@Override
-	public void openInventory(EntityPlayer player) {
-	}
+  @Override
+  public void setInventorySlotContents(int index, ItemStack stack) {
+    if (index >= 0 && index < this.codeItemStacks.size()) {
+      codeItemStacks.set(index, stack);
+      // TODO setup with load time delay
+      loadBook(stack);
+      markDirty();
+    }
+  }
 
-	@Override
-	public void closeInventory(EntityPlayer player) {
-	}
+  private void loadBook(ItemStack stack) {
+    if (world.isRemote) {
+      return;
+    }
 
-	public static boolean isBook(Item item) {
-		return item == Items.WRITABLE_BOOK || item == Items.WRITTEN_BOOK;
-	}
+    if (!isBook(stack.getItem()) || !stack.hasTagCompound()) {
+      return;
+    }
 
-	@Override
-	public boolean isItemValidForSlot(int index, ItemStack stack) {
-		return isBook(stack.getItem());
-	}
+    NBTTagList pages = stack.getTagCompound().getTagList("pages", 8);
 
-	@Override
-	public int getField(int id) {
-		switch (id) {
-		case 0:
-			return loadTime;
-		default:
-			return 0;
-		}
-	}
+    if (pages == null) {
+      return;
+    }
 
-	@Override
-	public void setField(int id, int value) {
-		switch (id) {
-		case 0:
-			loadTime = value;
-			break;
-		}
-	}
+    StringBuilder code = new StringBuilder();
+    for (int i = 0; i < pages.tagCount(); ++i) {
+      code.append(pages.getStringTagAt(i));
+      code.append("\n");
+    }
+    processor.load(code.toString());
+    loaded = false;
+  }
 
-	@Override
-	public int getFieldCount() {
-		return 1;
-	}
+  @Override
+  public int getInventoryStackLimit() {
+    return 64;
+  }
 
-	@Override
-	public String getName() {
-		return hasCustomName() ? this.customName : "container.minecoprocessor";
-	}
+  @Override
+  public boolean isUsableByPlayer(EntityPlayer player) {
+    return world.getTileEntity(pos) != this ? false
+        : player.getDistanceSq((double) pos.getX() + 0.5D, (double) pos.getY() + 0.5D,
+            (double) pos.getZ() + 0.5D) <= 64.0D;
+  }
 
-	public void setName(String name) {
-		this.customName = name;
-	}
+  @Override
+  public void openInventory(EntityPlayer player) {
+  }
 
-	@Override
-	public boolean hasCustomName() {
-		return customName != null && !customName.isEmpty();
-	}
+  @Override
+  public void closeInventory(EntityPlayer player) {
+  }
 
-	@Override
-	public ITextComponent getDisplayName() {
-		return this.hasCustomName() ? new TextComponentString(this.getName()) : new TextComponentTranslation(this.getName());
-	}
+  public static boolean isBook(Item item) {
+    return item == Items.WRITABLE_BOOK || item == Items.WRITTEN_BOOK;
+  }
 
-	@Override
-	public int getSizeInventory() {
-		return codeItemStacks.size();
-	}
+  @Override
+  public boolean isItemValidForSlot(int index, ItemStack stack) {
+    return isBook(stack.getItem());
+  }
 
-	@Override
-	public boolean isEmpty() {
-		for (ItemStack itemstack : codeItemStacks) {
-			if (!itemstack.isEmpty()) {
-				return false;
-			}
-		}
+  @Override
+  public int getField(int id) {
+    switch (id) {
+      case 0:
+        return loadTime;
+      default:
+        return 0;
+    }
+  }
 
-		return true;
-	}
+  @Override
+  public void setField(int id, int value) {
+    switch (id) {
+      case 0:
+        loadTime = value;
+        break;
+    }
+  }
 
-	@Override
-	public void clear() {
-		codeItemStacks.clear();
-		markDirty();
-	}
+  @Override
+  public int getFieldCount() {
+    return 1;
+  }
+
+  @Override
+  public String getName() {
+    return hasCustomName() ? this.customName : "container.minecoprocessor";
+  }
+
+  public void setName(String name) {
+    this.customName = name;
+  }
+
+  @Override
+  public boolean hasCustomName() {
+    return customName != null && !customName.isEmpty();
+  }
+
+  @Override
+  public ITextComponent getDisplayName() {
+    return this.hasCustomName() ? new TextComponentString(this.getName())
+        : new TextComponentTranslation(this.getName());
+  }
+
+  @Override
+  public int getSizeInventory() {
+    return codeItemStacks.size();
+  }
+
+  @Override
+  public boolean isEmpty() {
+    for (ItemStack itemstack : codeItemStacks) {
+      if (!itemstack.isEmpty()) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  @Override
+  public void clear() {
+    codeItemStacks.clear();
+    markDirty();
+  }
 
 }

@@ -9,16 +9,16 @@ import net.torocraft.minecoprocessors.gui.MinecoprocessorGuiHandler;
 
 public class CommonProxy {
 
-	public void preInit(FMLPreInitializationEvent e) {
-		BlockMinecoprocessor.init();
-	}
+  public void preInit(FMLPreInitializationEvent e) {
+    BlockMinecoprocessor.init();
+  }
 
-	public void init(FMLInitializationEvent e) {
-		TileEntityMinecoprocessor.init();
-		MinecoprocessorGuiHandler.init();
-	}
+  public void init(FMLInitializationEvent e) {
+    TileEntityMinecoprocessor.init();
+    MinecoprocessorGuiHandler.init();
+  }
 
-	public void postInit(FMLPostInitializationEvent e) {
+  public void postInit(FMLPostInitializationEvent e) {
 
-	}
+  }
 }

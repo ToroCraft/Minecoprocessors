@@ -11,25 +11,28 @@ import net.torocraft.minecoprocessors.blocks.TileEntityMinecoprocessor;
 
 public class MinecoprocessorGuiHandler implements IGuiHandler {
 
-	public static final int MINECOPROCESSOR_ENTITY_GUI = 0;
+  public static final int MINECOPROCESSOR_ENTITY_GUI = 0;
 
-	public static void init() {
-		NetworkRegistry.INSTANCE.registerGuiHandler(Minecoprocessors.INSTANCE, new MinecoprocessorGuiHandler());
-	}
+  public static void init() {
+    NetworkRegistry.INSTANCE
+        .registerGuiHandler(Minecoprocessors.INSTANCE, new MinecoprocessorGuiHandler());
+  }
 
-	@Override
-	public Object getServerGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
-		if (ID == MINECOPROCESSOR_ENTITY_GUI) {
-			return new ContainerMinecoprocessor(player.inventory, (TileEntityMinecoprocessor) world.getTileEntity(new BlockPos(x, y, z)));
-		}
-		return null;
-	}
+  @Override
+  public Object getServerGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
+    if (ID == MINECOPROCESSOR_ENTITY_GUI) {
+      return new ContainerMinecoprocessor(player.inventory,
+          (TileEntityMinecoprocessor) world.getTileEntity(new BlockPos(x, y, z)));
+    }
+    return null;
+  }
 
-	@Override
-	public Object getClientGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
-		if (ID == MINECOPROCESSOR_ENTITY_GUI) {
-			return new GuiMinecoprocessor(player.inventory, (TileEntityMinecoprocessor) world.getTileEntity(new BlockPos(x, y, z)));
-		}
-		return null;
-	}
+  @Override
+  public Object getClientGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
+    if (ID == MINECOPROCESSOR_ENTITY_GUI) {
+      return new GuiMinecoprocessor(player.inventory,
+          (TileEntityMinecoprocessor) world.getTileEntity(new BlockPos(x, y, z)));
+    }
+    return null;
+  }
 }
