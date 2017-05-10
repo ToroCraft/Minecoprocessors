@@ -11,23 +11,8 @@ import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
 import net.torocraft.minecoprocessors.util.ParseException;
 
-//TODO support carry
-
-//TODO support call / ret
-
-//TODO add memory
-
-//TODO int call: 00: pause, 01: world.getWorldTime(),
-
-//TODO temperature
-
-//TODO change PF - PR to OUT and IN
-
 //TODO change block state to show if the proc is running or halted
 
-//TODO processors connected to processors or other RS diodes
-
-//TODO move stack, program and labels into a single memory array
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class Processor implements IProcessor {
@@ -50,6 +35,7 @@ public class Processor implements IProcessor {
 	private byte[] instruction;
 	private final byte[] stack = new byte[64];
 	private final byte[] registers = new byte[Register.values().length];
+	private byte temp;
 
 	/*
 	 * pointers
@@ -96,9 +82,9 @@ public class Processor implements IProcessor {
 		carry = false;
 		wait = false;
 		ip = 0;
-		sp = -1;
+		sp = 0;
 		reset(registers);
-		registers[Register.PORTS.ordinal()] = (byte) 0xb01;
+		registers[Register.PORTS.ordinal()] = (byte) 0xb1110;
 	}
 
 	@Override
@@ -121,6 +107,7 @@ public class Processor implements IProcessor {
 		long flags = 0;
 		flags = ByteUtil.setShort(flags, ip, 3);
 		flags = ByteUtil.setByteInLong(flags, sp, 5);
+		flags = ByteUtil.setByteInLong(flags, temp, 4);
 		flags = ByteUtil.setBitInLong(flags, fault, 0);
 		flags = ByteUtil.setBitInLong(flags, zero, 1);
 		flags = ByteUtil.setBitInLong(flags, overflow, 2);
@@ -129,9 +116,26 @@ public class Processor implements IProcessor {
 		return flags;
 	}
 
+	private void testPackFlags() {
+		reset();
+		temp = (byte) 0xff;
+		assert packFlags() == Long.parseUnsignedLong("000000ff00000000", 16);
+		fault = true;
+		temp = 0;
+		assert packFlags() == Long.parseUnsignedLong("0000000000000001", 16);
+		zero = true;
+		assert packFlags() == Long.parseUnsignedLong("0000000000000003", 16);
+		overflow = true;
+		assert packFlags() == Long.parseUnsignedLong("0000000000000007", 16);
+		sp = (byte) 0xee;
+		ip = (short) 0xabcd;
+		assert packFlags() == Long.parseUnsignedLong("abcdee0000000007", 16);
+	}
+
 	private void unPackFlags(long flags) {
 		ip = ByteUtil.getShort(flags, 3);
 		sp = ByteUtil.getByteInLong(flags, 5);
+		temp = ByteUtil.getByteInLong(flags, 4);
 		fault = ByteUtil.getBitInLong(flags, 0);
 		zero = ByteUtil.getBitInLong(flags, 1);
 		overflow = ByteUtil.getBitInLong(flags, 2);
@@ -139,8 +143,28 @@ public class Processor implements IProcessor {
 		wait = ByteUtil.getBitInLong(flags, 4);
 	}
 
+	private void testUnpackFlags() {
+		reset();
+		unPackFlags(Long.parseUnsignedLong("abcdee0000000007", 16));
+		assert sp == (byte) 0xee;
+		assert ip == (short) 0xabcd;
+		assert zero;
+		assert overflow;
+		assert fault;
+
+		unPackFlags(Long.parseUnsignedLong("0000ff0000000000", 16));
+		assert sp == -1;
+		assert ip == 0;
+		assert !zero;
+		assert !overflow;
+		assert !fault;
+	}
+
 	private static void copy(byte[] a, byte[] b) {
-		for (int i = 0; i < a.length; i++) {
+		if(a.length != b.length){
+			new RuntimeException("WARNING: copying different sized a[" + a.length + "] b[" + b.length + "]").printStackTrace();
+		}
+		for (int i = 0; i < Math.min(a.length, b.length); i++) {
 			a[i] = b[i];
 		}
 	}
@@ -192,6 +216,9 @@ public class Processor implements IProcessor {
 
 	@Override
 	public void tick() {
+		if (temp > 1) {
+			temp--;
+		}
 		if (fault || wait) {
 			return;
 		}
@@ -213,6 +240,10 @@ public class Processor implements IProcessor {
 
 		System.out.println(pinchDump());
 
+		if (temp < 110) {
+			temp += 2;
+		}
+
 		ip++;
 
 		switch (InstructionCode.values()[instruction[0]]) {
@@ -223,12 +254,14 @@ public class Processor implements IProcessor {
 			processAnd();
 			return;
 		case CALL:
-			break;
+			processCall();
+			return;
 		case CMP:
 			processCmp();
 			return;
 		case DIV:
-			break;
+			processDiv();
+			return;
 		case JMP:
 			processJmp();
 			return;
@@ -245,7 +278,8 @@ public class Processor implements IProcessor {
 			processMov();
 			return;
 		case MUL:
-			break;
+			processMul();
+			return;
 		case NOT:
 			processNot();
 			return;
@@ -259,7 +293,8 @@ public class Processor implements IProcessor {
 			processPush();
 			return;
 		case RET:
-			break;
+			processRet();
+			return;
 		case NOP:
 			return;
 		case SHL:
@@ -278,7 +313,13 @@ public class Processor implements IProcessor {
 			processWfe();
 			return;
 		case INT:
-			break;
+			return;
+		case INC:
+			processInc();
+			return;
+		case DEC:
+			processDec();
+			return;
 		default:
 			break;
 		}
@@ -390,26 +431,165 @@ public class Processor implements IProcessor {
 	}
 
 	private void processPush() {
-		byte a = getVariableOperand(0);
-		sp++;
 		if (sp >= stack.length) {
 			fault = true;
 			return;
 		}
-		stack[sp] = a;
+		byte a = getVariableOperand(0);
+		stack[sp++] = a;
 	}
 
 	private void processPop() {
-		if (sp < 0) {
+		if (sp <= 0) {
 			fault = true;
 			return;
 		}
-		registers[instruction[1]] = stack[sp];
-		sp--;
+		registers[instruction[1]] = stack[--sp];
 	}
 
+	private void processCall() {
+		stack[sp++] = ByteUtil.getByteInShort(ip, 0);
+		stack[sp++] = ByteUtil.getByteInShort(ip, 1);
+		ip = labels.get(instruction[1]).address;
+	}
+
+	private void processRet() {
+		ip = ByteUtil.setByteInShort(ip, stack[--sp], 1);
+		ip = ByteUtil.setByteInShort(ip, stack[--sp], 0);
+	}
+
+	private void testProcessCall() {
+		try {
+			setupTest(0, 0, 0, 0, "call test_label");
+			ip = (short) 0xabcd;
+			processCall();
+			assertRegisters(0, 0, 0, 0);
+
+			assert stack[0] == (byte) 0xcd;
+			assert stack[1] == (byte) 0xab;
+
+			assert ip == (short) 111;
+			assert sp == 2;
+
+			processRet();
+
+			assert ip == (short) 0xabcd;
+			assert sp == 0;
+
+		} catch (Exception e) {
+			throw new AssertionError(e);
+		}
+	}
+
+	private void processInc() {
+		int a = getVariableOperand(0);
+		int z = a + 1;
+		zero = z == 0;
+		registers[instruction[1]] = (byte) z;
+	}
+
+	private void testProcessInc() {
+		try {
+			setupTest(10, 0, 0, 0, "inc a");
+			processInc();
+			assertRegisters(11, 0, 0, 0);
+			assert !zero;
+
+			setupTest(-1, 0, 0, 0, "inc a");
+			processInc();
+			assertRegisters(0, 0, 0, 0);
+			assert zero;
+		} catch (Exception e) {
+			throw new AssertionError(e);
+		}
+	}
+
+	private void processDec() {
+		int a = getVariableOperand(0);
+		int z = a - 1;
+		zero = z == 0;
+		registers[instruction[1]] = (byte) z;
+	}
+
+	private void testProcessDec() {
+		try {
+			setupTest(10, 0, 0, 0, "dec a");
+			processDec();
+			assertRegisters(9, 0, 0, 0);
+			assert !zero;
+
+			setupTest(1, 0, 0, 0, "dec a");
+			processDec();
+			assertRegisters(0, 0, 0, 0);
+			assert zero;
+		} catch (Exception e) {
+			throw new AssertionError(e);
+		}
+	}
+
+	private void processMul() {
+		int a = registers[Register.A.ordinal()];
+		int b = getVariableOperand(0);
+		long z = a * b;
+		zero = z == 0;
+		testOverflow(z);
+		registers[Register.A.ordinal()] = (byte) z;
+	}
+
+	private void testProcessMul() {
+		try {
+			setupTest(0xff, 2, 0, 0, "mul b");
+			processMul();
+			assertRegisters(0xfe, 2, 0, 0);
+			assert !zero;
+
+			setupTest(5, 0, 0, 2, "mul d");
+			processMul();
+			assertRegisters(10, 0, 0, 2);
+			assert !zero;
+		} catch (Exception e) {
+			throw new AssertionError(e);
+		}
+	}
+
+	private void processDiv() {
+		int a = registers[Register.A.ordinal()];
+		int b = getVariableOperand(0);
+		if(b == 0){
+			fault = true;
+			return;
+		}
+		long z = a / b;
+		zero = z == 0;
+		testOverflow(z);
+		registers[Register.A.ordinal()] = (byte) z;
+	}
+	private void testProcessDiv() {
+		try {
+			setupTest(10, 2, 0, 0, "div b");
+			processDiv();
+			assertRegisters(5, 2, 0, 0);
+			assert !zero;
+
+			setupTest(5, 0, 0, 2, "div d");
+			processDiv();
+			assertRegisters(2, 0, 0, 2);
+			
+			setupTest(5, 0, 0, 0, "div d");
+			processDiv();
+			assertRegisters(5, 0, 0, 0);
+			assert !zero;
+			assert fault;
+		} catch (Exception e) {
+			throw new AssertionError(e);
+		}
+	}
 	private void testOverflow(int z) {
 		overflow = z != (int) (byte) z;
+	}
+
+	private void testOverflow(long z) {
+		overflow = z != (long) (byte) z;
 	}
 
 	private byte getVariableOperand(int operandIndex) {
@@ -444,19 +624,26 @@ public class Processor implements IProcessor {
 		testProcessPushPop();
 		testPackFlags();
 		testUnpackFlags();
-		//testNbt();
+		testProcessCall();
+		testProcessInc();
+		testProcessDec();
+		testProcessMul();
+		testProcessDiv();
+		// testNbt();
 	}
 
 	private void testCopyArray() {
-		byte[] a = {1,2,3,4,5,6};
+		byte[] a = { 1, 2, 3, 4, 5, 6 };
 		byte[] b = new byte[a.length];
 		copy(b, a);
-		assert(b[0] == 1);
-		assert(b[5] == 6);
+		assert (b[0] == 1);
+		assert (b[5] == 6);
 	}
 
+	@SuppressWarnings("unused")
 	private void testNbt() {
-		//TODO find a better way to test NBT, it doesn't seem to be working well in this test case
+		// TODO find a better way to test NBT, it doesn't seem to be working
+		// well in this test case
 		flush();
 		labels.add(new Label((short) 189, "foobar"));
 		program.add(new byte[] { 0x00, 0x01, 0x02, 0x03 });
@@ -500,37 +687,6 @@ public class Processor implements IProcessor {
 	}
 
 	// TODO test copy and reset array methods
-
-	private void testPackFlags() {
-		reset();
-		assert packFlags() == Long.parseUnsignedLong("0000ff0000000000", 16);
-		fault = true;
-		assert packFlags() == Long.parseUnsignedLong("0000ff0000000001", 16);
-		zero = true;
-		assert packFlags() == Long.parseUnsignedLong("0000ff0000000003", 16);
-		overflow = true;
-		assert packFlags() == Long.parseUnsignedLong("0000ff0000000007", 16);
-		sp = (byte) 0xee;
-		ip = (short) 0xabcd;
-		assert packFlags() == Long.parseUnsignedLong("abcdee0000000007", 16);
-	}
-
-	private void testUnpackFlags() {
-		reset();
-		unPackFlags(Long.parseUnsignedLong("abcdee0000000007", 16));
-		assert sp == (byte) 0xee;
-		assert ip == (short) 0xabcd;
-		assert zero;
-		assert overflow;
-		assert fault;
-
-		unPackFlags(Long.parseUnsignedLong("0000ff0000000000", 16));
-		assert sp == -1;
-		assert ip == 0;
-		assert !zero;
-		assert !overflow;
-		assert !fault;
-	}
 
 	private void testTestOverFlow() {
 		testOverflow(1);
@@ -824,17 +980,17 @@ public class Processor implements IProcessor {
 			instruction = InstructionUtil.parseLine("push a", new ArrayList<Label>(), (short) 0);
 			processPush();
 
-			assert sp == 0;
+			assert sp == 1;
 			assert stack[0] == (byte) 30;
 
 			processPush();
 
-			assert sp == 1;
+			assert sp == 2;
 			assert stack[1] == (byte) 30;
 
 			instruction = InstructionUtil.parseLine("pop b", new ArrayList<Label>(), (short) 0);
 			processPop();
-			assert sp == 0;
+			assert sp == 1;
 			assert registers[Register.B.ordinal()] == (byte) 30;
 
 		} catch (Exception e) {
@@ -872,11 +1028,11 @@ public class Processor implements IProcessor {
 	}
 
 	private void dumpRegister(StringBuilder s, Register reg) {
-		
-		//s.append(reg.toString().toLowerCase());
-		//s.append("[");
+
+		// s.append(reg.toString().toLowerCase());
+		// s.append("[");
 		s.append(pad(Integer.toUnsignedString(registers[reg.ordinal()], 16)));
-		//s.append("] ");
+		// s.append("] ");
 	}
 
 	public String pinchDump() {
@@ -903,6 +1059,8 @@ public class Processor implements IProcessor {
 		s.append("]   ");
 
 		dumpRegister(s, Register.PORTS);
+
+		s.append(" ").append(temp).append("°F ");
 
 		s.append("  (").append(InstructionUtil.compileLine(instruction, labels, (short) -1)).append(") ");
 

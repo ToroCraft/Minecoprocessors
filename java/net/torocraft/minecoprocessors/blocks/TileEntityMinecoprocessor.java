@@ -20,8 +20,6 @@ import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
 import net.torocraft.minecoprocessors.util.ByteUtil;
 
-// update clock to redstone tick
-
 public class TileEntityMinecoprocessor extends TileEntity implements ITickable, IInventory {
 
 	private static final String NAME = "minecoprocessor_tile_entity";
@@ -79,9 +77,9 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 			return;
 		}
 
-		//if (world.getTotalWorldTime() % 10 != 0) {
-		//	return;
-		//}
+		if (world.getTotalWorldTime() % 2 != 0) {
+			return;
+		}
 
 		if (!loaded) {
 			Processor.reset(prevPortValues);
@@ -112,7 +110,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
 		boolean curVal = ByteUtil.getBit(registers[Register.PF.ordinal() + portIndex], 0);
 
-		if (ByteUtil.getBit(ports, portIndex) && prevPortValues[portIndex] != curVal) {
+		if (isInOutputMode(ports, portIndex) && prevPortValues[portIndex] != curVal) {
 			prevPortValues[portIndex] = curVal;
 			BlockMinecoprocessor.INSTANCE.onPortChange(world, pos, world.getBlockState(pos), portIndex);
 			return true;
@@ -131,11 +129,29 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 		return updated;
 	}
 
+	private static boolean isInInputMode(byte ports, int portIndex) {
+		return ByteUtil.getBit(ports, portIndex) && !ByteUtil.getBit(ports, portIndex + 4);
+	}
+	
+	private static boolean isInOutputMode(byte ports, int portIndex) {
+		return !ByteUtil.getBit(ports, portIndex) && !ByteUtil.getBit(ports, portIndex + 4);
+	}
+	
+	//TODO support clock mode
+	@SuppressWarnings("unused")
+	private static boolean isInClockMode(byte ports, int portIndex) {
+		return !ByteUtil.getBit(ports, portIndex) && ByteUtil.getBit(ports, portIndex + 4);
+	}
+	
+	private static boolean isInResetMode(byte ports, int portIndex) {
+		return ByteUtil.getBit(ports, portIndex) && ByteUtil.getBit(ports, portIndex + 4);
+	}
+	
 	private boolean updateInputPort(int portIndex, boolean value) {
 		byte[] registers = processor.getRegisters();
 		byte ports = registers[Register.PORTS.ordinal()];
 
-		if (!ByteUtil.getBit(ports, portIndex) && prevPortValues[portIndex] != value) {
+		if (isInInputMode(ports, portIndex) && prevPortValues[portIndex] != value) {
 			prevPortValues[portIndex] = value;
 
 			registers[Register.PF.ordinal() + portIndex] = value ? (byte) 1 : 0;
@@ -144,12 +160,22 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 			//		+ registers[Register.PF.ordinal() + portIndex]);
 			return true;
 		}
+		
+		if (isInResetMode(ports, portIndex) && prevPortValues[portIndex] != value) {
+			prevPortValues[portIndex] = value;
+			
+			if(value){
+				processor.reset();
+				return true;
+			}
+			return false;
+		}
+		
 		return false;
 	}
 
 	private boolean getPortSignal(int portIndex) {
-		boolean outputMode = ByteUtil.getBit(processor.getRegisters()[Register.PORTS.ordinal()], portIndex);
-		if (!outputMode) {
+		if (!isInOutputMode(processor.getRegisters()[Register.PORTS.ordinal()], portIndex)) {
 			return false;
 		}
 		return ByteUtil.getBit(processor.getRegisters()[Register.PF.ordinal() + portIndex], 0);

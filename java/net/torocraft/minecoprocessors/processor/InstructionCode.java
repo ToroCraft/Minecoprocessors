@@ -23,5 +23,7 @@ public enum InstructionCode {
 	CALL,
 	NOP,
 	INT,
-	WFE
+	WFE,
+	INC,
+	DEC
 }

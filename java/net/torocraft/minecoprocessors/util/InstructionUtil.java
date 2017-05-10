@@ -8,30 +8,10 @@ import java.util.regex.Pattern;
 import net.torocraft.minecoprocessors.processor.InstructionCode;
 import net.torocraft.minecoprocessors.processor.Register;
 
-
-//TODO add int CODE to allow pausing the processor
-
 //TODO support .'s in labels
-
-//TODO INC / DEC
-
-//TODO MUL / DIV
-
-//TODO DB define byte
-
-
-
-//TODO port addressing? mov east, 1
-
-
-
-
+// which mean local? https://docs.oracle.com/cd/E19120-01/open.solaris/817-5477/esqaq/index.html
 
 //TODO test with windows encodings
-
-//TODO memory addressing operand [a]
-
-//TODO memory addressing operand with offset [a-3]
 
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class InstructionUtil {
@@ -100,6 +80,8 @@ public class InstructionUtil {
 		case POP:
 		case PUSH:
 		case INT:
+		case INC:
+		case DEC:
 			line.append(" ");
 			if (ByteUtil.getBit(instruction[3], 0)) {
 				line.append(Integer.toString(instruction[1], 10));
@@ -257,6 +239,8 @@ public class InstructionUtil {
 		case POP:
 		case PUSH:
 		case INT:
+		case INC:
+		case DEC:
 			return parseSingleOperand(line, instruction);
 
 		case RET:

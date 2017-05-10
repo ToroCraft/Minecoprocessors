@@ -36,9 +36,9 @@ public enum Register {
 	/**
 	 * port direction registers (high / low Z) <BR>
 	 * 
-	 * <b>1</b>: output mode (low Z) <BR>
+	 * <b>0</b>: output mode (low Z) <BR>
 	 * 
-	 * <b>0</b>: input mode (high Z)
+	 * <b>1</b>: input mode (high Z)
 	 * 
 	 * <ul>
 	 * <li><b>bit 0:</b> front port</li>

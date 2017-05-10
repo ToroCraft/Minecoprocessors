@@ -33,6 +33,8 @@ import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.gui.MinecoprocessorGuiHandler;
 
+// smoke particles
+
 public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEntityProvider {
 	protected static final AxisAlignedBB AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 0.1875D, 1.0D);
 
@@ -143,7 +145,6 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 	}
 
 	private static int convertFacingToPortIndex(EnumFacing facing, EnumFacing side) {
-		// TODO
 		int rotation = getRotation(facing);
 		return rotateFacing(side, -rotation).getIndex() - 2;
 	}
