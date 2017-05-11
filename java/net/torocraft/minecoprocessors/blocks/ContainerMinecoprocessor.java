@@ -15,7 +15,7 @@ public class ContainerMinecoprocessor extends Container {
   public ContainerMinecoprocessor(IInventory playerInventory, IInventory te) {
     this.te = te;
 
-    this.codeBookSlot = this.addSlotToContainer(new CodeBookSlot(te, 0, 23, 29));
+    this.codeBookSlot = this.addSlotToContainer(new CodeBookSlot(te, 0, 80, 35));
 
     for (int i = 0; i < 3; ++i) {
       for (int j = 0; j < 9; ++j) {
