@@ -4,11 +4,14 @@ import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.blocks.ContainerMinecoprocessor;
 import net.torocraft.minecoprocessors.blocks.TileEntityMinecoprocessor;
+import net.torocraft.minecoprocessors.network.MessageProcessorRequest;
+import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
 
 // TODO loading arrow support
@@ -38,10 +41,26 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   private GuiButton buttonPause;
   private GuiButton buttonStep;
 
+  private NBTTagCompound processorData;
+  private Processor processor = new Processor();
+
+  //TODO detect close and null this instance
+  public static GuiMinecoprocessor INSTANCE;
+
   public GuiMinecoprocessor(IInventory playerInv, TileEntityMinecoprocessor te) {
     super(new ContainerMinecoprocessor(playerInv, te));
     this.playerInventory = playerInv;
     this.minecoprocessor = te;
+
+    Minecoprocessors.NETWORK.sendToServer(new MessageProcessorRequest(te.getPos()));
+
+
+    INSTANCE = this;
+  }
+
+  public void updateData(NBTTagCompound processorData) {
+    this.processorData = processorData;
+    processor.readFromNBT(processorData);
   }
 
   /**
@@ -56,6 +75,8 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     // fontRendererObj.drawString("A B C D ", x, y - 5, 0x404040);
 
     // fontRendererObj.drawString("0F 01 00 00", x, y + 10, 0xffffff);
+
+    registers = processor.getRegisters();
 
     y = 50;
     drawRegister(Register.A, 130 * 2, y);
@@ -105,9 +126,18 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
 
   private void drawRegister(Register register, int x, int y) {
     String label = register.toString();
-    String value = Integer.toHexString(registers[register.ordinal()]).substring(0, 2);
+    String value = toHex(registers[register.ordinal()]);
     drawLabeledValue(label, value, x, y);
   }
+
+  private String toHex(byte b) {
+    String s = Integer.toHexString(b);
+    if (s.length() > 2) {
+      return s.substring(0, 2);
+    }
+    return s;
+  }
+
 
   private void drawFlag(String label, boolean flag, int x, int y) {
     String value = flag ? "1" : "0";
@@ -153,7 +183,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     buttonReset = new ScaledGuiButton(buttonId++, x, y, width, height, I18n.format("gui.button.reset", (Object) null));
     buttonPause = new ScaledGuiButton(buttonId++, x, y + 11, width, height, I18n.format("gui.button.pause", (Object) null));
     buttonStep = new ScaledGuiButton(buttonId++, x, y + 22, width, height, I18n.format("gui.button.step", (Object) null));
-    
+
     buttonStep.enabled = false;
 
     buttonList.add(buttonReset);

@@ -1,6 +1,9 @@
 package net.torocraft.minecoprocessors.blocks;
 
+import java.util.HashSet;
+import java.util.Set;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ItemStackHelper;
@@ -15,6 +18,8 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.registry.GameRegistry;
+import net.torocraft.minecoprocessors.Minecoprocessors;
+import net.torocraft.minecoprocessors.network.MessageProcessorUpdate;
 import net.torocraft.minecoprocessors.processor.IProcessor;
 import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
@@ -33,6 +38,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   private String customName;
   private int loadTime;
   private boolean loaded;
+  private Set<EntityPlayerMP> playersToUpdate = new HashSet<>();
 
   private final boolean[] prevPortValues = new boolean[4];
   private byte prevPortsRegister = 0x0f;
@@ -89,11 +95,24 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     }
 
     processor.tick();
+    updatePlayers();
+
     detectOutputChanges();
 
     if (prevPortsRegister != processor.getRegisters()[Register.PORTS.ordinal()]) {
       BlockMinecoprocessor.INSTANCE.updateInputPorts(world, pos, world.getBlockState(pos));
       prevPortsRegister = processor.getRegisters()[Register.PORTS.ordinal()];
+    }
+  }
+
+  private void updatePlayers() {
+    if (playersToUpdate.size() < 1) {
+      return;
+    }
+
+    for (EntityPlayerMP player : playersToUpdate) {
+      System.out.println("updatePlayers() " + player.getName());
+      Minecoprocessors.NETWORK.sendTo(new MessageProcessorUpdate(processor.writeToNBT()), player);
     }
   }
 
@@ -271,10 +290,12 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   }
 
   @Override
-  public void openInventory(EntityPlayer player) {}
+  public void openInventory(EntityPlayer player) {
+  }
 
   @Override
-  public void closeInventory(EntityPlayer player) {}
+  public void closeInventory(EntityPlayer player) {
+  }
 
   public static boolean isBook(Item item) {
     return item == Items.WRITABLE_BOOK || item == Items.WRITTEN_BOOK;
@@ -339,6 +360,12 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   public void clear() {
     codeItemStacks.clear();
     markDirty();
+  }
+
+
+  public void startUpdatingPlayer(EntityPlayerMP player) {
+    System.out.println("startUpdatingPlayer()");
+    playersToUpdate.add(player);
   }
 
 }
