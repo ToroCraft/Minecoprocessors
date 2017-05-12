@@ -8,6 +8,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.blocks.ContainerMinecoprocessor;
+import net.torocraft.minecoprocessors.blocks.TileEntityMinecoprocessor;
 import net.torocraft.minecoprocessors.processor.Register;
 
 // TODO loading arrow support
@@ -29,7 +30,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   private static final ResourceLocation BREWING_STAND_GUI_TEXTURES = new ResourceLocation(Minecoprocessors.MODID, "textures/gui/minecoprocessor.png");
 
   private final IInventory playerInventory;
-  private final IInventory minecoprocessor;
+  private final TileEntityMinecoprocessor minecoprocessor;
 
   private byte[] registers = {(byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff};
 
@@ -37,10 +38,10 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   private GuiButton buttonPause;
   private GuiButton buttonStep;
 
-  public GuiMinecoprocessor(IInventory playerInv, IInventory p_i45506_2_) {
-    super(new ContainerMinecoprocessor(playerInv, p_i45506_2_));
+  public GuiMinecoprocessor(IInventory playerInv, TileEntityMinecoprocessor te) {
+    super(new ContainerMinecoprocessor(playerInv, te));
     this.playerInventory = playerInv;
-    this.minecoprocessor = p_i45506_2_;
+    this.minecoprocessor = te;
   }
 
   /**
@@ -51,7 +52,6 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     GlStateManager.pushMatrix();
     GlStateManager.scale(0.5d, 0.5d, 0.5d);
     int scale = 2;
-    int x = 130 * scale;
     int y = 20 * scale;
     // fontRendererObj.drawString("A B C D ", x, y - 5, 0x404040);
 

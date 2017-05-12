@@ -45,6 +45,11 @@ public class ContainerMinecoprocessor extends Container {
       return 1;
     }
   }
+  
+  @Override
+  public void detectAndSendChanges() {
+    
+  }
 
   @Override
   public boolean canInteractWith(EntityPlayer player) {

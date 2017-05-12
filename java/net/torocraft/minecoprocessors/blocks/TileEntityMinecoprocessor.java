@@ -29,8 +29,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
   private final IProcessor processor = new Processor();
 
-  private NonNullList<ItemStack> codeItemStacks = NonNullList.<ItemStack>withSize(1,
-      ItemStack.EMPTY);
+  private NonNullList<ItemStack> codeItemStacks = NonNullList.<ItemStack>withSize(1, ItemStack.EMPTY);
   private String customName;
   private int loadTime;
   private boolean loaded;
@@ -138,7 +137,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     return !ByteUtil.getBit(ports, portIndex) && !ByteUtil.getBit(ports, portIndex + 4);
   }
 
-  //TODO support clock mode
+  // TODO support clock mode
   @SuppressWarnings("unused")
   private static boolean isInClockMode(byte ports, int portIndex) {
     return !ByteUtil.getBit(ports, portIndex) && ByteUtil.getBit(ports, portIndex + 4);
@@ -157,8 +156,9 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
       registers[Register.PF.ordinal() + portIndex] = value ? (byte) 1 : 0;
 
-      //System.out.println("update port reg: " + Register.values()[Register.PF.ordinal() + portIndex] + " => "
-      //		+ registers[Register.PF.ordinal() + portIndex]);
+      // System.out.println("update port reg: " + Register.values()[Register.PF.ordinal() +
+      // portIndex] + " => "
+      // + registers[Register.PF.ordinal() + portIndex]);
       return true;
     }
 
@@ -211,8 +211,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
   @Override
   public ItemStack getStackInSlot(int index) {
-    return index >= 0 && index < codeItemStacks.size() ? (ItemStack) codeItemStacks.get(index)
-        : ItemStack.EMPTY;
+    return index >= 0 && index < codeItemStacks.size() ? (ItemStack) codeItemStacks.get(index) : ItemStack.EMPTY;
   }
 
   @Override
@@ -268,18 +267,14 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
   @Override
   public boolean isUsableByPlayer(EntityPlayer player) {
-    return world.getTileEntity(pos) != this ? false
-        : player.getDistanceSq((double) pos.getX() + 0.5D, (double) pos.getY() + 0.5D,
-            (double) pos.getZ() + 0.5D) <= 64.0D;
+    return world.getTileEntity(pos) != this ? false : player.getDistanceSq((double) pos.getX() + 0.5D, (double) pos.getY() + 0.5D, (double) pos.getZ() + 0.5D) <= 64.0D;
   }
 
   @Override
-  public void openInventory(EntityPlayer player) {
-  }
+  public void openInventory(EntityPlayer player) {}
 
   @Override
-  public void closeInventory(EntityPlayer player) {
-  }
+  public void closeInventory(EntityPlayer player) {}
 
   public static boolean isBook(Item item) {
     return item == Items.WRITABLE_BOOK || item == Items.WRITTEN_BOOK;
@@ -292,21 +287,12 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
   @Override
   public int getField(int id) {
-    switch (id) {
-      case 0:
-        return loadTime;
-      default:
-        return 0;
-    }
+    return 0;
   }
 
   @Override
   public void setField(int id, int value) {
-    switch (id) {
-      case 0:
-        loadTime = value;
-        break;
-    }
+
   }
 
   @Override
@@ -330,8 +316,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
   @Override
   public ITextComponent getDisplayName() {
-    return this.hasCustomName() ? new TextComponentString(this.getName())
-        : new TextComponentTranslation(this.getName());
+    return this.hasCustomName() ? new TextComponentString(this.getName()) : new TextComponentTranslation(this.getName());
   }
 
   @Override
