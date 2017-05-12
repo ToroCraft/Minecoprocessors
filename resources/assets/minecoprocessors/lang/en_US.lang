@@ -1,2 +1,5 @@
 tile.minecoprocessor.name=Redstone Processor
 container.minecoprocessor=Redstone Processor
+gui.button.reset=reset
+gui.button.pause=pause
+gui.button.step=step
