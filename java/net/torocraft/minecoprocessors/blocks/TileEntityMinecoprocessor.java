@@ -3,6 +3,7 @@ package net.torocraft.minecoprocessors.blocks;
 import java.util.HashSet;
 import java.util.Set;
 
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Items;
@@ -15,19 +16,17 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ITickable;
 import net.minecraft.util.NonNullList;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraft.world.World;
 import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.network.MessageProcessorUpdate;
 import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
 import net.torocraft.minecoprocessors.util.ByteUtil;
-
-// TODO unload program when book removed
-
-// TODO send GUI updates when ports change
 
 public class TileEntityMinecoprocessor extends TileEntity implements ITickable, IInventory {
 
@@ -47,8 +46,16 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   private final boolean[] prevPortValues = new boolean[4];
   private byte prevPortsRegister = 0x0f;
 
+  private boolean prevIsInactive;
+  private boolean prevIsHot;
+
   public static void init() {
     GameRegistry.registerTileEntity(TileEntityMinecoprocessor.class, NAME);
+  }
+
+  @Override
+  public boolean shouldRefresh(World world, BlockPos pos, IBlockState oldState, IBlockState newState) {
+    return BlockMinecoprocessor.INSTANCE != oldState.getBlock() || BlockMinecoprocessor.INSTANCE != newState.getBlock();
   }
 
   @Override
@@ -89,6 +96,20 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
     if (world.getTotalWorldTime() % 2 != 0) {
       return;
+    }
+
+    boolean isInactive = processor.isWait() || processor.isFault();
+
+    if (prevIsInactive != isInactive) {
+      prevIsInactive = isInactive;
+      int priority = -1;
+      world.updateBlockTick(pos, BlockMinecoprocessor.INSTANCE, 0, priority);
+    }
+
+    if (prevIsHot != processor.isHot()) {
+      prevIsHot = processor.isHot();
+      int priority = -1;
+      world.updateBlockTick(pos, BlockMinecoprocessor.INSTANCE, 0, priority);
     }
 
     if (!loaded) {
@@ -175,12 +196,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
     if (isInInputMode(ports, portIndex) && prevPortValues[portIndex] != value) {
       prevPortValues[portIndex] = value;
-
       registers[Register.PF.ordinal() + portIndex] = value ? (byte) 1 : 0;
-
-      // System.out.println("update port reg: " + Register.values()[Register.PF.ordinal() +
-      // portIndex] + " => "
-      // + registers[Register.PF.ordinal() + portIndex]);
       return true;
     }
 
@@ -250,12 +266,29 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
   @Override
   public void setInventorySlotContents(int index, ItemStack stack) {
-    if (index >= 0 && index < this.codeItemStacks.size()) {
-      codeItemStacks.set(index, stack);
-      // TODO setup with load time delay
-      loadBook(stack);
-      markDirty();
+    if (index != 0) {
+      return;
     }
+
+    codeItemStacks.set(index, stack);
+
+    if (stack.isEmpty()) {
+      unloadBook();
+    } else {
+      loadBook(stack);
+    }
+
+    markDirty();
+
+  }
+
+  private void unloadBook() {
+    if (world.isRemote) {
+      return;
+    }
+    processor.load(null);
+    loaded = false;
+    updatePlayers();
   }
 
   private void loadBook(ItemStack stack) {
@@ -280,6 +313,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     }
     processor.load(code.toString());
     loaded = false;
+    updatePlayers();
   }
 
   @Override
@@ -364,11 +398,10 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   }
 
   public void enablePlayerGuiUpdates(EntityPlayerMP player, boolean enable) {
-    if(enable){
+    if (enable) {
       playersToUpdate.add(player);
       updatePlayers();
-    }else{
-      System.out.println("removing player");
+    } else {
       playersToUpdate.remove(player);
     }
   }
@@ -376,6 +409,5 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   public Processor getProcessor() {
     return processor;
   }
-
 
 }

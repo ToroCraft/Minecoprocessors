@@ -51,7 +51,7 @@ public class MessageProcessorUpdate implements IMessage {
       if (message.processorData == null || message.processorData == null) {
         return null;
       }
-
+      
       IThreadListener mainThread = Minecraft.getMinecraft();
 
       mainThread.addScheduledTask(new Runnable() {
@@ -62,10 +62,7 @@ public class MessageProcessorUpdate implements IMessage {
           }
 
           if (!GuiMinecoprocessor.INSTANCE.getPos().equals(message.pos)) {
-            System.out.println("wrong proc");
-
             Minecoprocessors.NETWORK.sendToServer(new MessageEnableGuiUpdates(message.pos, false));
-
             return;
           }
 

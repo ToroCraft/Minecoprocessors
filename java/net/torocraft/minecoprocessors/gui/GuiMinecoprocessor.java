@@ -18,9 +18,7 @@ import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
 
-// TODO remove update requests on close (check pos to make sure it is the correct chip)
-
-// TODO step button
+// TODO mouse hovers
 
 public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiContainer {
 
@@ -29,21 +27,17 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   private final IInventory playerInventory;
   private final TileEntityMinecoprocessor minecoprocessor;
 
-  private byte[] registers = {(byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff};
-
   private GuiButton buttonReset;
   private GuiButton buttonPause;
   private GuiButton buttonStep;
 
   private Processor processor;
-  
+
   public BlockPos getPos() {
     return minecoprocessor.getPos();
   }
 
-  // TODO detect close and null this instance
-
-  // TODO add sequence number to packets and ignore it if it is older than the last recieved on
+  // TODO add sequence number to packets and ignore it if it is older than the last received on
 
   public static GuiMinecoprocessor INSTANCE;
 
@@ -52,16 +46,21 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     this.playerInventory = playerInv;
     this.minecoprocessor = te;
     INSTANCE = this;
-    Minecoprocessors.NETWORK.sendToServer(new MessageEnableGuiUpdates(te.getPos(), true));
+    Minecoprocessors.NETWORK.sendToServer(new MessageEnableGuiUpdates(minecoprocessor.getPos(), true));
   }
 
   public void updateData(NBTTagCompound processorData) {
-
     if (processor == null) {
       processor = new Processor();
     }
-
     processor.readFromNBT(processorData);
+  }
+
+  @Override
+  public void onGuiClosed() {
+    super.onGuiClosed();
+    Minecoprocessors.NETWORK.sendToServer(new MessageEnableGuiUpdates(minecoprocessor.getPos(), false));
+    INSTANCE = null;
   }
 
   /**
@@ -73,29 +72,32 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     GlStateManager.scale(0.5d, 0.5d, 0.5d);
     int scale = 2;
     int y = 20 * scale;
-    // fontRendererObj.drawString("A B C D ", x, y - 5, 0x404040);
 
-    // fontRendererObj.drawString("0F 01 00 00", x, y + 10, 0xffffff);
-
-    registers = processor == null ? null : processor.getRegisters();
+    byte[] registers = processor == null ? null : processor.getRegisters();
 
     y = 50;
-    drawRegister(Register.A, 130 * 2, y);
-    drawRegister(Register.B, 139 * 2, y);
-    drawRegister(Register.C, 148 * 2, y);
-    drawRegister(Register.D, 157 * 2, y);
+    drawRegister(Register.A, 130 * 2, y, mouseX, mouseY);
+    drawRegister(Register.B, 139 * 2, y, mouseX, mouseY);
+    drawRegister(Register.C, 148 * 2, y, mouseX, mouseY);
+    drawRegister(Register.D, 157 * 2, y, mouseX, mouseY);
 
     y = 82;
-    drawFlag("Z", processor == null ? null : processor.isZero(), 130 * 2, y);
-    drawFlag("C", processor == null ? null : processor.isCarry() || processor.isOverflow(), 139 * 2, y);
-    drawFlag("F", processor == null ? null : processor.isFault(), 148 * 2, y);
-    drawFlag("S", processor == null ? null : processor.isWait(), 157 * 2, y);
+    drawFlag("Z", processor == null ? null : processor.isZero(), 130 * 2, y, mouseX, mouseY);
+    drawFlag("C", processor == null ? null : processor.isCarry() || processor.isOverflow(), 139 * 2, y, mouseX, mouseY);
+    drawFlag("F", processor == null ? null : processor.isFault(), 148 * 2, y, 0xff0000, mouseX, mouseY);
+    drawFlag("S", processor == null ? null : processor.isWait(), 157 * 2, y, 0x00ff00, mouseX, mouseY);
 
     y = 114;
-    drawLabeledShort("IP", processor == null ? null : processor.getIp(), 130 * 2, y);
-   // drawLabeledByte("TEMP", processor == null ? null : processor.getTemp(), 157 * 2, y);
-    drawLabeledValue("TEMP", processor == null ? null : Integer.toUnsignedString(processor.getTemp()), 157 * 2, y);
- 
+    drawLabeledShort("IP", processor == null ? null : processor.getIp(), 130 * 2, y, mouseX, mouseY);
+    // drawLabeledByte("TEMP", processor == null ? null : processor.getTemp(), 157 * 2, y);
+
+    Integer tempColor = null;
+    if (processor != null && processor.isHot()) {
+      tempColor = 0xff0000;
+    }
+
+    drawLabeledValue("TEMP", processor == null ? null : Integer.toUnsignedString(processor.getTemp()), 157 * 2, y, tempColor, mouseX, mouseY);
+
     centered(toHex(registers == null ? null : registers[Register.PF.ordinal()]), 176, 47);
     centered(toHex(registers == null ? null : registers[Register.PR.ordinal()]), 216, 86);
     centered(toHex(registers == null ? null : registers[Register.PL.ordinal()]), 137, 86);
@@ -130,6 +132,8 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
       a = null;
     }
 
+    int color = 0xffffff;
+
     String value = "";
 
     if (a != null) {
@@ -137,14 +141,20 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
       // value = toHex(processor.getIp()) + ": " + value;
     }
 
+    if (value.isEmpty() && processor != null && processor.getError() != null) {
+      value = processor.getError();
+      color = 0xff0000;
+    }
+
     fontRendererObj.drawString(label, x - 4, y - 14, 0x404040);
-    fontRendererObj.drawString(value, x, y, 0xffffff);
+    fontRendererObj.drawString(value, x, y, color);
   }
 
-  private void drawRegister(Register register, int x, int y) {
+  private void drawRegister(Register register, int x, int y, int mouseX, int mouseY) {
+    byte[] registers = processor == null ? null : processor.getRegisters();
     String label = register.toString();
     String value = toHex(registers == null ? null : registers[register.ordinal()]);
-    drawLabeledValue(label, value, x, y);
+    drawLabeledValue(label, value, x, y, null, mouseX, mouseY);
   }
 
   private String toHex(Byte b) {
@@ -169,7 +179,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     if (s.length() > 4) {
       return s.substring(s.length() - 4, s.length());
     }
-    // TODO make this better
+    // TODO make this better 😲
     if (s.length() < 2) {
       s = "0" + s;
     }
@@ -182,32 +192,42 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     return s;
   }
 
-  private void drawFlag(String label, Boolean flag, int x, int y) {
-    String value = null;
-    if (flag != null) {
-      value = flag ? "1" : "0";
-    }
-    drawLabeledValue(label, value, x, y);
-  }
-  
-  private void drawLabeledByte(String label, Byte b, int x, int y) {
-    drawLabeledValue(label, toHex(b), x, y);
-  }
-  
-  private void drawLabeledShort(String label, Short b, int x, int y) {
-    drawLabeledValue(label, toHex(b), x, y);
+  private void drawFlag(String label, Boolean flag, int x, int y, int mouseX, int mouseY) {
+    drawFlag(label, flag, x, y, null, mouseX, mouseY);
   }
 
-  private void drawLabeledValue(String label, String value, int x, int y) {
+  private void drawFlag(String label, Boolean flag, int x, int y, Integer flashColor, int mouseX, int mouseY) {
+    if (flag == null) {
+      flag = false;
+    }
+    drawLabeledValue(label, flag ? "1" : "0", x, y, flag ? flashColor : null, mouseX, mouseY);
+  }
+
+  @SuppressWarnings("unused")
+  private void drawLabeledByte(String label, Byte b, int x, int y, int mouseX, int mouseY) {
+    drawLabeledValue(label, toHex(b), x, y, null, mouseX, mouseY);
+  }
+
+  private void drawLabeledShort(String label, Short b, int x, int y, int mouseX, int mouseY) {
+    drawLabeledValue(label, toHex(b), x, y, null, mouseX, mouseY);
+  }
+
+  private void drawLabeledValue(String label, String value, int x, int y, Integer flashColor, int mouseX, int mouseY) {
     int wLabel = fontRendererObj.getStringWidth(label) / 2;
     int wValue = 0;
     if (value != null) {
       wValue = fontRendererObj.getStringWidth(value) / 2;
     }
 
+    int color = 0xffffff;
+
+    if (flashColor != null && (minecoprocessor.getWorld().getTotalWorldTime() / 10) % 2 == 0) {
+      color = flashColor;
+    }
+
     fontRendererObj.drawString(label, x - wLabel, y - 14, 0x404040);
     if (value != null) {
-      fontRendererObj.drawString(value, x - wValue, y, 0xffffff);
+      fontRendererObj.drawString(value, x - wValue, y, color);
     }
   }
 

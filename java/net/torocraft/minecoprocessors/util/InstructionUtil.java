@@ -10,7 +10,6 @@ import net.torocraft.minecoprocessors.processor.Register;
 //TODO support .'s in labels
 // which mean local? https://docs.oracle.com/cd/E19120-01/open.solaris/817-5477/esqaq/index.html
 
-//TODO test with windows encodings
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class InstructionUtil {

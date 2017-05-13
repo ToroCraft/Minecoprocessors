@@ -74,16 +74,13 @@ public class MessageProcessorAction implements IMessage {
 
         switch (message.action) {
           case PAUSE:
-            System.out.println("PAUSE wait:" + mp.getProcessor().isWait());
             mp.getProcessor().setWait(!mp.getProcessor().isWait());
             mp.updatePlayers();
             break;
           case RESET:
-            System.out.println("RESET");
             mp.reset();
             break;
           case STEP:
-            System.out.println("STEP");
             mp.getProcessor().setStep(true);
             break;
         }

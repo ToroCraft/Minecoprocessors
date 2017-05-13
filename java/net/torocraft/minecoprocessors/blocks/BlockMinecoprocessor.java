@@ -1,9 +1,11 @@
 package net.torocraft.minecoprocessors.blocks;
 
 import java.util.Random;
+
 import net.minecraft.block.BlockRedstoneDiode;
 import net.minecraft.block.ITileEntityProvider;
 import net.minecraft.block.properties.IProperty;
+import net.minecraft.block.properties.PropertyBool;
 import net.minecraft.block.state.BlockStateContainer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
@@ -21,6 +23,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumBlockRenderType;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
+import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.Mirror;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Rotation;
@@ -29,6 +32,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.registry.GameRegistry;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.gui.MinecoprocessorGuiHandler;
 
@@ -36,8 +41,10 @@ import net.torocraft.minecoprocessors.gui.MinecoprocessorGuiHandler;
 
 public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEntityProvider {
 
-  protected static final AxisAlignedBB AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 0.1875D,
-      1.0D);
+  protected static final AxisAlignedBB AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 0.1875D, 1.0D);
+
+  public static final PropertyBool ACTIVE = PropertyBool.create("active");
+  public static final PropertyBool HOT = PropertyBool.create("hot");
 
   public static final String NAME = "minecoprocessor";
 
@@ -55,11 +62,73 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
     ITEM_INSTANCE.setRegistryName(resourceName);
     GameRegistry.register(ITEM_INSTANCE);
 
-    GameRegistry.addRecipe(new ItemStack(BlockMinecoprocessor.INSTANCE), "tct", "crc", "tct", 't',
-        Blocks.REDSTONE_TORCH, 'r',
-        Blocks.REDSTONE_BLOCK, 'c', Items.COMPARATOR
+    GameRegistry.addRecipe(new ItemStack(BlockMinecoprocessor.INSTANCE), "tct", "crc", "tct", 't', Blocks.REDSTONE_TORCH, 'r', Blocks.REDSTONE_BLOCK, 'c', Items.COMPARATOR
 
     );
+  }
+
+  @SideOnly(Side.CLIENT)
+  public void randomDisplayTick(IBlockState state, World world, BlockPos pos, Random rand) {
+    smokeTick(state, world, pos, rand);
+  }
+
+  private void smokeTick(IBlockState state, World world, BlockPos pos, Random rand) {
+    boolean isHot = ((Boolean) state.getValue(HOT)).booleanValue();
+    if (isHot) {
+      double x, y, z;
+      for (int i = 0; i < rand.nextInt(4) + 4; i++) {
+        x = (double) ((float) pos.getX() + 0.5F) + (double) (rand.nextFloat() - 0.5F) * 0.5D;
+        y = (double) ((float) pos.getY() + 0.4F) + (double) (rand.nextFloat() - 0.5F) * 0.2D;
+        z = (double) ((float) pos.getZ() + 0.5F) + (double) (rand.nextFloat() - 0.5F) * 0.5D;
+        world.spawnParticle(EnumParticleTypes.SMOKE_NORMAL, x, y, z, 0.0D, 0.0D, 0.0D, new int[0]);
+      }
+    }
+  }
+
+  @Override
+  public IBlockState getStateForPlacement(World worldIn, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ, int meta, EntityLivingBase placer) {
+    return super.getStateForPlacement(worldIn, pos, facing, hitX, hitY, hitZ, meta, placer).withProperty(HOT, Boolean.valueOf(false)).withProperty(ACTIVE, Boolean.valueOf(false));
+  }
+
+  @Override
+  protected BlockStateContainer createBlockState() {
+    return new BlockStateContainer(this, new IProperty[] {FACING, ACTIVE, HOT});
+  }
+
+  protected IBlockState getPoweredState(IBlockState unpoweredState) {
+    return getUnpoweredState(unpoweredState);
+  }
+
+  protected IBlockState getUnpoweredState(IBlockState poweredState) {
+    Boolean obool = (Boolean) poweredState.getValue(ACTIVE);
+    EnumFacing enumfacing = (EnumFacing) poweredState.getValue(FACING);
+    return INSTANCE.getDefaultState().withProperty(FACING, enumfacing).withProperty(ACTIVE, obool);
+  }
+
+  /**
+   * Convert the given metadata into a BlockState for this Block
+   */
+  public IBlockState getStateFromMeta(int meta) {
+    return this.getDefaultState().withProperty(FACING, EnumFacing.getHorizontal(meta)).withProperty(ACTIVE, Boolean.valueOf((meta & 8) > 0)).withProperty(HOT,
+        Boolean.valueOf((meta & 4) > 0));
+  }
+
+  /**
+   * Convert the BlockState into the correct metadata value
+   */
+  public int getMetaFromState(IBlockState state) {
+    int i = 0;
+    i = i | ((EnumFacing) state.getValue(FACING)).getHorizontalIndex();
+
+    if (((Boolean) state.getValue(ACTIVE)).booleanValue()) {
+      i |= 8;
+    }
+
+    if (((Boolean) state.getValue(HOT)).booleanValue()) {
+      i |= 4;
+    }
+
+    return i;
   }
 
   @Override
@@ -73,14 +142,14 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   }
 
   public static void registerRenders() {
-    ModelResourceLocation model = new ModelResourceLocation(Minecoprocessors.MODID + ":" + NAME,
-        "inventory");
+    ModelResourceLocation model = new ModelResourceLocation(Minecoprocessors.MODID + ":" + NAME, "inventory");
     Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(ITEM_INSTANCE, 0, model);
   }
 
   public BlockMinecoprocessor() {
     super(true);
-    this.setDefaultState(this.blockState.getBaseState().withProperty(FACING, EnumFacing.NORTH));
+    this.setDefaultState(
+        this.blockState.getBaseState().withProperty(FACING, EnumFacing.NORTH).withProperty(HOT, Boolean.valueOf(false)).withProperty(ACTIVE, Boolean.valueOf(false)));
     setCreativeTab(CreativeTabs.REDSTONE);
     setUnlocalizedName(NAME);
   }
@@ -102,17 +171,12 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   }
 
   public void onPortChange(World worldIn, BlockPos pos, IBlockState state, int portIndex) {
-    this.notifyNeighborsOnSide(worldIn, pos, state,
-        convertPortIndexToFacing((EnumFacing) state.getValue(FACING).getOpposite(), portIndex));
+    this.notifyNeighborsOnSide(worldIn, pos, state, convertPortIndexToFacing((EnumFacing) state.getValue(FACING).getOpposite(), portIndex));
   }
 
-  protected void notifyNeighborsOnSide(World worldIn, BlockPos pos, IBlockState state,
-      EnumFacing side) {
+  protected void notifyNeighborsOnSide(World worldIn, BlockPos pos, IBlockState state, EnumFacing side) {
     BlockPos neighborPos = pos.offset(side);
-    if (net.minecraftforge.event.ForgeEventFactory
-        .onNeighborNotify(worldIn, pos, worldIn.getBlockState(pos), java.util.EnumSet.of(side),
-            false)
-        .isCanceled()) {
+    if (net.minecraftforge.event.ForgeEventFactory.onNeighborNotify(worldIn, pos, worldIn.getBlockState(pos), java.util.EnumSet.of(side), false).isCanceled()) {
       return;
     }
     worldIn.neighborChanged(neighborPos, this, pos);
@@ -123,6 +187,41 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   public void updateTick(World world, BlockPos pos, IBlockState state, Random rand) {
     super.updateTick(world, pos, state, rand);
     updateInputPorts(world, pos, state);
+
+    if (world.isRemote) {
+      return;
+    }
+    
+    TileEntityMinecoprocessor te = (TileEntityMinecoprocessor) world.getTileEntity(pos);
+
+    boolean changed = false;
+
+    boolean blockActive = ((Boolean) state.getValue(ACTIVE)).booleanValue();
+    boolean processorActive = !te.getProcessor().isWait() && !te.getProcessor().isFault();
+
+    if (blockActive && !processorActive) {
+      state = state.withProperty(ACTIVE, Boolean.valueOf(false));
+      changed = true;
+    } else if (!blockActive && processorActive) {
+      state = state.withProperty(ACTIVE, Boolean.valueOf(true));
+      changed = true;
+    }
+
+    boolean blockIsHot = ((Boolean) state.getValue(HOT)).booleanValue();
+    boolean processorIsHot = te.getProcessor().isHot();
+
+    if (blockIsHot && !processorIsHot) {
+      state = state.withProperty(HOT, Boolean.valueOf(false));
+      changed = true;
+    } else if (!blockIsHot && processorIsHot) {
+      state = state.withProperty(HOT, Boolean.valueOf(true));
+      changed = true;
+    }
+
+    if (changed) {
+      world.setBlockState(pos, state, 2);
+    }
+
   }
 
   public void updateInputPorts(World world, BlockPos pos, IBlockState state) {
@@ -139,10 +238,6 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
     values[convertFacingToPortIndex(facing, EnumFacing.SOUTH)] = s;
     values[convertFacingToPortIndex(facing, EnumFacing.WEST)] = w;
     values[convertFacingToPortIndex(facing, EnumFacing.EAST)] = e;
-
-    // System.out.println("updateTick E[" + e + "] W[" + w + "] N[" + n + "]
-    // S[" + s + "] --- F[" + values[0] + "] B[" + values[1] + "] L["
-    // + values[2] + "] R[" + values[3] + "]");
 
     ((TileEntityMinecoprocessor) world.getTileEntity(pos)).updateInputPorts(values);
   }
@@ -187,8 +282,7 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   }
 
   @Override
-  public void onBlockPlacedBy(World worldIn, BlockPos pos, IBlockState state,
-      EntityLivingBase placer, ItemStack stack) {
+  public void onBlockPlacedBy(World worldIn, BlockPos pos, IBlockState state, EntityLivingBase placer, ItemStack stack) {
     super.onBlockPlacedBy(worldIn, pos, state, placer, stack);
     if (stack.hasDisplayName()) {
       TileEntity tileentity = worldIn.getTileEntity(pos);
@@ -200,14 +294,12 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   }
 
   @Override
-  public int getStrongPower(IBlockState blockState, IBlockAccess blockAccess, BlockPos pos,
-      EnumFacing side) {
+  public int getStrongPower(IBlockState blockState, IBlockAccess blockAccess, BlockPos pos, EnumFacing side) {
     return blockState.getWeakPower(blockAccess, pos, side);
   }
 
   @Override
-  public int getWeakPower(IBlockState blockState, IBlockAccess blockAccess, BlockPos pos,
-      EnumFacing side) {
+  public int getWeakPower(IBlockState blockState, IBlockAccess blockAccess, BlockPos pos, EnumFacing side) {
     TileEntityMinecoprocessor te = ((TileEntityMinecoprocessor) blockAccess.getTileEntity(pos));
 
     boolean powered = false;
@@ -251,15 +343,10 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   }
 
   @Override
-  public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player,
-      EnumHand hand, EnumFacing facing, float hitX,
-      float hitY, float hitZ) {
+  public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ) {
 
     if (!world.isRemote) {
-      player
-          .openGui(Minecoprocessors.INSTANCE, MinecoprocessorGuiHandler.MINECOPROCESSOR_ENTITY_GUI,
-              world, pos.getX(), pos.getY(),
-              pos.getZ());
+      player.openGui(Minecoprocessors.INSTANCE, MinecoprocessorGuiHandler.MINECOPROCESSOR_ENTITY_GUI, world, pos.getX(), pos.getY(), pos.getZ());
     }
 
     return true;
@@ -268,16 +355,6 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   @Override
   protected int getDelay(IBlockState state) {
     return 0;
-  }
-
-  @Override
-  protected IBlockState getPoweredState(IBlockState unpoweredState) {
-    return unpoweredState;
-  }
-
-  @Override
-  protected IBlockState getUnpoweredState(IBlockState poweredState) {
-    return poweredState;
   }
 
   @Override
@@ -309,23 +386,6 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
       InventoryHelper.dropInventoryItems(worldIn, pos, (TileEntityMinecoprocessor) tileentity);
     }
     super.breakBlock(worldIn, pos, state);
-  }
-
-  @Override
-  public IBlockState getStateFromMeta(int meta) {
-    return this.getDefaultState().withProperty(FACING, EnumFacing.getHorizontal(meta));
-  }
-
-  @Override
-  public int getMetaFromState(IBlockState state) {
-    int i = 0;
-    i = i | ((EnumFacing) state.getValue(FACING)).getHorizontalIndex();
-    return i;
-  }
-
-  @Override
-  protected BlockStateContainer createBlockState() {
-    return new BlockStateContainer(this, new IProperty[]{FACING});
   }
 
   public static void test() {

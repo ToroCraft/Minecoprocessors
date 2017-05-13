@@ -4,7 +4,7 @@
         "particle": "blocks/repeater_on",
         "slab": "blocks/stone_slab_top",
         "top": "minecoprocessors:blocks/minecoprocessor",
-        "unlit": "blocks/redstone_torch_on",
+        "unlit": "blocks/redstone_torch_off",
         "redstone": "blocks/redstone_block"
     },
     

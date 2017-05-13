@@ -13,6 +13,7 @@ public class ParseException extends Exception {
   }
 
   private static String genMessage(String line, String message) {
-    return "{" + line + "} " + message;
+    //return "{" + line + "} " + message;
+    return line;
   }
 }

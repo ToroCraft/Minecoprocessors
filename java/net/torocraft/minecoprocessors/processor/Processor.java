@@ -2,6 +2,7 @@ package net.torocraft.minecoprocessors.processor;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import net.minecraft.nbt.NBTTagByteArray;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -10,9 +11,7 @@ import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
 import net.torocraft.minecoprocessors.util.ParseException;
 
-// TODO change block state to show if the proc is running or halted
-
-// TODO fix NBT problems!
+//latch pins
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class Processor implements IProcessor {
@@ -22,6 +21,7 @@ public class Processor implements IProcessor {
   private static final String NBT_PROGRAM = "program";
   private static final String NBT_LABELS = "labels";
   private static final String NBT_FLAGS = "flags";
+  private static final String NBT_ERROR = "error";
 
   /*
    * program
@@ -33,11 +33,10 @@ public class Processor implements IProcessor {
    * state
    */
   private byte[] instruction;
-  private final byte[] stack = new byte[64];
-  private final byte[] registers = new byte[Register.values().length];
-  private byte temp;
-  private byte prevTemp;
-  
+  private byte[] stack = new byte[64];
+  private byte[] registers = new byte[Register.values().length];
+  private float temp;
+
   /*
    * pointers
    */
@@ -52,15 +51,19 @@ public class Processor implements IProcessor {
   private boolean overflow;
   private boolean carry;
   private boolean wait;
-  
+
   /*
    * tmp
    */
   private boolean step;
+  private String error;
+  private byte prevTemp;
+  private float tempVelocity;
+  private float tempAcc;
 
   private void flush() {
     reset();
-    reset(stack);
+    stack = new byte[Register.values().length];
 
     labels.clear();
     program.clear();
@@ -88,9 +91,10 @@ public class Processor implements IProcessor {
     carry = false;
     wait = false;
     step = false;
+    error = null;
     ip = 0;
     sp = 0;
-    reset(registers);
+    registers = new byte[Register.values().length];
     registers[Register.PORTS.ordinal()] = (byte) 0xb1110;
   }
 
@@ -103,9 +107,14 @@ public class Processor implements IProcessor {
   public void load(String file) {
     try {
       flush();
-      program = InstructionUtil.parseFile(file, labels);
+      if (file != null) {
+        program = InstructionUtil.parseFile(file, labels);
+      } else {
+        program = new ArrayList<>();
+        labels = new ArrayList<>();
+      }
     } catch (ParseException e) {
-      e.printStackTrace();
+      error = e.getMessage();
       fault = true;
     }
   }
@@ -114,7 +123,7 @@ public class Processor implements IProcessor {
     long flags = 0;
     flags = ByteUtil.setShort(flags, ip, 3);
     flags = ByteUtil.setByteInLong(flags, sp, 5);
-    flags = ByteUtil.setByteInLong(flags, temp, 4);
+    flags = ByteUtil.setByteInLong(flags, getTemp(), 4);
     flags = ByteUtil.setBitInLong(flags, fault, 0);
     flags = ByteUtil.setBitInLong(flags, zero, 1);
     flags = ByteUtil.setBitInLong(flags, overflow, 2);
@@ -178,9 +187,14 @@ public class Processor implements IProcessor {
 
   @Override
   public void readFromNBT(NBTTagCompound c) {
-    copy(stack, c.getByteArray(NBT_STACK));
-    copy(registers, c.getByteArray(NBT_REGISTERS));
+    stack = c.getByteArray(NBT_STACK);
+    registers = c.getByteArray(NBT_REGISTERS);
     unPackFlags(c.getLong(NBT_FLAGS));
+
+    error = c.getString(NBT_ERROR);
+    if (error != null && error.isEmpty()) {
+      error = null;
+    }
 
     program = new ArrayList();
     NBTTagList programTag = (NBTTagList) c.getTag(NBT_PROGRAM);
@@ -205,7 +219,9 @@ public class Processor implements IProcessor {
     c.setByteArray(NBT_STACK, stack);
     c.setByteArray(NBT_REGISTERS, registers);
     c.setLong(NBT_FLAGS, packFlags());
-
+    if (error != null) {
+      c.setString(NBT_ERROR, error);
+    }
     NBTTagList programTag = new NBTTagList();
     for (Object b : program) {
       programTag.appendTag(new NBTTagByteArray((byte[]) b));
@@ -221,23 +237,69 @@ public class Processor implements IProcessor {
     return c;
   }
 
+  private void tempUpdate() {
+    tempVelocity += tempAcc;
+
+    if (tempVelocity > 0.2f) {
+      tempVelocity = 0.2f;
+    } else if (tempVelocity < -0.1f) {
+      tempVelocity = -0.1f;
+    }
+
+    if (tempVelocity != 0) {
+      temp = temp + tempVelocity;
+    }
+
+    if (temp > 125f) {
+      temp = 125f;
+    } else if (temp < 0) {
+      temp = 0f;
+    }
+
+  }
+
+  private void coolCycle() {
+    if (temp == 0) {
+      tempAcc = 0;
+      return;
+    }
+    if (temp > 0) {
+      tempAcc = -0.003f;
+    } else if (temp < 0) {
+      tempAcc = 0;
+      temp = 0;
+      tempVelocity = 0;
+    }
+  }
+
+  private void testCoolCycle() {
+
+  }
+
+  private void heatCycle() {
+    tempAcc = 0.002f;
+  }
+
+  private void testHeatCycle() {
+
+  }
+
   /**
    * returns true if GUI should be updated after this tick
    */
   @Override
   public boolean tick() {
-    if (temp > 1) {
-      temp--;
-    }
-    
+    tempUpdate();
+    coolCycle();
+
     if (fault || (wait && !step)) {
-      boolean cooled = prevTemp != temp;
-      prevTemp = temp;
+      boolean cooled = prevTemp != getTemp();
+      prevTemp = getTemp();
       return cooled;
     }
     step = false;
     process();
-    prevTemp = temp;
+    prevTemp = getTemp();
     return true;
   }
 
@@ -254,11 +316,9 @@ public class Processor implements IProcessor {
 
     instruction = (byte[]) program.get(ip);
 
-    //System.out.println(pinchDump());
+    // System.out.println(pinchDump());
 
-    if (temp < 110) {
-      temp += 2;
-    }
+    heatCycle();
 
     ip++;
 
@@ -647,7 +707,9 @@ public class Processor implements IProcessor {
     testProcessDec();
     testProcessMul();
     testProcessDiv();
-    // testNbt();
+    testNbt();
+    testCoolCycle();
+    testHeatCycle();
   }
 
   private void testCopyArray() {
@@ -658,10 +720,7 @@ public class Processor implements IProcessor {
     assert (b[5] == 6);
   }
 
-  @SuppressWarnings("unused")
   private void testNbt() {
-    // TODO find a better way to test NBT, it doesn't seem to be working
-    // well in this test case
     flush();
     labels.add(new Label((short) 189, "foobar"));
     program.add(new byte[] {0x00, 0x01, 0x02, 0x03});
@@ -669,10 +728,6 @@ public class Processor implements IProcessor {
     registers[0] = (byte) 0xee;
     registers[4] = (byte) 0xcc;
     zero = true;
-
-    for (byte b : registers) {
-      System.out.println("B:" + b);
-    }
 
     NBTTagCompound c = writeToNBT();
 
@@ -694,17 +749,10 @@ public class Processor implements IProcessor {
     assert instruction[1] == 0x01;
     assert instruction[2] == 0x02;
     assert instruction[3] == 0x03;
-
-    for (byte b : registers) {
-      System.out.println("A:" + b);
-    }
-
     assert registers[0] == (byte) 0xee;
     assert registers[4] == (byte) 0xcc;
 
   }
-
-  // TODO test copy and reset array methods
 
   private void testTestOverFlow() {
     testOverflow(1);
@@ -765,8 +813,7 @@ public class Processor implements IProcessor {
       assertRegisters(4, 0, 130, 0);
       assert overflow;
       assert !zero;
-      
-      
+
       setupTest(1, 0, 0, 0, "add a, 0xf0");
       processAdd();
       assertRegisters(241, 0, 0, 0);
@@ -1051,7 +1098,7 @@ public class Processor implements IProcessor {
     }
     return s;
   }
-  
+
   private String fix(String s) {
     if (s.length() > 2) {
       return s.substring(s.length() - 2, s.length());
@@ -1122,7 +1169,7 @@ public class Processor implements IProcessor {
   }
 
   public byte getTemp() {
-    return temp;
+    return (byte) Math.round(temp);
   }
 
   public short getIp() {
@@ -1159,6 +1206,14 @@ public class Processor implements IProcessor {
 
   public void setStep(boolean step) {
     this.step = step;
+  }
+
+  public String getError() {
+    return error;
+  }
+
+  public boolean isHot() {
+    return temp > 120;
   }
 
 }
