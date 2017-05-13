@@ -2,6 +2,7 @@ package net.torocraft.minecoprocessors.blocks;
 
 import java.util.HashSet;
 import java.util.Set;
+
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Items;
@@ -20,10 +21,13 @@ import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.network.MessageProcessorUpdate;
-import net.torocraft.minecoprocessors.processor.IProcessor;
 import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
 import net.torocraft.minecoprocessors.util.ByteUtil;
+
+// TODO unload program when book removed
+
+// TODO send GUI updates when ports change
 
 public class TileEntityMinecoprocessor extends TileEntity implements ITickable, IInventory {
 
@@ -32,7 +36,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   private static final String NBT_LOAD_TIME = "loadTime";
   private static final String NBT_CUSTOM_NAME = "CustomName";
 
-  private final IProcessor processor = new Processor();
+  private final Processor processor = new Processor();
 
   private NonNullList<ItemStack> codeItemStacks = NonNullList.<ItemStack>withSize(1, ItemStack.EMPTY);
   private String customName;
@@ -94,10 +98,10 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
       loaded = true;
     }
 
-    processor.tick();
-    updatePlayers();
-
-    detectOutputChanges();
+    if (processor.tick()) {
+      updatePlayers();
+      detectOutputChanges();
+    }
 
     if (prevPortsRegister != processor.getRegisters()[Register.PORTS.ordinal()]) {
       BlockMinecoprocessor.INSTANCE.updateInputPorts(world, pos, world.getBlockState(pos));
@@ -105,14 +109,13 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     }
   }
 
-  private void updatePlayers() {
+  public void updatePlayers() {
     if (playersToUpdate.size() < 1) {
       return;
     }
 
     for (EntityPlayerMP player : playersToUpdate) {
-      System.out.println("updatePlayers() " + player.getName());
-      Minecoprocessors.NETWORK.sendTo(new MessageProcessorUpdate(processor.writeToNBT()), player);
+      Minecoprocessors.NETWORK.sendTo(new MessageProcessorUpdate(processor.writeToNBT(), pos), player);
     }
   }
 
@@ -290,12 +293,10 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   }
 
   @Override
-  public void openInventory(EntityPlayer player) {
-  }
+  public void openInventory(EntityPlayer player) {}
 
   @Override
-  public void closeInventory(EntityPlayer player) {
-  }
+  public void closeInventory(EntityPlayer player) {}
 
   public static boolean isBook(Item item) {
     return item == Items.WRITABLE_BOOK || item == Items.WRITTEN_BOOK;
@@ -362,10 +363,19 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     markDirty();
   }
 
-
-  public void startUpdatingPlayer(EntityPlayerMP player) {
-    System.out.println("startUpdatingPlayer()");
-    playersToUpdate.add(player);
+  public void enablePlayerGuiUpdates(EntityPlayerMP player, boolean enable) {
+    if(enable){
+      playersToUpdate.add(player);
+      updatePlayers();
+    }else{
+      System.out.println("removing player");
+      playersToUpdate.remove(player);
+    }
   }
+
+  public Processor getProcessor() {
+    return processor;
+  }
+
 
 }

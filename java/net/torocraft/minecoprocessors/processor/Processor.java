@@ -10,8 +10,9 @@ import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
 import net.torocraft.minecoprocessors.util.ParseException;
 
-//TODO change block state to show if the proc is running or halted
+// TODO change block state to show if the proc is running or halted
 
+// TODO fix NBT problems!
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class Processor implements IProcessor {
@@ -35,7 +36,8 @@ public class Processor implements IProcessor {
   private final byte[] stack = new byte[64];
   private final byte[] registers = new byte[Register.values().length];
   private byte temp;
-
+  private byte prevTemp;
+  
   /*
    * pointers
    */
@@ -50,6 +52,11 @@ public class Processor implements IProcessor {
   private boolean overflow;
   private boolean carry;
   private boolean wait;
+  
+  /*
+   * tmp
+   */
+  private boolean step;
 
   private void flush() {
     reset();
@@ -80,6 +87,7 @@ public class Processor implements IProcessor {
     overflow = false;
     carry = false;
     wait = false;
+    step = false;
     ip = 0;
     sp = 0;
     reset(registers);
@@ -102,7 +110,7 @@ public class Processor implements IProcessor {
     }
   }
 
-  private long packFlags() {
+  public long packFlags() {
     long flags = 0;
     flags = ByteUtil.setShort(flags, ip, 3);
     flags = ByteUtil.setByteInLong(flags, sp, 5);
@@ -131,7 +139,7 @@ public class Processor implements IProcessor {
     assert packFlags() == Long.parseUnsignedLong("abcdee0000000007", 16);
   }
 
-  private void unPackFlags(long flags) {
+  public void unPackFlags(long flags) {
     ip = ByteUtil.getShort(flags, 3);
     sp = ByteUtil.getByteInLong(flags, 5);
     temp = ByteUtil.getByteInLong(flags, 4);
@@ -161,9 +169,7 @@ public class Processor implements IProcessor {
 
   private static void copy(byte[] a, byte[] b) {
     if (a.length != b.length) {
-      new RuntimeException(
-          "WARNING: copying different sized a[" + a.length + "] b[" + b.length + "]")
-          .printStackTrace();
+      new RuntimeException("WARNING: copying different sized a[" + a.length + "] b[" + b.length + "]").printStackTrace();
     }
     for (int i = 0; i < Math.min(a.length, b.length); i++) {
       a[i] = b[i];
@@ -215,15 +221,24 @@ public class Processor implements IProcessor {
     return c;
   }
 
+  /**
+   * returns true if GUI should be updated after this tick
+   */
   @Override
-  public void tick() {
+  public boolean tick() {
     if (temp > 1) {
       temp--;
     }
-    if (fault || wait) {
-      return;
+    
+    if (fault || (wait && !step)) {
+      boolean cooled = prevTemp != temp;
+      prevTemp = temp;
+      return cooled;
     }
+    step = false;
     process();
+    prevTemp = temp;
+    return true;
   }
 
   private void process() {
@@ -239,7 +254,7 @@ public class Processor implements IProcessor {
 
     instruction = (byte[]) program.get(ip);
 
-    System.out.println(pinchDump());
+    //System.out.println(pinchDump());
 
     if (temp < 110) {
       temp += 2;
@@ -649,7 +664,7 @@ public class Processor implements IProcessor {
     // well in this test case
     flush();
     labels.add(new Label((short) 189, "foobar"));
-    program.add(new byte[]{0x00, 0x01, 0x02, 0x03});
+    program.add(new byte[] {0x00, 0x01, 0x02, 0x03});
     stack[0] = (byte) 0x99;
     registers[0] = (byte) 0xee;
     registers[4] = (byte) 0xcc;
@@ -749,6 +764,13 @@ public class Processor implements IProcessor {
       processAdd();
       assertRegisters(4, 0, 130, 0);
       assert overflow;
+      assert !zero;
+      
+      
+      setupTest(1, 0, 0, 0, "add a, 0xf0");
+      processAdd();
+      assertRegisters(241, 0, 0, 0);
+      assert !overflow;
       assert !zero;
 
     } catch (Exception e) {
@@ -1029,12 +1051,19 @@ public class Processor implements IProcessor {
     }
     return s;
   }
+  
+  private String fix(String s) {
+    if (s.length() > 2) {
+      return s.substring(s.length() - 2, s.length());
+    }
+    return s;
+  }
 
   private void dumpRegister(StringBuilder s, Register reg) {
 
     // s.append(reg.toString().toLowerCase());
     // s.append("[");
-    s.append(pad(Integer.toUnsignedString(registers[reg.ordinal()], 16)));
+    s.append(fix(pad(Integer.toUnsignedString(registers[reg.ordinal()], 16))));
     // s.append("] ");
   }
 
@@ -1065,14 +1094,16 @@ public class Processor implements IProcessor {
 
     s.append(" ").append(temp).append("°F ");
 
-    s.append("  (").append(InstructionUtil.compileLine(instruction, labels, (short) -1))
-        .append(") ");
+    s.append("  (").append(InstructionUtil.compileLine(instruction, labels, (short) -1)).append(") ");
 
     if (fault) {
       s.append("FAULT ");
     }
     if (zero) {
       s.append("ZF ");
+    }
+    if (wait) {
+      s.append("WAIT ");
     }
     if (overflow) {
       s.append("OF ");
@@ -1084,6 +1115,50 @@ public class Processor implements IProcessor {
   @Override
   public byte[] getRegisters() {
     return registers;
+  }
+
+  public List getProgram() {
+    return program;
+  }
+
+  public byte getTemp() {
+    return temp;
+  }
+
+  public short getIp() {
+    return ip;
+  }
+
+  public byte getSp() {
+    return sp;
+  }
+
+  public boolean isZero() {
+    return zero;
+  }
+
+  public boolean isOverflow() {
+    return overflow;
+  }
+
+  public boolean isCarry() {
+    return carry;
+  }
+
+  public boolean isWait() {
+    return wait;
+  }
+
+  public void setWait(boolean wait) {
+    this.wait = wait;
+  }
+
+  public List<Label> getLabels() {
+    return labels;
+  }
+
+  public void setStep(boolean step) {
+    this.step = step;
   }
 
 }

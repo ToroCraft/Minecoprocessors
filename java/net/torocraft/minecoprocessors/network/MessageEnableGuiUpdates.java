@@ -10,45 +10,40 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.blocks.TileEntityMinecoprocessor;
 
-public class MessageProcessorRequest implements IMessage {
+public class MessageEnableGuiUpdates implements IMessage {
 
   public BlockPos pos;
+  public Boolean enable;
 
   public static void init(int packetId) {
-    Minecoprocessors.NETWORK
-        .registerMessage(MessageProcessorRequest.Handler.class, MessageProcessorRequest.class,
-            packetId, Side.SERVER);
+    Minecoprocessors.NETWORK.registerMessage(MessageEnableGuiUpdates.Handler.class, MessageEnableGuiUpdates.class, packetId, Side.SERVER);
   }
 
-  public MessageProcessorRequest() {
+  public MessageEnableGuiUpdates() {
 
   }
 
-  public MessageProcessorRequest(BlockPos controlBlockPos) {
+  public MessageEnableGuiUpdates(BlockPos controlBlockPos, Boolean enable) {
     this.pos = controlBlockPos;
+    this.enable = enable;
   }
 
   @Override
   public void fromBytes(ByteBuf buf) {
-    try {
-      pos = BlockPos.fromLong(buf.readLong());
-    } catch (Exception e) {
-      pos = null;
-    }
+    pos = BlockPos.fromLong(buf.readLong());
+    enable = buf.readBoolean();
   }
 
   @Override
   public void toBytes(ByteBuf buf) {
-    if (pos == null) {
-      throw new NullPointerException("control block is null");
-    }
     buf.writeLong(pos.toLong());
+    buf.writeBoolean(enable);
   }
 
-  public static class Handler implements IMessageHandler<MessageProcessorRequest, IMessage> {
+  public static class Handler implements IMessageHandler<MessageEnableGuiUpdates, IMessage> {
 
     @Override
-    public IMessage onMessage(final MessageProcessorRequest message, MessageContext ctx) {
+    public IMessage onMessage(final MessageEnableGuiUpdates message, MessageContext ctx) {
       if (message.pos == null) {
         return null;
       }
@@ -61,9 +56,9 @@ public class MessageProcessorRequest implements IMessage {
   private static class Worker implements Runnable {
 
     private final EntityPlayerMP player;
-    private final MessageProcessorRequest message;
+    private final MessageEnableGuiUpdates message;
 
-    public Worker(EntityPlayerMP player, MessageProcessorRequest message) {
+    public Worker(EntityPlayerMP player, MessageEnableGuiUpdates message) {
       this.player = player;
       this.message = message;
     }
@@ -73,14 +68,14 @@ public class MessageProcessorRequest implements IMessage {
       try {
         TileEntityMinecoprocessor mp = (TileEntityMinecoprocessor) player.world.getTileEntity(message.pos);
 
-        mp.startUpdatingPlayer(player);
+        mp.enablePlayerGuiUpdates(player, message.enable);
 
-
-      }catch(Exception e){
+      } catch (Exception e) {
         e.printStackTrace();
       }
 
-      //Minecoprocessors.NETWORK.sendTo(new MessageLegalMovesResponse(te.getPos(), moves.legalPositions), player);
+      // Minecoprocessors.NETWORK.sendTo(new MessageLegalMovesResponse(te.getPos(),
+      // moves.legalPositions), player);
     }
 
   }

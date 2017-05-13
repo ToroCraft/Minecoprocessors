@@ -6,7 +6,7 @@ public interface IProcessor {
 
   void reset();
 
-  void tick();
+  boolean tick();
 
   void wake();
 

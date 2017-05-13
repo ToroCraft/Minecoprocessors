@@ -82,6 +82,54 @@ mov pf, 0
 jmp sleep
 
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;counter
+start:
+mov a, 0xff
+loop:
+dec a
+jnz loop
+inc b
+cmp b, 0xff
+jnz start
+wfe
+jmp start
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; binary counter
+mov ports, 0
+start:
+mov a, c
+and a, 0001b
+mov pf, a
+
+mov a, c
+and a, 0010b
+shr a, 1
+mov pr, a
+
+
+mov a, c
+and a, 0100b
+shr a, 2
+mov pb, a
+
+mov a, c
+and a, 01000b
+shr a, 3
+mov pl, a
+
+inc c
+jmp start
+
+
+
+
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; test page 1

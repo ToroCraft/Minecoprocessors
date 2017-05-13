@@ -6,27 +6,21 @@ import net.minecraft.client.resources.I18n;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.blocks.ContainerMinecoprocessor;
 import net.torocraft.minecoprocessors.blocks.TileEntityMinecoprocessor;
-import net.torocraft.minecoprocessors.network.MessageProcessorRequest;
+import net.torocraft.minecoprocessors.network.MessageProcessorAction;
+import net.torocraft.minecoprocessors.network.MessageEnableGuiUpdates;
+import net.torocraft.minecoprocessors.network.MessageProcessorAction.Action;
 import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
+import net.torocraft.minecoprocessors.util.InstructionUtil;
 
-// TODO loading arrow support
-
-// TODO fault and paused light
-
-// TODO processor diagram
-
-// TODO register readout current line
-
-// TODO clock mode (20hz vs manual)
+// TODO remove update requests on close (check pos to make sure it is the correct chip)
 
 // TODO step button
-
-// TODO reset and pause button
 
 public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiContainer {
 
@@ -41,25 +35,32 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   private GuiButton buttonPause;
   private GuiButton buttonStep;
 
-  private NBTTagCompound processorData;
-  private Processor processor = new Processor();
+  private Processor processor;
+  
+  public BlockPos getPos() {
+    return minecoprocessor.getPos();
+  }
 
-  //TODO detect close and null this instance
+  // TODO detect close and null this instance
+
+  // TODO add sequence number to packets and ignore it if it is older than the last recieved on
+
   public static GuiMinecoprocessor INSTANCE;
 
   public GuiMinecoprocessor(IInventory playerInv, TileEntityMinecoprocessor te) {
     super(new ContainerMinecoprocessor(playerInv, te));
     this.playerInventory = playerInv;
     this.minecoprocessor = te;
-
-    Minecoprocessors.NETWORK.sendToServer(new MessageProcessorRequest(te.getPos()));
-
-
     INSTANCE = this;
+    Minecoprocessors.NETWORK.sendToServer(new MessageEnableGuiUpdates(te.getPos(), true));
   }
 
   public void updateData(NBTTagCompound processorData) {
-    this.processorData = processorData;
+
+    if (processor == null) {
+      processor = new Processor();
+    }
+
     processor.readFromNBT(processorData);
   }
 
@@ -76,7 +77,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
 
     // fontRendererObj.drawString("0F 01 00 00", x, y + 10, 0xffffff);
 
-    registers = processor.getRegisters();
+    registers = processor == null ? null : processor.getRegisters();
 
     y = 50;
     drawRegister(Register.A, 130 * 2, y);
@@ -85,22 +86,20 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     drawRegister(Register.D, 157 * 2, y);
 
     y = 82;
-    drawFlag("Z", true, 130 * 2, y);
-    drawFlag("C", false, 139 * 2, y);
-    drawFlag("F", false, 148 * 2, y);
-    drawFlag("S", true, 157 * 2, y);
+    drawFlag("Z", processor == null ? null : processor.isZero(), 130 * 2, y);
+    drawFlag("C", processor == null ? null : processor.isCarry() || processor.isOverflow(), 139 * 2, y);
+    drawFlag("F", processor == null ? null : processor.isFault(), 148 * 2, y);
+    drawFlag("S", processor == null ? null : processor.isWait(), 157 * 2, y);
 
-    // PF
-    centered("00", 176, 47);
-
-    // PR
-    centered("01", 216, 86);
-
-    // PL
-    centered("02", 137, 86);
-
-    // PB
-    centered("03", 176, 125);
+    y = 114;
+    drawLabeledShort("IP", processor == null ? null : processor.getIp(), 130 * 2, y);
+   // drawLabeledByte("TEMP", processor == null ? null : processor.getTemp(), 157 * 2, y);
+    drawLabeledValue("TEMP", processor == null ? null : Integer.toUnsignedString(processor.getTemp()), 157 * 2, y);
+ 
+    centered(toHex(registers == null ? null : registers[Register.PF.ordinal()]), 176, 47);
+    centered(toHex(registers == null ? null : registers[Register.PR.ordinal()]), 216, 86);
+    centered(toHex(registers == null ? null : registers[Register.PL.ordinal()]), 137, 86);
+    centered(toHex(registers == null ? null : registers[Register.PB.ordinal()]), 176, 125);
 
     drawCode();
 
@@ -109,16 +108,34 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     drawGuiTitle();
     drawInventoryTitle();
 
-    drawButtons();
+    String pauseText = "gui.button.sleep";
+    if (processor == null || processor.isWait()) {
+      pauseText = "gui.button.wake";
+    }
+    buttonPause.displayString = I18n.format(pauseText);
 
+    buttonStep.enabled = processor != null && processor.isWait();
   }
 
   private void drawCode() {
     int x = 22;
     int y = 50;
 
-    String label = "NEXT 0F";
-    String value = "MOV A, B";
+    String label = "NEXT";
+
+    byte[] a = null;
+    try {
+      a = (byte[]) processor.getProgram().get(processor.getIp());
+    } catch (Exception e) {
+      a = null;
+    }
+
+    String value = "";
+
+    if (a != null) {
+      value = InstructionUtil.compileLine(a, processor.getLabels(), (short) -1);
+      // value = toHex(processor.getIp()) + ": " + value;
+    }
 
     fontRendererObj.drawString(label, x - 4, y - 14, 0x404040);
     fontRendererObj.drawString(value, x, y, 0xffffff);
@@ -126,30 +143,72 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
 
   private void drawRegister(Register register, int x, int y) {
     String label = register.toString();
-    String value = toHex(registers[register.ordinal()]);
+    String value = toHex(registers == null ? null : registers[register.ordinal()]);
     drawLabeledValue(label, value, x, y);
   }
 
-  private String toHex(byte b) {
+  private String toHex(Byte b) {
+    if (b == null) {
+      return null;
+    }
     String s = Integer.toHexString(b);
     if (s.length() > 2) {
-      return s.substring(0, 2);
+      return s.substring(s.length() - 2, s.length());
+    }
+    if (s.length() < 2) {
+      s = "0" + s;
     }
     return s;
   }
 
+  private String toHex(Short b) {
+    if (b == null) {
+      return null;
+    }
+    String s = Integer.toHexString(b);
+    if (s.length() > 4) {
+      return s.substring(s.length() - 4, s.length());
+    }
+    // TODO make this better
+    if (s.length() < 2) {
+      s = "0" + s;
+    }
+    if (s.length() < 3) {
+      s = "0" + s;
+    }
+    if (s.length() < 4) {
+      s = "0" + s;
+    }
+    return s;
+  }
 
-  private void drawFlag(String label, boolean flag, int x, int y) {
-    String value = flag ? "1" : "0";
+  private void drawFlag(String label, Boolean flag, int x, int y) {
+    String value = null;
+    if (flag != null) {
+      value = flag ? "1" : "0";
+    }
     drawLabeledValue(label, value, x, y);
+  }
+  
+  private void drawLabeledByte(String label, Byte b, int x, int y) {
+    drawLabeledValue(label, toHex(b), x, y);
+  }
+  
+  private void drawLabeledShort(String label, Short b, int x, int y) {
+    drawLabeledValue(label, toHex(b), x, y);
   }
 
   private void drawLabeledValue(String label, String value, int x, int y) {
     int wLabel = fontRendererObj.getStringWidth(label) / 2;
-    int wValue = fontRendererObj.getStringWidth(value) / 2;
+    int wValue = 0;
+    if (value != null) {
+      wValue = fontRendererObj.getStringWidth(value) / 2;
+    }
 
     fontRendererObj.drawString(label, x - wLabel, y - 14, 0x404040);
-    fontRendererObj.drawString(value, x - wValue, y, 0xffffff);
+    if (value != null) {
+      fontRendererObj.drawString(value, x - wValue, y, 0xffffff);
+    }
   }
 
   private void centered(String s, float x, float y) {
@@ -170,6 +229,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   @Override
   public void initGui() {
     super.initGui();
+    drawButtons();
 
   }
 
@@ -180,11 +240,9 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     int width = 49;
     int height = 10;
 
-    buttonReset = new ScaledGuiButton(buttonId++, x, y, width, height, I18n.format("gui.button.reset", (Object) null));
-    buttonPause = new ScaledGuiButton(buttonId++, x, y + 11, width, height, I18n.format("gui.button.pause", (Object) null));
-    buttonStep = new ScaledGuiButton(buttonId++, x, y + 22, width, height, I18n.format("gui.button.step", (Object) null));
-
-    buttonStep.enabled = false;
+    buttonReset = new ScaledGuiButton(buttonId++, x, y, width, height, I18n.format("gui.button.reset"));
+    buttonPause = new ScaledGuiButton(buttonId++, x, y + 11, width, height, I18n.format("gui.button.sleep"));
+    buttonStep = new ScaledGuiButton(buttonId++, x, y + 22, width, height, I18n.format("gui.button.step"));
 
     buttonList.add(buttonReset);
     buttonList.add(buttonStep);
@@ -194,13 +252,13 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   @Override
   protected void actionPerformed(GuiButton button) {
     if (button == buttonReset) {
-      System.out.println("Reset Button Pressed");
+      Minecoprocessors.NETWORK.sendToServer(new MessageProcessorAction(minecoprocessor.getPos(), Action.RESET));
     }
     if (button == buttonPause) {
-      System.out.println("Pause Button Pressed");
+      Minecoprocessors.NETWORK.sendToServer(new MessageProcessorAction(minecoprocessor.getPos(), Action.PAUSE));
     }
     if (button == buttonStep) {
-      System.out.println("Step Button Pressed");
+      Minecoprocessors.NETWORK.sendToServer(new MessageProcessorAction(minecoprocessor.getPos(), Action.STEP));
     }
   }
 
