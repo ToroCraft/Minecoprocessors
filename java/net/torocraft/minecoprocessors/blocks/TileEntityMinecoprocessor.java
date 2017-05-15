@@ -53,6 +53,10 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     GameRegistry.registerTileEntity(TileEntityMinecoprocessor.class, NAME);
   }
 
+  public void onLoad() {
+    processor.wake();
+  }
+
   @Override
   public boolean shouldRefresh(World world, BlockPos pos, IBlockState oldState, IBlockState newState) {
     return BlockMinecoprocessor.INSTANCE != oldState.getBlock() || BlockMinecoprocessor.INSTANCE != newState.getBlock();

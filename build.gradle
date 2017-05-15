@@ -12,13 +12,13 @@ apply plugin: 'net.minecraftforge.gradle.forge'
 
 idea { module { inheritOutputDirs = true } }
 
-version = "0.1"
+version = "0.2"
 group = "net.torocraft.minecoprocessors" 
-archivesBaseName = "modid"
+archivesBaseName = "minecoprocessors"
 
-sourceCompatibility = targetCompatibility = "1.6" // Need this here so eclipse task generates correctly.
+sourceCompatibility = targetCompatibility = "1.8" // Need this here so eclipse task generates correctly.
 compileJava {
-    sourceCompatibility = targetCompatibility = "1.6"
+    sourceCompatibility = targetCompatibility = "1.8"
 }
 
 minecraft {

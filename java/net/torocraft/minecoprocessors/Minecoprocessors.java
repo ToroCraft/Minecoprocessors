@@ -13,7 +13,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 public class Minecoprocessors {
 
   public static final String MODID = "minecoprocessors";
-  public static final String VERSION = "0.1";
+  public static final String VERSION = "0.2";
   public static final String MODNAME = "Minecoprocessors";
 
   @Mod.Instance(MODID)
