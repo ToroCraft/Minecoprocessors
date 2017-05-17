@@ -2,7 +2,9 @@ package net.torocraft.minecoprocessors.blocks;
 
 import java.util.Random;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockRedstoneDiode;
+import net.minecraft.block.BlockRedstoneWire;
 import net.minecraft.block.ITileEntityProvider;
 import net.minecraft.block.properties.IProperty;
 import net.minecraft.block.properties.PropertyBool;
@@ -191,7 +193,7 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
     if (world.isRemote) {
       return;
     }
-    
+
     TileEntityMinecoprocessor te = (TileEntityMinecoprocessor) world.getTileEntity(pos);
 
     boolean changed = false;
@@ -225,12 +227,15 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   }
 
   public void updateInputPorts(World world, BlockPos pos, IBlockState state) {
+    if (world.isRemote) {
+      return;
+    }
     EnumFacing facing = (EnumFacing) state.getValue(FACING).getOpposite();
 
-    boolean e = getPowerOnSide(world, pos.offset(EnumFacing.EAST), EnumFacing.EAST) > 0;
-    boolean w = getPowerOnSide(world, pos.offset(EnumFacing.WEST), EnumFacing.WEST) > 0;
-    boolean n = getPowerOnSide(world, pos.offset(EnumFacing.NORTH), EnumFacing.NORTH) > 0;
-    boolean s = getPowerOnSide(world, pos.offset(EnumFacing.SOUTH), EnumFacing.SOUTH) > 0;
+    boolean e = calculateInputStrength(world, pos.offset(EnumFacing.EAST), EnumFacing.EAST) > 0;
+    boolean w = calculateInputStrength(world, pos.offset(EnumFacing.WEST), EnumFacing.WEST) > 0;
+    boolean n = calculateInputStrength(world, pos.offset(EnumFacing.NORTH), EnumFacing.NORTH) > 0;
+    boolean s = calculateInputStrength(world, pos.offset(EnumFacing.SOUTH), EnumFacing.SOUTH) > 0;
 
     boolean[] values = new boolean[4];
 
@@ -240,6 +245,27 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
     values[convertFacingToPortIndex(facing, EnumFacing.EAST)] = e;
 
     ((TileEntityMinecoprocessor) world.getTileEntity(pos)).updateInputPorts(values);
+  }
+
+  protected int calculateInputStrength(World worldIn, BlockPos pos, EnumFacing enumfacing) {
+    BlockPos blockpos = pos;
+    IBlockState adjacentState = worldIn.getBlockState(blockpos);
+    Block block = adjacentState.getBlock();
+    
+    int i = worldIn.getRedstonePower(blockpos, enumfacing);
+
+    if (i >= 15) {
+      return i;
+    }
+
+    int redstoneWirePower = 0;
+
+    if (block == Blocks.REDSTONE_WIRE) {
+      redstoneWirePower = ((Integer) adjacentState.getValue(BlockRedstoneWire.POWER)).intValue();
+    }
+
+    return Math.max(i, redstoneWirePower);
+
   }
 
   private static EnumFacing convertPortIndexToFacing(EnumFacing facing, int portIndex) {
@@ -301,6 +327,10 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   @Override
   public int getWeakPower(IBlockState blockState, IBlockAccess blockAccess, BlockPos pos, EnumFacing side) {
     TileEntityMinecoprocessor te = ((TileEntityMinecoprocessor) blockAccess.getTileEntity(pos));
+    
+    if(te.getWorld().isRemote){
+      return 0;
+    }
 
     boolean powered = false;
 
