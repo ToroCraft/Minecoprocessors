@@ -13,7 +13,7 @@ Increase your redstone possibilities and learn assembly programming at the same 
 To get started you will need to craft a [Book and Quill](http://minecraft.gamepedia.com/Book_and_Quill).  
 The Book and Quill can then be used to write a program in assembly which can then be loaded into a redstone processor.  
 
-Using a Book and Quill write  the following program.
+Using a Book and Quill write the following program.
 
 ```Assembly
 mov ports, 0010b
@@ -29,15 +29,22 @@ mov pf, 0
 jmp start
 ```
 
-This program will wait for a redstone signal to the back port of the processor. Once it detects the back port is powered, the processor powers the front port for ten iterations.  This will keep the front port powered for just over 80 redstone ticks since there are two commands per iteration and a couple setup commands.  After that period of time as elapsed, the processor will stop powering the front port jump to the beginning of the program with it will again wait for a redstone signal.
+This program acts as a __pulse extender__ when loaded into a redstone processor. Once the processor detects the back port is powered, the processor will power the front port for a period of time relative to the number put into the `c` register on line 6.  The front port will be powered for just over 80 redstone ticks since there are two commands per iteration and a couple setup commands.  After that period of time as elapsed, the processor will stop powering the front port and wait for the next redstone signal to the back port.
 
 ![Restone Program in Book and Quill](http://i.imgur.com/p616ssf.png)
 
 Next you will need to craft a redstone processor using one redstone block, four redstone comparators and four redstone torches.  When placing the redstone processor, the front port will be placed facing away from the player, similar to redstone repeaters and comparators.  Right click the processor to open up the processor’s GUI.  From there you can current status of the process along with an inventory slot to place the book and quill containing your program.
 
+You might want to read throught the [Book and Quill](http://minecraft.gamepedia.com/Book_and_Quill) to see what might Minecraft offers.
+The books can be named in an avil and signed to make them read only.
+Once a book and quill is signed, you can also copy them which could be a useful feature.
+However, you will most likely want to write your programs using a program outside of Minecraft as book and quills do allow you to move the cursor.
+Also, if you are having trouble copy and pasting a program into a book and quill, make sure it is small enough to fit on one page.
+If the program doesn't fit on one page, nothing will happen when you try to paste it into the book and quill.
+
 ![Restone Processor GUI](http://i.imgur.com/kBOYQS4.png)
 
-The redstone processor will start executing your program immediately after placing your program into the GUI.  It can now be used in your circuits just like any other redstone block.
+The redstone processor will start executing your program immediately after placing the book and quill with your program into the GUI.  It can now be used in your circuits just like any other redstone block.
 
 ### code explanation
 
@@ -112,19 +119,18 @@ The `dec` instruction is a shorthand verion of `sub c, 1` which will subtract 1 
 ```Assembly
 jnz loop
 ```
-The `jnz` instruction is again used to form a loop with the previous two lines. 
+The `jnz` instruction is again used to form a loop with the previous two lines.  
+The loop will continue until the the c register is zero, causing the `jnz` instruction to move to the next line instead of jumping to the `loop` label.
 
+```Assembly
+mov pf, 0
+```
+After the delay is finished, `0` is moved into the `pf` register causing the processor to stop powering the front port.
 
-
-
-### notes ....
-
-Any number up to `0xff` (all bits on in (Hexidecimal)[https://en.wikipedia.org/wiki/Hexadecimal]) .  
-
-
-Since decimal numbers are repersented in (two's complement)[https://en.wikipedia.org/wiki/Two%27s_complement] format
-the largest number possible 
-
+```Assembly
+jmp start
+```
+Finally, the `jmp` command is used to do a non-conditional jump to the `start` label to repeat the entire process.
 
 
 
@@ -175,28 +181,28 @@ Put a zero value in corresponding low nibble bit to set a port as an output, or 
 
 ## Supported commands
 
-* `MOV` 
-* `ADD` 
-* `SUB` 
-* `AND` 
-* `OR` 
-* `XOR` 
-* `NOT` 
-* `MUL` 
-* `DIV` 
-* `JMP` 
-* `JZ` 
-* `JNZ` 
-* `CMP` 
-* `SHL` 
-* `SHR` 
-* `PUSH` 
-* `POP` 
+* `MOV a, b` __Move__ a value `b` into register `a`
+* `ADD a, b` __Add__ the value `b` to `a` and keep the result in the `a` register.
+* `SUB a, b` __Subtract__ the value `b` from `a` and keep the result in the `a` register.
+* `AND a, b` __Bitwise and__ the value `b` and `a` and keep the result in the `a` register.
+* `OR a, b` __Bitwise or__ the value `b` and `a` and keep the result in the `a` register.
+* `XOR a, b` __Bitwise xor__ the value `b` and `a` and keep the result in the `a` register.
+* `NOT a` __Bitwise not__ the value `a` and keep the result in the `a` register.
+* `MUL a` __Bitwise not__ the value `a` and keep the result in the `a` register.
+* `DIV a` 
+* `JMP a` 
+* `JZ label` 
+* `JNZ label` 
+* `CALL label` 
+* `CMP a, b` 
 * `RET` 
-* `CALL` 
+* `SHL a` 
+* `SHR a` 
+* `PUSH a` 
+* `POP a` 
 * `NOP` 
-* `INC` 
-* `DEC`
+* `INC a` 
+* `DEC a`
 * `WFE`
 
 ## Sources to Learn Assembly
@@ -208,6 +214,16 @@ Put a zero value in corresponding low nibble bit to set a port as an output, or 
 ## Larger Programs
 
 ## Programs for Common Circuits
+
+
+
+### notes ....
+
+Any number up to `0xff` (all bits on in (Hexidecimal)[https://en.wikipedia.org/wiki/Hexadecimal]) .  
+
+
+Since decimal numbers are repersented in (two's complement)[https://en.wikipedia.org/wiki/Two%27s_complement] format
+the largest number possible 
 
 
 
