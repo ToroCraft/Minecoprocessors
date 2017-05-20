@@ -57,6 +57,8 @@ public class Processor implements IProcessor {
    */
   private boolean step;
   private String error;
+  
+  @SuppressWarnings("unused")
   private byte prevTemp;
   private float tempVelocity;
   private float tempAcc;
@@ -237,6 +239,7 @@ public class Processor implements IProcessor {
     return c;
   }
 
+  @SuppressWarnings("unused")
   private void tempUpdate() {
     tempVelocity += tempAcc;
 
@@ -258,6 +261,7 @@ public class Processor implements IProcessor {
 
   }
 
+  @SuppressWarnings("unused")
   private void coolCycle() {
     if (temp == 0) {
       tempAcc = 0;
@@ -272,34 +276,30 @@ public class Processor implements IProcessor {
     }
   }
 
-  private void testCoolCycle() {
 
-  }
-
+  @SuppressWarnings("unused")
   private void heatCycle() {
     tempAcc = 0.002f;
   }
 
-  private void testHeatCycle() {
-
-  }
 
   /**
    * returns true if GUI should be updated after this tick
    */
   @Override
   public boolean tick() {
-    tempUpdate();
-    coolCycle();
+    //tempUpdate();
+    //coolCycle();
 
     if (fault || (wait && !step)) {
-      boolean cooled = prevTemp != getTemp();
-      prevTemp = getTemp();
-      return cooled;
+     // boolean cooled = prevTemp != getTemp();
+      //prevTemp = getTemp();
+      ///return cooled;
+      return false;
     }
     step = false;
     process();
-    prevTemp = getTemp();
+    //prevTemp = getTemp();
     return true;
   }
 
@@ -318,7 +318,7 @@ public class Processor implements IProcessor {
 
     // System.out.println(pinchDump());
 
-    heatCycle();
+    //heatCycle();
 
     ip++;
 
@@ -708,8 +708,6 @@ public class Processor implements IProcessor {
     testProcessMul();
     testProcessDiv();
     testNbt();
-    testCoolCycle();
-    testHeatCycle();
   }
 
   private void testCopyArray() {

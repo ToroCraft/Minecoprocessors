@@ -91,12 +91,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     drawLabeledShort("IP", processor == null ? null : processor.getIp(), 130 * 2, y, mouseX, mouseY);
     // drawLabeledByte("TEMP", processor == null ? null : processor.getTemp(), 157 * 2, y);
 
-    Integer tempColor = null;
-    if (processor != null && processor.isHot()) {
-      tempColor = 0xff0000;
-    }
-
-    drawLabeledValue("TEMP", processor == null ? null : Integer.toUnsignedString(processor.getTemp()), 157 * 2, y, tempColor, mouseX, mouseY);
+    //drawTemp(mouseX, mouseY, y);
 
     centered(toHex(registers == null ? null : registers[Register.PF.ordinal()]), 176, 47);
     centered(toHex(registers == null ? null : registers[Register.PR.ordinal()]), 216, 86);
@@ -119,6 +114,15 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     buttonStep.enabled = processor != null && processor.isWait();
   }
 
+  @SuppressWarnings("unused")
+  private void drawTemp(int mouseX, int mouseY, int y) {
+    Integer tempColor = null;
+    if (processor != null && processor.isHot()) {
+      tempColor = 0xff0000;
+    }
+    drawLabeledValue("TEMP", processor == null ? null : Integer.toUnsignedString(processor.getTemp()), 157 * 2, y, tempColor, mouseX, mouseY);
+  }
+
   private void drawCode() {
     int x = 22;
     int y = 50;
@@ -138,7 +142,6 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
 
     if (a != null) {
       value = InstructionUtil.compileLine(a, processor.getLabels(), (short) -1);
-      // value = toHex(processor.getIp()) + ": " + value;
     }
 
     if (value.isEmpty() && processor != null && processor.getError() != null) {
