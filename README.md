@@ -8,9 +8,9 @@ Increase your redstone possibilities and learn assembly programming at the same 
 ## Getting Started
 
 To get started you will need to craft a [Book and Quill](http://minecraft.gamepedia.com/Book_and_Quill).  
-The [Book and Quill](http://minecraft.gamepedia.com/Book_and_Quill) can then be used to write a program in assembly which can then be loaded into a redstone processor.  
+The Book and Quill can then be used to write a program in assembly which can then be loaded into a redstone processor.  
 
-Using a [Book and Quill](http://minecraft.gamepedia.com/Book_and_Quill) write  the following program.
+Using a Book and Quill write  the following program.
 
 ```
 mov ports, 0010b
