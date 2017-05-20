@@ -16,7 +16,7 @@ The Book and Quill can then be used to write a program in assembly which can the
 
 Using a Book and Quill write  the following program.
 
-```
+```Assembly
 mov ports, 0010b
 start:
 cmp pb, 1
