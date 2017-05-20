@@ -54,7 +54,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   }
 
   public void onLoad() {
-    processor.wake();
+    //processor.wake();
   }
 
   @Override
@@ -193,7 +193,10 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   private static boolean isInResetMode(byte ports, int portIndex) {
     return ByteUtil.getBit(ports, portIndex) && ByteUtil.getBit(ports, portIndex + 4);
   }
-
+  
+  /**
+   * return true for positive edge changes
+   */
   private boolean updateInputPort(int portIndex, boolean value) {
     byte[] registers = processor.getRegisters();
     byte ports = registers[Register.PORTS.ordinal()];
@@ -201,7 +204,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     if (isInInputMode(ports, portIndex) && prevPortValues[portIndex] != value) {
       prevPortValues[portIndex] = value;
       registers[Register.PF.ordinal() + portIndex] = value ? (byte) 1 : 0;
-      return true;
+      return value;
     }
 
     if (isInResetMode(ports, portIndex) && prevPortValues[portIndex] != value) {
