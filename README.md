@@ -32,6 +32,8 @@ jmp start
 
 This program will wait for a redstone signal to the back port of the processor. Once it detects the back port is powered, the processor powers the front port for ten iterations.  This will keep the front port powered for just over 80 redstone ticks since there are two commands per iteration and a couple setup commands.  After that period of time as elapsed, the processor will stop powering the front port jump to the beginning of the program with it will again wait for a redstone signal.
 
+![Restone Program in Book and Quill](http://i.imgur.com/p616ssf.png)
+
 Next you will need to craft a redstone processor using one redstone block, four redstone comparators and four redstone torches.  When placing the redstone processor, the front port will be placed facing away from the player, similar to redstone repeaters and comparators.  Right click the processor to open up the processor’s GUI.  From there you can current status of the process along with an inventory slot to place the book and quill containing your program.
 
 ![Restone Processor GUI](http://i.imgur.com/kBOYQS4.png)
