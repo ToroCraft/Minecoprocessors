@@ -213,8 +213,8 @@ Put a zero value in corresponding low nibble bit to set a port as an output, or 
 
 ## Sources to Learn Assembly
 
-* Simple 8-bit Assembler Simulator [](https://schweigi.github.io/assembler-simulator/instruction-set.html)
-* Assembly Programming Tutorial [](https://www.tutorialspoint.com/assembly_programming/)
+* [Simple 8-bit Assembler Simulator](https://schweigi.github.io/assembler-simulator/instruction-set.html)
+* [Assembly Programming Tutorial](https://www.tutorialspoint.com/assembly_programming/)
 
 ## Larger Programs
 
