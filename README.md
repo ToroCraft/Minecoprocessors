@@ -1,7 +1,6 @@
+![Redstone Processor Block](http://i.imgur.com/Vp1e18J.png)
 
 # Minecoprocessors
-
-![Redstone Processor Block](http://i.imgur.com/Vp1e18J.png)
 
 Increase your redstone possibilities and learn assembly programming at the same time with Minecoprocessors! The Minecoprocessors mod adds a redstone processor block that can be programed similar to a real microprocessor.  The redstone processor block is styled to look like and operate like the vanilla redstone blocks.
 
