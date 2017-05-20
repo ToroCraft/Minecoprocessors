@@ -1,9 +1,12 @@
+![Redstone Processor Block](http://i.imgur.com/Vp1e18J.png)
 
 # Minecoprocessors
 
 Increase your redstone possibilities and learn assembly programming at the same time with Minecoprocessors! The Minecoprocessors mod adds a redstone processor block that can be programed similar to a real microprocessor.  The redstone processor block is styled to look like and operate like the vanilla redstone blocks.
 
 ## Recipe
+
+![Restone Processor Recipe](http://i.imgur.com/KUacMFg.png)
 
 ## Getting Started
 
@@ -12,7 +15,7 @@ The Book and Quill can then be used to write a program in assembly which can the
 
 Using a Book and Quill write  the following program.
 
-```
+```Assembly
 mov ports, 0010b
 start:
 cmp pb, 1
@@ -28,7 +31,11 @@ jmp start
 
 This program will wait for a redstone signal to the back port of the processor. Once it detects the back port is powered, the processor powers the front port for ten iterations.  This will keep the front port powered for just over 80 redstone ticks since there are two commands per iteration and a couple setup commands.  After that period of time as elapsed, the processor will stop powering the front port jump to the beginning of the program with it will again wait for a redstone signal.
 
+![Restone Program in Book and Quill](http://i.imgur.com/p616ssf.png)
+
 Next you will need to craft a redstone processor using one redstone block, four redstone comparators and four redstone torches.  When placing the redstone processor, the front port will be placed facing away from the player, similar to redstone repeaters and comparators.  Right click the processor to open up the processor’s GUI.  From there you can current status of the process along with an inventory slot to place the book and quill containing your program.
+
+![Restone Processor GUI](http://i.imgur.com/kBOYQS4.png)
 
 The redstone processor will start executing your program immediately after placing your program into the GUI.  It can now be used in your circuits just like any other redstone block.
 
