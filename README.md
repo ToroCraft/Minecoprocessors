@@ -6,7 +6,7 @@ Increase your redstone possibilities and learn assembly programming at the same 
 
 ## Recipe
 
-![Restone Processor Recipe](http://i.imgur.com/KUacMFg.png)
+![Redstone Processor Recipe](http://i.imgur.com/KUacMFg.png)
 
 ## Getting Started
 
@@ -31,18 +31,24 @@ jmp start
 
 This program acts as a __pulse extender__ when loaded into a redstone processor. Once the processor detects the back port is powered, the processor will power the front port for a period of time relative to the number put into the `c` register on line 6.  The front port will be powered for just over 80 redstone ticks since there are two commands per iteration and a couple setup commands.  After that period of time as elapsed, the processor will stop powering the front port and wait for the next redstone signal to the back port.
 
-![Restone Program in Book and Quill](http://i.imgur.com/p616ssf.png)
+![Redstone Program in Book and Quill](http://i.imgur.com/p616ssf.png)
 
-Next you will need to craft a redstone processor using one redstone block, four redstone comparators and four redstone torches.  When placing the redstone processor, the front port will be placed facing away from the player, similar to redstone repeaters and comparators.  Right click the processor to open up the processor’s GUI.  From there you can current status of the process along with an inventory slot to place the book and quill containing your program.
+Next you will need to craft a redstone processor using 
+one [redstone block](http://minecraft.gamepedia.com/Block_of_Redstone), 
+four [redstone comparators](http://minecraft.gamepedia.com/Redstone_Comparator) 
+and four [redstone torches](http://minecraft.gamepedia.com/Redstone_Torch).  
+When placing the redstone processor, the front port will be placed facing away from the player, similar to redstone repeaters and comparators.  
+Right click the processor to open up the processor’s GUI.  
+From there you can current status of the process along with an inventory slot to place the book and quill containing your program.
 
-You might want to read throught the [Book and Quill](http://minecraft.gamepedia.com/Book_and_Quill) to see what might Minecraft offers.
-The books can be named in an avil and signed to make them read only.
+You might want to read through the [Book and Quill](http://minecraft.gamepedia.com/Book_and_Quill) to see what might Minecraft offers.
+The books can be named in an [anvil](http://minecraft.gamepedia.com/Anvil) and signed to make them read only.
 Once a book and quill is signed, you can also copy them which could be a useful feature.
 However, you will most likely want to write your programs using a program outside of Minecraft as book and quills do allow you to move the cursor.
 Also, if you are having trouble copy and pasting a program into a book and quill, make sure it is small enough to fit on one page.
 If the program doesn't fit on one page, nothing will happen when you try to paste it into the book and quill.
 
-![Restone Processor GUI](http://i.imgur.com/kBOYQS4.png)
+![Redstone Processor GUI](http://i.imgur.com/kBOYQS4.png)
 
 The redstone processor will start executing your program immediately after placing the book and quill with your program into the GUI.  It can now be used in your circuits just like any other redstone block.
 
@@ -62,7 +68,7 @@ mov ports, 0010b
 Refer to the [I/O POrts](#io-ports) for more information about the ports setup.
 The value `0010b` is the number 2 expressed in binary as denoted by the`b` at the end.
 Binary is used here to make it easier to see which bit are on or off, however writing this line as
-`mov ports, 2` would yeild the same effect.
+`mov ports, 2` would yield the same effect.
 
 ```Assembly
 start:
@@ -84,13 +90,13 @@ is to set the port as an input port as we did in the first line of the program.
 ```Assembly
 jnz start
 ```
-The `jnz` instruction will jump to the specificed label if the last command did not result in a zero. 
+The `jnz` instruction will jump to the specified label if the last command did not result in a zero. 
 For this program we are checking if back ports is one or not.  If the back port is on, the `cmp` instruction
 would have yielded a zero and this jump would not take place, otherwise the program would jump back the the `start`
 label and start run the previous commands again.  These last three lines form a loop so that the program will only progress
 further once the back port (`pb`) of the processor is powered.
 
-There are currenlty two other useful jump commands: `jmp` (always jump) and `jz` (only jump if the previous instruction resulted in a zero).
+There are currently two other useful jump commands: `jmp` (always jump) and `jz` (only jump if the previous instruction resulted in a zero).
 
 ```Assembly
 mov pf, 1
@@ -114,7 +120,7 @@ Then we define a new label called `loop`.
 dec c
 ```
 Next we decrement the value in the `c` register using the `dec` instruction.
-The `dec` instruction is a shorthand verion of `sub c, 1` which will subtract 1 from the value in the `c` register.
+The `dec` instruction is a shorthand version of `sub c, 1` which will subtract 1 from the value in the `c` register.
 
 ```Assembly
 jnz loop
@@ -132,16 +138,14 @@ jmp start
 ```
 Finally, the `jmp` command is used to do a non-conditional jump to the `start` label to repeat the entire process.
 
-
-
 ## Registers
 
 The redstone processor has four one byte general purpose [registers](https://en.wikipedia.org/wiki/Processor_register): 
 
-* `a` General Puporse Register
-* `b` General Puporse Register
-* `c` General Puporse Register
-* `d` General Puporse Register
+* `a` General Purpose Register
+* `b` General Purpose Register
+* `c` General Purpose Register
+* `d` General Purpose Register
 
 along with four port registers:
 
@@ -167,43 +171,43 @@ Put a zero value in corresponding low nibble bit to set a port as an output, or 
 
 ## Flags
 
-* `Z`
-* `C`
-* `F`
-* `S`
+* `Z` Zero Flag, set when the previous instruction yields a zero value
+* `C` Carry Flag, set when the precious instruction yields a value too large for the register
+* `F` Fault Flag, set when processor has a fault condition (e.g. divide by zero)
+* `S` Sleep Flag, set when the processor is in sleep mode
 
 ## Supported Number Formats
 
-* `-1` Decial in (two's complement)[https://en.wikipedia.org/wiki/Two%27s_complement]
-* `0xff` (Hexidecimal)[https://en.wikipedia.org/wiki/Hexadecimal]
+* `-1` Decimal in (two's complement)[https://en.wikipedia.org/wiki/Two%27s_complement]
+* `0xff` (Hexadecimal)[https://en.wikipedia.org/wiki/Hexadecimal]
 * `0o377` (Octal)[https://en.wikipedia.org/wiki/Octal]
-* `11111111b` (Binray)[https://en.wikipedia.org/wiki/Binary_number]
+* `11111111b` (Binary)[https://en.wikipedia.org/wiki/Binary_number]
 
 ## Supported commands
 
-* `MOV a, b` __Move__ a value `b` into register `a`
-* `ADD a, b` __Add__ the value `b` to `a` and keep the result in the `a` register.
-* `SUB a, b` __Subtract__ the value `b` from `a` and keep the result in the `a` register.
-* `AND a, b` __Bitwise and__ the value `b` and `a` and keep the result in the `a` register.
-* `OR a, b` __Bitwise or__ the value `b` and `a` and keep the result in the `a` register.
-* `XOR a, b` __Bitwise xor__ the value `b` and `a` and keep the result in the `a` register.
-* `NOT a` __Bitwise not__ the value `a` and keep the result in the `a` register.
-* `MUL a` __Bitwise not__ the value `a` and keep the result in the `a` register.
-* `DIV a` 
-* `JMP a` 
-* `JZ label` 
-* `JNZ label` 
-* `CALL label` 
-* `CMP a, b` 
-* `RET` 
-* `SHL a` 
-* `SHR a` 
-* `PUSH a` 
-* `POP a` 
-* `NOP` 
-* `INC a` 
-* `DEC a`
-* `WFE`
+* `MOV a, b` Move
+* `ADD a, b` Add
+* `SUB a, b` Subtract
+* `AND a, b` Bitwise AND
+* `OR a, b` Bitwise OR
+* `XOR a, b` Bitwise XOR
+* `NOT a` Bitwise NOT
+* `MUL a` Multiply (with the a register)
+* `DIV a` Divide (with the a register)
+* `JMP label` Jump
+* `JZ label` Jump if Zero 
+* `JNZ label` Jump if not Zero
+* `CALL label` Call Subroutine
+* `RET` Return from a Subroutine
+* `CMP a, b` Compare (zero if same)
+* `SHL a` Shift Left
+* `SHR a` Shift Right
+* `PUSH a` Push to Stack
+* `POP a` Pop from Stack
+* `NOP` No Operation
+* `INC a` Increment by 1
+* `DEC a` Decrement by 1
+* `WFE` Wait for Event (experimental)
 
 ## Sources to Learn Assembly
 * Simple 8-bit Assembler Simulator [](https://schweigi.github.io/assembler-simulator/instruction-set.html)
@@ -213,16 +217,21 @@ Put a zero value in corresponding low nibble bit to set a port as an output, or 
 
 ## Larger Programs
 
+The book and quill can only have 14 lines per page with a limited space for each line.
+It can hold up to 50 pages, however, allow larger programs to be written when split up onto different pages.
+While all pages are merged together when a book and quill is loaded into a redstone processor, it is probably
+a better idea to treat each page separately and reference as subroutines using them using the `call` and `ret` instructions.
+
 ## Programs for Common Circuits
 
 
 
 ### notes ....
 
-Any number up to `0xff` (all bits on in (Hexidecimal)[https://en.wikipedia.org/wiki/Hexadecimal]) .  
+Any number up to `0xff` (all bits on in (Hexadecimal)[https://en.wikipedia.org/wiki/Hexadecimal]) .  
 
 
-Since decimal numbers are repersented in (two's complement)[https://en.wikipedia.org/wiki/Two%27s_complement] format
+Since decimal numbers are represented in (two's complement)[https://en.wikipedia.org/wiki/Two%27s_complement] format
 the largest number possible 
 
 
@@ -231,7 +240,7 @@ the largest number possible
 
 
 ## Development Environment Setup
-Download the desired version of Forge MDK from https://files.minecraftforge.net/ and unzip the MDK into a new directory. After the MDK is unzipped, clone this repo into the `src` directory as `main`. Then you will need to either copy or link the `build.gradle` from the repository to the root of the MDK, replacing the original one. 
+Download the desired version of Forge MDK from https://files.minecraftforge.net/ and unzip the MDK into a new directory. After the MDK is unzipped, clone this repository into the `src` directory as `main`. Then you will need to either copy or link the `build.gradle` from the repository to the root of the MDK, replacing the original one. 
 
 ### Setup Example
 Replace `<MC_VERSION>` with the Minecraft version of the MDK (for example `~/mdk_1.11.2`) and `<MDK_FILE>` with the file name of the MDK you downloaded (for example `forge-1.10.2-13.20.0.2228-mdk.zip`)
