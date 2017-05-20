@@ -2,7 +2,7 @@
 
 # Minecoprocessors
 
-Increase the redstone possibilities and learn assembly programming at the same time with the Minecoprocessors Minecraft Mod! The Minecoprocessors Mod adds a redstone processor block that can be programed similar to a real microprocessor.  The redstone processor block is styled to look like and operate like similar to the other redstone blocks in the game.
+Increase the redstone possibilities and learn assembly programming at the same time with the Minecoprocessors Minecraft Mod! The Minecoprocessors Mod adds a redstone processor block that can be programed similar to a real microprocessor.  The redstone processor block is styled to look and operate like the other redstone blocks in the game.
 
 ## Recipe
 
@@ -29,7 +29,7 @@ mov pf, 0
 jmp start
 ```
 
-This program creates a __pulse extender__ when loaded into a redstone processor. Once the processor detects the back port is powered, the processor will power the front port for a period of time relative to the number stored in the `c` register on line 6.  The front port will be powered for just over 80 redstone ticks. The ticks are higher than 40 because there are two instructions per iteration and a couple setup commands. Every instruction requires one redstone tick to process.  After that period of time as elapsed, the processor will stop powering the front port and wait for the next redstone signal to the back port.
+This program creates a __pulse extender__ when loaded into a redstone processor. Once the processor detects that the back port is powered, the processor will power the front port for a period of time relative to the number stored in the `c` register on line 6.  The front port will be powered for just over 80 redstone ticks. The ticks are higher than 40 because there are two instructions per iteration and a couple setup commands. Every instruction requires one redstone tick to process.  After that period of time has elapsed, the processor will stop powering the front port and wait for the next redstone signal to the back port.
 
 ![Redstone Program in Book and Quill](http://i.imgur.com/p616ssf.png)
 
@@ -39,7 +39,7 @@ You might want to read through the [Book and Quill](http://minecraft.gamepedia.c
 The books can be named in an [anvil](http://minecraft.gamepedia.com/Anvil) and signed to make them read only.
 Once a book and quill is signed, you can also copy them which could be a useful feature.
 However, you will most likely want to write your programs outside of Minecraft as book and quills do not allow the cursor to be moved away from the last character.
-Also, if you are having trouble copy and pasting a program into a book and quill, make sure it is small enough to fit on to one page.
+Also, if you are having trouble copying and pasting a program into a book and quill, make sure it is small enough to fit onto one page.
 If the program doesn't fit on one page, nothing will happen when you try to paste it into the book and quill.
 
 ![Redstone Processor GUI](http://i.imgur.com/kBOYQS4.png)
