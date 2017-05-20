@@ -2,7 +2,7 @@
 
 # Minecoprocessors
 
-Increase your redstone possibilities and learn assembly programming at the same time with Minecoprocessors! The Minecoprocessors mod adds a redstone processor block that can be programed similar to a real microprocessor.  The redstone processor block is styled to look like and operate like the vanilla redstone blocks.
+Increase the redstone possibilities and learn assembly programming at the same time with the Minecoprocessors Minecraft Mod! The Minecoprocessors Mod adds a redstone processor block that can be programed similar to a real microprocessor.  The redstone processor block is styled to look like and operate like similar to the other redstone blocks in the game.
 
 ## Recipe
 
@@ -11,7 +11,7 @@ Increase your redstone possibilities and learn assembly programming at the same 
 ## Getting Started
 
 To get started you will need to craft a [Book and Quill](http://minecraft.gamepedia.com/Book_and_Quill).  
-The Book and Quill can then be used to write a program in assembly which can then be loaded into a redstone processor.  
+The Book and Quill can then be used to write an assembly program which can then be loaded into a redstone processor.  
 
 Using a Book and Quill write the following program.
 
@@ -29,43 +29,34 @@ mov pf, 0
 jmp start
 ```
 
-This program acts as a __pulse extender__ when loaded into a redstone processor. Once the processor detects the back port is powered, the processor will power the front port for a period of time relative to the number put into the `c` register on line 6.  The front port will be powered for just over 80 redstone ticks since there are two commands per iteration and a couple setup commands.  After that period of time as elapsed, the processor will stop powering the front port and wait for the next redstone signal to the back port.
+This program creates a __pulse extender__ when loaded into a redstone processor. Once the processor detects the back port is powered, the processor will power the front port for a period of time relative to the number stored in the `c` register on line 6.  The front port will be powered for just over 80 redstone ticks. The ticks are higher than 40 because there are two instructions per iteration and a couple setup commands. Every instruction requires one redstone tick to process.  After that period of time as elapsed, the processor will stop powering the front port and wait for the next redstone signal to the back port.
 
 ![Redstone Program in Book and Quill](http://i.imgur.com/p616ssf.png)
 
-Next you will need to craft a redstone processor using 
-one [redstone block](http://minecraft.gamepedia.com/Block_of_Redstone), 
-four [redstone comparators](http://minecraft.gamepedia.com/Redstone_Comparator) 
-and four [redstone torches](http://minecraft.gamepedia.com/Redstone_Torch).  
-When placing the redstone processor, the front port will be placed facing away from the player, similar to redstone repeaters and comparators.  
-Right click the processor to open up the processor’s GUI.  
-From there you can current status of the process along with an inventory slot to place the book and quill containing your program.
+Next you will need to craft a redstone processor using one [redstone block](http://minecraft.gamepedia.com/Block_of_Redstone), four [redstone comparators](http://minecraft.gamepedia.com/Redstone_Comparator) and four [redstone torches](http://minecraft.gamepedia.com/Redstone_Torch).  When placing the redstone processor, the front port will be placed facing away from the player, similar to redstone repeaters and comparators.  Right click the processor to open up the processor’s GUI.  The current status of the processor is shown in the GUI along with an inventory slot to place the book and quill containing your program.
 
-You might want to read through the [Book and Quill](http://minecraft.gamepedia.com/Book_and_Quill) to see what might Minecraft offers.
+You might want to read through the [Book and Quill](http://minecraft.gamepedia.com/Book_and_Quill) wiki to see what Minecraft offers.
 The books can be named in an [anvil](http://minecraft.gamepedia.com/Anvil) and signed to make them read only.
 Once a book and quill is signed, you can also copy them which could be a useful feature.
-However, you will most likely want to write your programs using a program outside of Minecraft as book and quills do allow you to move the cursor.
-Also, if you are having trouble copy and pasting a program into a book and quill, make sure it is small enough to fit on one page.
+However, you will most likely want to write your programs outside of Minecraft as book and quills do not allow the cursor to be moved away from the last character.
+Also, if you are having trouble copy and pasting a program into a book and quill, make sure it is small enough to fit on to one page.
 If the program doesn't fit on one page, nothing will happen when you try to paste it into the book and quill.
 
 ![Redstone Processor GUI](http://i.imgur.com/kBOYQS4.png)
 
-The redstone processor will start executing your program immediately after placing the book and quill with your program into the GUI.  It can now be used in your circuits just like any other redstone block.
+The redstone processor will start executing your program immediately after placing the book and quill with your program into the GUI.  After the program is loaded the processor can now be used in your redstone circuits just like any other redstone block.
 
-### code explanation
-
-Explain the purpose of the program
-
-
-The first line uses the `mov` instruction to move the value `0010b` into the `ports` register.
-This line will switch all of the ports into output mode except for the back port which will be
-set to an input.
+### Code Explanation
 
 ```Assembly
 mov ports, 0010b
 ```
 
-Refer to the [I/O POrts](#io-ports) for more information about the ports setup.
+The first line uses the `mov` instruction to move the value `0010b` into the `ports` register.
+This line will switch all of the ports into output mode except for the back port which will be
+set as an input.
+
+Refer to the [I/O Ports](#io-ports) for more information about the ports setup.
 The value `0010b` is the number 2 expressed in binary as denoted by the`b` at the end.
 Binary is used here to make it easier to see which bit are on or off, however writing this line as
 `mov ports, 2` would yield the same effect.
@@ -73,6 +64,7 @@ Binary is used here to make it easier to see which bit are on or off, however wr
 ```Assembly
 start:
 ```
+
 The next line adds a label.  Labels are not actual instructions but instead markers providing an
 easy way to jump to a line.  Labels can be any word containing only letters, numbers and underscores.
 The colon (`:`) at the end of the line denotes the line as a label.  
@@ -80,62 +72,72 @@ The colon (`:`) at the end of the line denotes the line as a label.
 ```Assembly
 cmp pb, 1
 ```
-The next line uses the `cmp` instruction to check if the back port (`pb`) is on (`1`).
+
+The next line uses the `cmp` instruction to check if the back port `pb` is on `1`.
+The `cmp` instruction works like the `sub` (subtract) instruction, however it doesn't overwrite the values in the registers.
 It is important to note that the `pb` and all other port registers are one byte registers,
 but only the least significant bit is used to determine the redstone power for that port.  That means
-`0101b`, `0001b`, `1`, `15` will all power the ports since all of those numbers have the same
-value in the least significant bit.  Also, the only way to read read stone values from a port register 
+`0101b`, `0001b`, `1` and `15` will all power the ports since all of those numbers have the same
+value in the least significant bit.  Also, the only way to read read redstone values from a port register 
 is to set the port as an input port as we did in the first line of the program.
 
 ```Assembly
 jnz start
 ```
+
 The `jnz` instruction will jump to the specified label if the last command did not result in a zero. 
-For this program we are checking if back ports is one or not.  If the back port is on, the `cmp` instruction
+For this program we are checking if back port is off or on.  If the back port is on, the `cmp` instruction
 would have yielded a zero and this jump would not take place, otherwise the program would jump back the the `start`
-label and start run the previous commands again.  These last three lines form a loop so that the program will only progress
-further once the back port (`pb`) of the processor is powered.
+label and start running the previous commands again.  These last three lines form a loop so that the program will only progress
+further once the back port `pb` of the processor is powered on.
 
 There are currently two other useful jump commands: `jmp` (always jump) and `jz` (only jump if the previous instruction resulted in a zero).
 
 ```Assembly
 mov pf, 1
 ```
+
 Once the back port detects a redstone power signal the loop will be broken and following line will be executed. 
-This line moves `1` into the front port register (`pf`) which will power the front port.
+This line moves `1` into the front port register `pf` which will power the front port.
 
 ```Assembly
 mov c, 40
 ```
+
 Then we setup for a delay by moving `40` in the `c` register.  
 The `c` register is commonly used to hold a count although any register could be used for this purpose.
-The delay of this circuit can easily be adjust by changing this number.
+The delay of this circuit can easily be adjusted by changing this number.
 
 ```Assembly
 loop:
 ```
+
 Then we define a new label called `loop`.
 
 ```Assembly
 dec c
 ```
+
 Next we decrement the value in the `c` register using the `dec` instruction.
 The `dec` instruction is a shorthand version of `sub c, 1` which will subtract 1 from the value in the `c` register.
 
 ```Assembly
 jnz loop
 ```
+
 The `jnz` instruction is again used to form a loop with the previous two lines.  
-The loop will continue until the the c register is zero, causing the `jnz` instruction to move to the next line instead of jumping to the `loop` label.
+This loop will continue until the the c register is zero, causing the `jnz` instruction to move to the next line instead of jumping to the `loop` label.
 
 ```Assembly
 mov pf, 0
 ```
+
 After the delay is finished, `0` is moved into the `pf` register causing the processor to stop powering the front port.
 
 ```Assembly
 jmp start
 ```
+
 Finally, the `jmp` command is used to do a non-conditional jump to the `start` label to repeat the entire process.
 
 ## Registers
@@ -155,11 +157,11 @@ along with four port registers:
 * `pr` Right Port
 
 that can be used to read or write to the four ports of the processor.
-Only the least significant bit is used to set the power signal of the port.
+Only the least significant bit is used when decided to power or not power the respective port.
 
 ### I/O Ports
 
-There is one additional register (ports) that is used to set mode of the ports. There are three modes that the ports can be set to, input, output or reset.
+There is one additional register, `ports`, that is used to set mode of the ports. There are three modes that the ports can be set to, input, output or reset.
 
 #### Port Register Bit Mapping
 
@@ -178,10 +180,10 @@ Put a zero value in corresponding low nibble bit to set a port as an output, or 
 
 ## Supported Number Formats
 
-* `-1` Decimal in (two's complement)[https://en.wikipedia.org/wiki/Two%27s_complement]
-* `0xff` (Hexadecimal)[https://en.wikipedia.org/wiki/Hexadecimal]
-* `0o377` (Octal)[https://en.wikipedia.org/wiki/Octal]
-* `11111111b` (Binary)[https://en.wikipedia.org/wiki/Binary_number]
+* `-1` Decimal in [two's complement](https://en.wikipedia.org/wiki/Two%27s_complement)
+* `0xff` [Hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal)
+* `0o377` [Octal](https://en.wikipedia.org/wiki/Octal)
+* `11111111b` [Binary](https://en.wikipedia.org/wiki/Binary_number)
 
 ## Supported commands
 
@@ -210,34 +212,67 @@ Put a zero value in corresponding low nibble bit to set a port as an output, or 
 * `WFE` Wait for Event (experimental)
 
 ## Sources to Learn Assembly
+
 * Simple 8-bit Assembler Simulator [](https://schweigi.github.io/assembler-simulator/instruction-set.html)
-
 * Assembly Programming Tutorial [](https://www.tutorialspoint.com/assembly_programming/)
-
 
 ## Larger Programs
 
 The book and quill can only have 14 lines per page with a limited space for each line.
 It can hold up to 50 pages, however, allow larger programs to be written when split up onto different pages.
-While all pages are merged together when a book and quill is loaded into a redstone processor, it is probably
-a better idea to treat each page separately and reference as subroutines using them using the `call` and `ret` instructions.
+While all pages are merged together when a book and quill is loaded into a redstone processor, 
+it is a good idea to treat each page separately and reference them as subroutines using using the `call` and `ret` instructions.
 
 ## Programs for Common Circuits
 
 
+### Repeater
+```Assembly
+mov ports, 0010b
+start:
+mov pf, pb
+jmp start
+```
 
-### notes ....
+### 3 Input AND Gate
+```Assembly
+mov ports, 1110b
+start:
+mov a, pb
+and a, pl
+and a, pr
+mov pf, a
+jmp start
+```
 
-Any number up to `0xff` (all bits on in (Hexadecimal)[https://en.wikipedia.org/wiki/Hexadecimal]) .  
+### Dispenser Double-Pulser
+```Assembly
+mov ports, 0010b
+start:
+cmp pb, 0
+jz start
+mov pf, 1
+mov pf, 0
+mov pf, 1
+mov pf, 0
+wait:
+cmp pb, 1
+jz wait
+jmp start
+```
 
-
-Since decimal numbers are represented in (two's complement)[https://en.wikipedia.org/wiki/Two%27s_complement] format
-the largest number possible 
-
-
-
-
-
+### Enabled-clock Pulse Multiplier
+```Assembly
+mov ports, 0010b
+start:
+cmp pb, 0
+jz off
+not pf
+jmp start
+off:
+mov pf, 0
+jmp start
+```
 
 ## Development Environment Setup
 Download the desired version of Forge MDK from https://files.minecraftforge.net/ and unzip the MDK into a new directory. After the MDK is unzipped, clone this repository into the `src` directory as `main`. Then you will need to either copy or link the `build.gradle` from the repository to the root of the MDK, replacing the original one. 
