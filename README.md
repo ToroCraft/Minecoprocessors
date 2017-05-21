@@ -65,7 +65,7 @@ Binary is used here to make it easier to see which bit are on or off, however wr
 start:
 ```
 
-The next line adds a label.  Labels are not actual instructions but instead markers providing an
+The next line adds a label.  Labels are not actual instructions but instead are markers providing an
 easy way to jump to a line.  Labels can be any word containing only letters, numbers and underscores.
 The colon (`:`) at the end of the line denotes the line as a label.  
 
