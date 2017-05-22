@@ -161,7 +161,7 @@ Only the least significant bit is used when decided to power or not power the re
 
 ### I/O Ports
 
-There is one additional register, `ports`, that is used to set mode of the ports. There are three modes that the ports can be set to, input, output or reset.
+There is one additional register, `ports`, that is used to set mode of the ports. There are three modes that the ports can be set to:  input, output or reset.
 
 #### Port Register Bit Mapping
 
@@ -174,7 +174,7 @@ Put a zero value in corresponding low nibble bit to set a port as an output, or 
 ## Flags
 
 * `Z` Zero Flag, set when the previous instruction yields a zero value
-* `C` Carry Flag, set when the precious instruction yields a value too large for the register
+* `C` Carry Flag, set when the previous instruction yields a value too large for the register
 * `F` Fault Flag, set when processor has a fault condition (e.g. divide by zero)
 * `S` Sleep Flag, set when the processor is in sleep mode
 
