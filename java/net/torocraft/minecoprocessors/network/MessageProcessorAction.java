@@ -70,7 +70,7 @@ public class MessageProcessorAction implements IMessage {
     @Override
     public void run() {
       try {
-        TileEntityMinecoprocessor mp = (TileEntityMinecoprocessor) player.world.getTileEntity(message.pos);
+        TileEntityMinecoprocessor mp = (TileEntityMinecoprocessor) player.worldObj.getTileEntity(message.pos);
 
         switch (message.action) {
           case PAUSE:

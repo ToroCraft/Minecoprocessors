@@ -53,12 +53,12 @@ public class ContainerMinecoprocessor extends Container {
 
   @Override
   public boolean canInteractWith(EntityPlayer player) {
-    return te.isUsableByPlayer(player);
+    return te.isUseableByPlayer(player);
   }
 
   @Override
   public ItemStack transferStackInSlot(EntityPlayer playerIn, int fromSlot) {
-    ItemStack previous = ItemStack.EMPTY;
+    ItemStack previous = null;
     Slot slot = (Slot) this.inventorySlots.get(fromSlot);
 
     if (slot != null && slot.getHasStack()) {
@@ -67,27 +67,27 @@ public class ContainerMinecoprocessor extends Container {
 
       if (fromSlot == 0) {
         if (!this.mergeItemStack(current, 1, 37, true)) {
-          return ItemStack.EMPTY;
+          return null;
         }
       } else {
         if (!this.mergeItemStack(current, 0, 1, true)) {
-          return ItemStack.EMPTY;
+          return null;
         }
       }
 
       slot.onSlotChange(current, previous);
 
-      if (current.isEmpty()) {
-        slot.putStack(ItemStack.EMPTY);
+      if (current == null) {
+        slot.putStack(null);
       } else {
         slot.onSlotChanged();
       }
 
-      if (current.getCount() == previous.getCount()) {
-        return ItemStack.EMPTY;
+      if (current.stackSize == previous.stackSize) {
+        return null;
       }
 
-      slot.onTake(playerIn, current);
+      slot.onPickupFromSlot(playerIn, current);
     }
 
     return previous;

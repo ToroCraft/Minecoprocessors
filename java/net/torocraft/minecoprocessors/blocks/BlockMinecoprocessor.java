@@ -2,6 +2,7 @@ package net.torocraft.minecoprocessors.blocks;
 
 import java.util.Random;
 
+import javax.annotation.Nullable;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRedstoneDiode;
 import net.minecraft.block.BlockRedstoneWire;
@@ -75,7 +76,7 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   }
 
   private void smokeTick(IBlockState state, World world, BlockPos pos, Random rand) {
-    boolean isHot = ((Boolean) state.getValue(HOT)).booleanValue();
+    boolean isHot = state.getValue(HOT);
     if (isHot) {
       double x, y, z;
       for (int i = 0; i < rand.nextInt(4) + 4; i++) {
@@ -85,11 +86,6 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
         world.spawnParticle(EnumParticleTypes.SMOKE_NORMAL, x, y, z, 0.0D, 0.0D, 0.0D, new int[0]);
       }
     }
-  }
-
-  @Override
-  public IBlockState getStateForPlacement(World worldIn, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ, int meta, EntityLivingBase placer) {
-    return super.getStateForPlacement(worldIn, pos, facing, hitX, hitY, hitZ, meta, placer).withProperty(HOT, Boolean.valueOf(false)).withProperty(ACTIVE, Boolean.valueOf(false));
   }
 
   @Override
@@ -173,15 +169,13 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   }
 
   public void onPortChange(World worldIn, BlockPos pos, IBlockState state, int portIndex) {
+    worldIn.notifyNeighborsOfStateChange(pos, this);
     this.notifyNeighborsOnSide(worldIn, pos, state, convertPortIndexToFacing((EnumFacing) state.getValue(FACING).getOpposite(), portIndex));
   }
 
   protected void notifyNeighborsOnSide(World worldIn, BlockPos pos, IBlockState state, EnumFacing side) {
     BlockPos neighborPos = pos.offset(side);
-    if (net.minecraftforge.event.ForgeEventFactory.onNeighborNotify(worldIn, pos, worldIn.getBlockState(pos), java.util.EnumSet.of(side), false).isCanceled()) {
-      return;
-    }
-    worldIn.neighborChanged(neighborPos, this, pos);
+    worldIn.notifyNeighborsOfStateChange(neighborPos, this);
     worldIn.notifyNeighborsOfStateExcept(neighborPos, this, (EnumFacing) side.getOpposite());
   }
 
@@ -308,6 +302,12 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   }
 
   @Override
+  public IBlockState onBlockPlaced(World worldIn, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ, int meta, EntityLivingBase placer) {
+    return this.getDefaultState().withProperty(FACING, placer.getHorizontalFacing().getOpposite()).withProperty(HOT, Boolean.valueOf(false))
+        .withProperty(ACTIVE, Boolean.valueOf(false));
+  }
+
+  @Override
   public void onBlockPlacedBy(World worldIn, BlockPos pos, IBlockState state, EntityLivingBase placer, ItemStack stack) {
     super.onBlockPlacedBy(worldIn, pos, state, placer, stack);
     if (stack.hasDisplayName()) {
@@ -373,8 +373,7 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   }
 
   @Override
-  public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ) {
-
+  public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, @Nullable ItemStack heldItem, EnumFacing side, float hitX, float hitY, float hitZ) {
     if (!world.isRemote) {
       player.openGui(Minecoprocessors.INSTANCE, MinecoprocessorGuiHandler.MINECOPROCESSOR_ENTITY_GUI, world, pos.getX(), pos.getY(), pos.getZ());
     }

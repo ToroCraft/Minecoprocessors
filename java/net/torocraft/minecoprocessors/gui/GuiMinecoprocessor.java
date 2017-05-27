@@ -295,7 +295,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     int j = (this.height - this.ySize) / 2;
     this.drawTexturedModalRect(i, j, 0, 0, this.xSize, this.ySize);
     int k = this.minecoprocessor.getField(1);
-    int l = MathHelper.clamp((18 * k + 20 - 1) / 20, 0, 18);
+    int l = MathHelper.clamp_int((18 * k + 20 - 1) / 20, 0, 18);
 
     if (l > 0) {
       this.drawTexturedModalRect(i + 60, j + 44, 176, 29, l, 4);

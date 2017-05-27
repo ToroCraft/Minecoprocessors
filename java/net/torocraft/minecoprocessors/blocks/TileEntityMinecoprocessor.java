@@ -1,11 +1,14 @@
 package net.torocraft.minecoprocessors.blocks;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ItemStackHelper;
@@ -15,7 +18,6 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ITickable;
-import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
@@ -37,7 +39,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
   private final Processor processor = new Processor();
 
-  private NonNullList<ItemStack> codeItemStacks = NonNullList.<ItemStack>withSize(1, ItemStack.EMPTY);
+  private ItemStack[] codeItemStacks = new ItemStack[1];
   private String customName;
   private int loadTime;
   private boolean loaded;
@@ -67,14 +69,33 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     super.readFromNBT(c);
     processor.readFromNBT(c.getCompoundTag(NBT_PROCESSOR));
 
-    codeItemStacks = NonNullList.<ItemStack>withSize(this.getSizeInventory(), ItemStack.EMPTY);
-    ItemStackHelper.loadAllItems(c, codeItemStacks);
+    this.codeItemStacks = new ItemStack[this.getSizeInventory()];
+
 
     loadTime = c.getShort(NBT_LOAD_TIME);
 
     if (c.hasKey(NBT_CUSTOM_NAME, 8)) {
       this.customName = c.getString(NBT_CUSTOM_NAME);
     }
+
+
+    //////// ItemStackHelper.(c, codeItemStacks);
+
+    NBTTagList nbttaglist = c.getTagList("Items", 10);
+
+    for (int i = 0; i < nbttaglist.tagCount(); ++i)
+    {
+      NBTTagCompound nbttagcompound = nbttaglist.getCompoundTagAt(i);
+      int j = nbttagcompound.getByte("Slot") & 255;
+
+      if (j >= 0 && j < this.codeItemStacks.length)
+      {
+        this.codeItemStacks[j] = ItemStack.loadItemStackFromNBT(nbttagcompound);
+      }
+    }
+
+
+
   }
 
   @Override
@@ -83,22 +104,39 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     c.setTag(NBT_PROCESSOR, processor.writeToNBT());
 
     c.setShort(NBT_LOAD_TIME, (short) loadTime);
-    ItemStackHelper.saveAllItems(c, codeItemStacks);
+
 
     if (this.hasCustomName()) {
       c.setString(NBT_CUSTOM_NAME, this.customName);
     }
+
+    ///ItemStackHelper.saveAllItems(c, codeItemStacks);
+
+    NBTTagList nbttaglist = new NBTTagList();
+
+    for (int i = 0; i < this.codeItemStacks.length; ++i)
+    {
+      if (this.codeItemStacks[i] != null)
+      {
+        NBTTagCompound nbttagcompound = new NBTTagCompound();
+        nbttagcompound.setByte("Slot", (byte)i);
+        this.codeItemStacks[i].writeToNBT(nbttagcompound);
+        nbttaglist.appendTag(nbttagcompound);
+      }
+    }
+
+    c.setTag("Items", nbttaglist);
 
     return c;
   }
 
   @Override
   public void update() {
-    if (world.isRemote) {
+    if (worldObj.isRemote) {
       return;
     }
 
-    if (world.getTotalWorldTime() % 2 != 0) {
+    if (worldObj.getTotalWorldTime() % 2 != 0) {
       return;
     }
 
@@ -107,19 +145,19 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     if (prevIsInactive != isInactive) {
       prevIsInactive = isInactive;
       int priority = -1;
-      world.updateBlockTick(pos, BlockMinecoprocessor.INSTANCE, 0, priority);
+      worldObj.updateBlockTick(pos, BlockMinecoprocessor.INSTANCE, 0, priority);
     }
 
     if (prevIsHot != processor.isHot()) {
       prevIsHot = processor.isHot();
       int priority = -1;
-      world.updateBlockTick(pos, BlockMinecoprocessor.INSTANCE, 0, priority);
+      worldObj.updateBlockTick(pos, BlockMinecoprocessor.INSTANCE, 0, priority);
     }
 
     if (!loaded) {
       Processor.reset(prevPortValues);
       prevPortsRegister = 0x0f;
-      BlockMinecoprocessor.INSTANCE.updateInputPorts(world, pos, world.getBlockState(pos));
+      BlockMinecoprocessor.INSTANCE.updateInputPorts(worldObj, pos, worldObj.getBlockState(pos));
       loaded = true;
     }
 
@@ -129,7 +167,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     }
 
     if (prevPortsRegister != processor.getRegisters()[Register.PORTS.ordinal()]) {
-      BlockMinecoprocessor.INSTANCE.updateInputPorts(world, pos, world.getBlockState(pos));
+      BlockMinecoprocessor.INSTANCE.updateInputPorts(worldObj, pos, worldObj.getBlockState(pos));
       prevPortsRegister = processor.getRegisters()[Register.PORTS.ordinal()];
     }
   }
@@ -159,7 +197,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
     if (isInOutputMode(ports, portIndex) && prevPortValues[portIndex] != curVal) {
       prevPortValues[portIndex] = curVal;
-      BlockMinecoprocessor.INSTANCE.onPortChange(world, pos, world.getBlockState(pos), portIndex);
+      BlockMinecoprocessor.INSTANCE.onPortChange(worldObj, pos, worldObj.getBlockState(pos), portIndex);
       return true;
     }
     return false;
@@ -244,7 +282,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   }
 
   public void reset() {
-    if (world.isRemote) {
+    if (worldObj.isRemote) {
       return;
     }
     processor.reset();
@@ -256,7 +294,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
   @Override
   public ItemStack getStackInSlot(int index) {
-    return index >= 0 && index < codeItemStacks.size() ? (ItemStack) codeItemStacks.get(index) : ItemStack.EMPTY;
+    return index >= 0 && index < getSizeInventory() ? codeItemStacks[index] : null;
   }
 
   @Override
@@ -277,9 +315,9 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
       return;
     }
 
-    codeItemStacks.set(index, stack);
+    codeItemStacks[index] = stack;
 
-    if (stack.isEmpty()) {
+    if (stack == null) {
       unloadBook();
     } else {
       loadBook(stack);
@@ -290,7 +328,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   }
 
   private void unloadBook() {
-    if (world.isRemote) {
+    if (worldObj.isRemote) {
       return;
     }
     processor.load(null);
@@ -299,7 +337,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   }
 
   private void loadBook(ItemStack stack) {
-    if (world.isRemote) {
+    if (worldObj.isRemote) {
       return;
     }
 
@@ -329,8 +367,8 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   }
 
   @Override
-  public boolean isUsableByPlayer(EntityPlayer player) {
-    return world.getTileEntity(pos) != this ? false : player.getDistanceSq((double) pos.getX() + 0.5D, (double) pos.getY() + 0.5D, (double) pos.getZ() + 0.5D) <= 64.0D;
+  public boolean isUseableByPlayer(EntityPlayer player) {
+    return worldObj.getTileEntity(pos) != this ? false : player.getDistanceSq((double) pos.getX() + 0.5D, (double) pos.getY() + 0.5D, (double) pos.getZ() + 0.5D) <= 64.0D;
   }
 
   @Override
@@ -384,23 +422,23 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
   @Override
   public int getSizeInventory() {
-    return codeItemStacks.size();
+    return 1;
   }
-
+/*
   @Override
   public boolean isEmpty() {
     for (ItemStack itemstack : codeItemStacks) {
-      if (!itemstack.isEmpty()) {
+      if (itemstack != null) {
         return false;
       }
     }
 
     return true;
   }
-
+*/
   @Override
   public void clear() {
-    codeItemStacks.clear();
+    codeItemStacks = new ItemStack[getSizeInventory()];
     markDirty();
   }
 

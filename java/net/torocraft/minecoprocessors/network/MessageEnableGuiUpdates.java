@@ -66,7 +66,7 @@ public class MessageEnableGuiUpdates implements IMessage {
     @Override
     public void run() {
       try {
-        TileEntityMinecoprocessor mp = (TileEntityMinecoprocessor) player.world.getTileEntity(message.pos);
+        TileEntityMinecoprocessor mp = (TileEntityMinecoprocessor) player.worldObj.getTileEntity(message.pos);
         mp.enablePlayerGuiUpdates(player, message.enable);
       } catch (Exception e) {
         e.printStackTrace();
