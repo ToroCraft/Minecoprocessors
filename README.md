@@ -9,8 +9,11 @@ Increase the redstone possibilities and learn assembly programming at the same t
 ![Redstone Processor Recipe](http://i.imgur.com/KUacMFg.png)
 
 
-[Getting Started](https://github.com/ToroCraft/Minecoprocessors/wiki/Getting-Started)
+### [Getting Started](https://github.com/ToroCraft/Minecoprocessors/wiki/Getting-Started)
 
+### [Processor Details](https://github.com/ToroCraft/Minecoprocessors/wiki/Processor-Details)
+
+### [Programs for Common Circuits](https://github.com/ToroCraft/Minecoprocessors/wiki/Programs-for-Common-Circuits)
 
 ## Development Environment Setup
 Download the desired version of Forge MDK from https://files.minecraftforge.net/ and unzip the MDK into a new directory. After the MDK is unzipped, clone this repository into the `src` directory as `main`. Then you will need to either copy or link the `build.gradle` from the repository to the root of the MDK, replacing the original one. 
