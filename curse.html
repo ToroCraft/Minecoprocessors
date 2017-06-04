@@ -3,18 +3,19 @@
 
 <h1>Minecoprocessors</h1>
 <p>
-  Increase the redstone possibilities and learn assembly programming at the same time with the Minecoprocessors Minecraft Mod! The Minecoprocessors Mod adds a redstone processor block that can be programed similar to a real microprocessor.  The redstone processor block is styled to look and operate like the other redstone blocks in the game.
+  Increase the redstone possibilities and learn assembly programming at the same time with the Minecoprocessors Minecraft Mod! 
+  The Minecoprocessors Mod adds a redstone processor block that can be programed similar to a real microprocessor.  
+  The redstone processor block is styled to look and operate like the other redstone blocks in the game.
 </p>
 
 <h2>Recipe</h2>
 
-
-<img title="Redstone Processor Recipe" src="http://i.imgur.com/KUacMFg.png" />
+<p><img title="Redstone Processor Recipe" src="http://i.imgur.com/KUacMFg.png" /></p>
 
 <h2>Getting Started</h2>
 
 <p>
-  To get started you will need to craft a [Book and Quill](http://minecraft.gamepedia.com/Book_and_Quill).  
+  To get started you will need to craft a <a href="http://minecraft.gamepedia.com/Book_and_Quill">Book and Quill</a>.  
   The Book and Quill can then be used to write an assembly program which can then be loaded into a redstone processor.  
 </p>
 
@@ -22,7 +23,7 @@
   Using a Book and Quill write the following program.
 </p>
 
-<pre>
+<pre class="codeStyle">
 mov ports, 0010b
 start:
 cmp pb, 1
@@ -37,154 +38,165 @@ jmp start
 </pre>
 
 <p>
-  This program creates a <b>pulse extender</b> when loaded into a redstone processor. Once the processor detects that the back port is powered, the processor will power the front port for a period of time relative to the number stored in the `c` register on line 6.  The front port will be powered for just over 80 redstone ticks. The ticks are higher than 40 because there are two instructions per iteration and a couple setup commands. Every instruction requires one redstone tick to process.  After that period of time has elapsed, the processor will stop powering the front port and wait for the next redstone signal to the back port.
+  This program creates a <b>pulse extender</b> when loaded into a redstone processor. 
+  Once the processor detects that the back port is powered, 
+  the processor will power the front port for a period of time relative to the number stored in the <b><i class="codeStyle">c</i></b> register on line 6.  
+  The front port will be powered for just over 80 redstone ticks. 
+  The ticks are higher than 40 because there are two instructions per iteration and a couple setup commands. 
+  Every instruction requires one redstone tick to process.  
+  After that period of time has elapsed, the processor will stop powering the front port and wait for the next redstone signal to the back port.
 </p>
 
-<img title="Redstone Program in Book and Quill" src="http://i.imgur.com/p616ssf.png" />
+<p><img title="Redstone Program in Book and Quill" src="http://i.imgur.com/p616ssf.png" /></p>
 
 <p>
-  Next you will need to craft a redstone processor using one [redstone block](http://minecraft.gamepedia.com/Block_of_Redstone), four [redstone comparators](http://minecraft.gamepedia.com/Redstone_Comparator) and four [redstone torches](http://minecraft.gamepedia.com/Redstone_Torch).  When placing the redstone processor, the front port will be placed facing away from the player, similar to redstone repeaters and comparators.  Right click the processor to open up the processor’s GUI.  The current status of the processor is shown in the GUI along with an inventory slot to place the book and quill containing your program.
+  Next you will need to craft a redstone processor using one <a href="http://minecraft.gamepedia.com/Block_of_Redstone">redstone block</a>, 
+  four <a href="http://minecraft.gamepedia.com/Redstone_Comparator">redstone comparators</a> and four <a href="http://minecraft.gamepedia.com/Redstone_Torch">redstone torches</a>.  
+  When placing the redstone processor, the front port will be placed facing away from the player, similar to redstone repeaters and comparators.  
+  Right click the processor to open up the processor’s GUI.  
+  The current status of the processor is shown in the GUI along with an inventory slot to place the book and quill containing your program.
 </p>
 
 <p>
-  You might want to read through the [Book and Quill](http://minecraft.gamepedia.com/Book_and_Quill) wiki to see what Minecraft offers.
-  The books can be named in an [anvil](http://minecraft.gamepedia.com/Anvil) and signed to make them read only.
+  You might want to read through the <a href="http://minecraft.gamepedia.com/Book_and_Quill">Book and Quill</a> wiki to see what Minecraft offers.
+  The books can be named in an <a href="http://minecraft.gamepedia.com/Anvil">anvil</a> and signed to make them read only.
   Once a book and quill is signed, you can also copy them which could be a useful feature.
   However, you will most likely want to write your programs outside of Minecraft as book and quills do not allow the cursor to be moved away from the last character.
   Also, if you are having trouble copying and pasting a program into a book and quill, make sure it is small enough to fit onto one page.
   If the program doesn't fit on one page, nothing will happen when you try to paste it into the book and quill.
 </p>
 
-<img title="Redstone Processor GUI" src="http://i.imgur.com/kBOYQS4.png" />
+<p><img title="Redstone Processor GUI" src="http://i.imgur.com/kBOYQS4.png" /></p>
 
 <p>
-  The redstone processor will start executing your program immediately after placing the book and quill with your program into the GUI.  After the program is loaded the processor can now be used in your redstone circuits just like any other redstone block.
+  The redstone processor will start executing your program immediately after placing the book and quill with your program into the GUI.  
+  After the program is loaded the processor can now be used in your redstone circuits just like any other redstone block.
 </p>
 
 <h3>Code Explanation</h3>
 
-<pre>
+<pre class="codeStyle">
 mov ports, 0010b
 </pre>
 
 <p>
-The first line uses the `mov` instruction to move the value `0010b` into the `ports` register.
+The first line uses the <b><i class="codeStyle">mov</i></b> instruction to move the value <b><i class="codeStyle">0010b</i></b> into the <b><i class="codeStyle">ports</i></b> register.
 This line will switch all of the ports into output mode except for the back port which will be
 set as an input.
 </p>
 
 <p>
-Refer to the [I/O Ports](#io-ports) for more information about the ports setup.
-The value `0010b` is the number 2 expressed in binary as denoted by the`b` at the end.
+Refer to the I/O Ports for more information about the ports setup.
+The value <b><i class="codeStyle">0010b</i></b> is the number 2 expressed in binary as denoted by the <b><i class="codeStyle">b</i></b> at the end.
 Binary is used here to make it easier to see which bit are on or off, however writing this line as
-`mov ports, 2` would yield the same effect.
+<b><i class="codeStyle">mov ports, 2</i></b> would yield the same effect.
 </p>
 
-<pre>
+<pre class="codeStyle">
 start:
 </pre>
 
 <p>
 The next line adds a label.  Labels are not actual instructions but instead are markers providing an
 easy way to jump to a line.  Labels can be any word containing only letters, numbers and underscores.
-The colon (`:`) at the end of the line denotes the line as a label.  
+The colon (<b><i class="codeStyle">:</i></b>) at the end of the line denotes the line as a label.  
 </p>
 
-<pre>
+<pre class="codeStyle">
 cmp pb, 1
 </pre>
 
 <p>
-The next line uses the `cmp` instruction to check if the back port `pb` is on `1`.
-The `cmp` instruction works like the `sub` (subtract) instruction, however it doesn't overwrite the values in the registers.
-It is important to note that the `pb` and all other port registers are one byte registers,
+The next line uses the <b><i class="codeStyle">cmp</i></b> instruction to check if the back port <b><i class="codeStyle">pb</i></b> is on <b><i class="codeStyle">1</i></b>.
+The <b><i class="codeStyle">cmp</i></b> instruction works like the <b><i class="codeStyle">sub</i></b> (subtract) instruction, however it doesn't overwrite the values in the registers.
+It is important to note that the <b><i class="codeStyle">pb</i></b> and all other port registers are one byte registers,
 but only the least significant bit is used to determine the redstone power for that port.  That means
-`0101b`, `0001b`, `1` and `15` will all power the ports since all of those numbers have the same
+<b><i class="codeStyle">0101b</i></b>, <b><i class="codeStyle">0001b</i></b>, <b><i class="codeStyle">1</i></b> and <b><i class="codeStyle">15</i></b> will all power the ports since all of those numbers have the same
 value in the least significant bit.  Also, the only way to read read redstone values from a port register 
 is to set the port as an input port as we did in the first line of the program.
 </p>
 
-<pre>
+<pre class="codeStyle">
 jnz start
 </pre>
 
 <p>
-The `jnz` instruction will jump to the specified label if the last command did not result in a zero. 
-For this program we are checking if back port is off or on.  If the back port is on, the `cmp` instruction
-would have yielded a zero and this jump would not take place, otherwise the program would jump back the the `start`
+The <b><i class="codeStyle">jnz</i></b> instruction will jump to the specified label if the last command did not result in a zero. 
+For this program we are checking if back port is off or on.  If the back port is on, the <b><i class="codeStyle">cmp</i></b> instruction
+would have yielded a zero and this jump would not take place, otherwise the program would jump back the the <b><i class="codeStyle">start</i></b>
 label and start running the previous commands again.  These last three lines form a loop so that the program will only progress
-further once the back port `pb` of the processor is powered on.
+further once the back port <b><i class="codeStyle">pb</i></b> of the processor is powered on.
 </p>
 
 <p>
-There are currently two other useful jump commands: `jmp` (always jump) and `jz` (only jump if the previous instruction resulted in a zero).
+There are currently two other useful jump commands: <b><i class="codeStyle">jmp</i></b> (always jump) and <b><i class="codeStyle">jz</i></b> (only jump if the previous instruction resulted in a zero).
 </p>
 
-<pre>
+<pre class="codeStyle">
 mov pf, 1
 </pre>
 
 <p>
 Once the back port detects a redstone power signal the loop will be broken and following line will be executed. 
-This line moves `1` into the front port register `pf` which will power the front port.
+This line moves <b><i class="codeStyle">1</i></b> into the front port register <b><i class="codeStyle">pf</i></b> which will power the front port.
 </p>
 
-<pre>
+<pre class="codeStyle">
 mov c, 40
 </pre>
 
 <p>
-Then we setup for a delay by moving `40` in the `c` register.  
-The `c` register is commonly used to hold a count although any register could be used for this purpose.
+Then we setup for a delay by moving <b><i class="codeStyle">40</i></b> in the <b><i class="codeStyle">c</i></b> register.  
+The <b><i class="codeStyle">c</i></b> register is commonly used to hold a count although any register could be used for this purpose.
 The delay of this circuit can easily be adjusted by changing this number.
 </p>
 
-<pre>
+<pre class="codeStyle">
 loop:
 </pre>
 
 <p>
-Then we define a new label called `loop`.
+Then we define a new label called <b><i class="codeStyle">loop</i></b>.
 </p>
 
-<pre>
+<pre class="codeStyle">
 dec c
 </pre>
 
 <p>
-Next we decrement the value in the `c` register using the `dec` instruction.
-The `dec` instruction is a shorthand version of `sub c, 1` which will subtract 1 from the value in the `c` register.
+Next we decrement the value in the <b><i class="codeStyle">c</i></b> register using the <b><i class="codeStyle">dec</i></b> instruction.
+The <b><i class="codeStyle">dec</i></b> instruction is a shorthand version of <b><i class="codeStyle">sub c, 1</i></b> which will subtract 1 from the value in the <b><i class="codeStyle">c</i></b> register.
 </p>
 
-<pre>
+<pre class="codeStyle">
 jnz loop
 </pre>
 
 <p>
-The `jnz` instruction is again used to form a loop with the previous two lines.  
-This loop will continue until the the c register is zero, causing the `jnz` instruction to move to the next line instead of jumping to the `loop` label.
+The <b><i class="codeStyle">jnz</i></b> instruction is again used to form a loop with the previous two lines.  
+This loop will continue until the the c register is zero, causing the <b><i class="codeStyle">jnz</i></b> instruction to move to the next line instead of jumping to the <b><i class="codeStyle">loop</i></b> label.
 </p>
 
-<pre>
+<pre class="codeStyle">
 mov pf, 0
 </pre>
 
 <p>
-After the delay is finished, `0` is moved into the `pf` register causing the processor to stop powering the front port.
+After the delay is finished, <b><i class="codeStyle">0</i></b> is moved into the <b><i class="codeStyle">pf</i></b> register causing the processor to stop powering the front port.
 </p>
 
-<pre>
+<pre class="codeStyle">
 jmp start
 </pre>
 
 <p>
-  Finally, the `jmp` command is used to do a non-conditional jump to the `start` label to repeat the entire process.
+  Finally, the <b><i class="codeStyle">jmp</i></b> command is used to do a non-conditional jump to the <b><i class="codeStyle">start</i></b> label to repeat the entire process.
 </p>
 
 <h2>Registers</h2>
 
 <p>
-  The redstone processor has four one byte general purpose [registers](https://en.wikipedia.org/wiki/Processor_register): 
+  The redstone processor has four one byte general purpose <a href="https://en.wikipedia.org/wiki/Processor_register">registers</a>: 
 </p>
 
 <ul>
@@ -212,7 +224,7 @@ Only the least significant bit is used when decided to power or not power the re
 
 <h3>I/O Ports</h3>
 <p>
-  There is one additional register, `ports`, that is used to set mode of the ports. There are three modes that the ports can be set to, input, output or reset.
+  There is one additional register, <b><i class="codeStyle">ports</i></b>, that is used to set mode of the ports. There are three modes that the ports can be set to, input, output or reset.
 </p>
 
 <h4>Port Register Bit Mapping</h4>
@@ -285,14 +297,14 @@ Only the least significant bit is used when decided to power or not power the re
   The book and quill can only have 14 lines per page with a limited space for each line.
   It can hold up to 50 pages, however, allow larger programs to be written when split up onto different pages.
   While all pages are merged together when a book and quill is loaded into a redstone processor, 
-  it is a good idea to treat each page separately and reference them as subroutines using using the `call` and `ret` instructions.
+  it is a good idea to treat each page separately and reference them as subroutines using using the <b><i class="codeStyle">call</i></b> and <b><i class="codeStyle">ret</i></b> instructions.
 </p>
 
 <h2>Programs for Common Circuits</h2>
 
 
 <h3>Repeater</h3>
-<pre>
+<pre class="codeStyle">
 mov ports, 0010b
 start:
 mov pf, pb
@@ -300,7 +312,7 @@ jmp start
 </pre>
 
 <h3>3 Input AND Gate</h3>
-<pre>
+<pre class="codeStyle">
 mov ports, 1110b
 start:
 mov a, pb
@@ -311,7 +323,7 @@ jmp start
 </pre>
 
 <h3>Dispenser Double-Pulser</h3>
-<pre>
+<pre class="codeStyle">
 mov ports, 0010b
 start:
 cmp pb, 0
@@ -327,7 +339,7 @@ jmp start
 </pre>
 
 <h3>Enabled-clock Pulse Multiplier</h3>
-<pre>
+<pre class="codeStyle">
 mov ports, 0010b
 start:
 cmp pb, 0
