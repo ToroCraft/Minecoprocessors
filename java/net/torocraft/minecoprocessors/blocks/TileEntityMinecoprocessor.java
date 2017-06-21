@@ -1,5 +1,8 @@
 package net.torocraft.minecoprocessors.blocks;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -313,9 +316,20 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
       return;
     }
 
+    boolean signed = stack.getTagCompound().hasKey("author");
+    JsonParser parser = null;
+
     StringBuilder code = new StringBuilder();
     for (int i = 0; i < pages.tagCount(); ++i) {
-      code.append(pages.getStringTagAt(i));
+      if (signed) {
+        if(parser == null){
+          parser = new JsonParser();
+        }
+        JsonObject o = parser.parse(pages.getStringTagAt(i)).getAsJsonObject();
+        code.append(o.get("text").getAsString());
+      } else {
+        code.append(pages.getStringTagAt(i));
+      }
       code.append("\n");
     }
     processor.load(code.toString());
