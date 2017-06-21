@@ -16,17 +16,17 @@ public class ScaledGuiButton extends GuiButton {
   }
 
   @Override
-  public void drawButton(Minecraft mc, int mouseX, int mouseY) {
+  public void drawButton(Minecraft mc, int mouseX, int mouseY, float partialTicks) {
     if (!visible) {
       return;
     }
 
-    int xScaled = xPosition * 2;
-    int yScaled = yPosition * 2;
+    int xScaled = x * 2;
+    int yScaled = y * 2;
     int widthScaled = width * 2;
     int heightScaled = height * 2;
 
-    hovered = mouseX >= xPosition && mouseY >= yPosition && mouseX < xPosition + width && mouseY < yPosition + height;
+    hovered = mouseX >= x && mouseY >= y && mouseX < x + width && mouseY < y + height;
 
     mc.getTextureManager().bindTexture(BUTTON_TEXTURES);
     GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
@@ -53,7 +53,7 @@ public class ScaledGuiButton extends GuiButton {
       color = 16777120;
     }
 
-    FontRenderer fr = mc.fontRendererObj;
+    FontRenderer fr = mc.fontRenderer;
     drawCenteredString(fr, displayString, xScaled + widthScaled / 2, yScaled + (heightScaled - 8) / 2, color);
 
     GlStateManager.popMatrix();

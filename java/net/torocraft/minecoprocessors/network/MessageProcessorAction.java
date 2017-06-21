@@ -51,7 +51,7 @@ public class MessageProcessorAction implements IMessage {
       if (message.action == null) {
         return null;
       }
-      final EntityPlayerMP payer = ctx.getServerHandler().playerEntity;
+      final EntityPlayerMP payer = ctx.getServerHandler().player;
       payer.getServerWorld().addScheduledTask(new Worker(payer, message));
       return null;
     }

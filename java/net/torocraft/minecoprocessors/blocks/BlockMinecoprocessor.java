@@ -64,9 +64,8 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
     ITEM_INSTANCE.setRegistryName(resourceName);
     GameRegistry.register(ITEM_INSTANCE);
 
-    GameRegistry.addRecipe(new ItemStack(BlockMinecoprocessor.INSTANCE), "tct", "crc", "tct", 't', Blocks.REDSTONE_TORCH, 'r', Blocks.REDSTONE_BLOCK, 'c', Items.COMPARATOR
-
-    );
+    //FIXME update recipe to 1.12
+    //GameRegistry.addRecipe(new ItemStack(BlockMinecoprocessor.INSTANCE), "tct", "crc", "tct", 't', Blocks.REDSTONE_TORCH, 'r', Blocks.REDSTONE_BLOCK, 'c', Items.COMPARATOR);
   }
 
   @SideOnly(Side.CLIENT)

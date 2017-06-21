@@ -149,8 +149,8 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
       color = 0xff0000;
     }
 
-    fontRendererObj.drawString(label, x - 4, y - 14, 0x404040);
-    fontRendererObj.drawString(value, x, y, color);
+    fontRenderer.drawString(label, x - 4, y - 14, 0x404040);
+    fontRenderer.drawString(value, x, y, color);
   }
 
   private void drawRegister(Register register, int x, int y, int mouseX, int mouseY) {
@@ -216,10 +216,10 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   }
 
   private void drawLabeledValue(String label, String value, int x, int y, Integer flashColor, int mouseX, int mouseY) {
-    int wLabel = fontRendererObj.getStringWidth(label) / 2;
+    int wLabel = fontRenderer.getStringWidth(label) / 2;
     int wValue = 0;
     if (value != null) {
-      wValue = fontRendererObj.getStringWidth(value) / 2;
+      wValue = fontRenderer.getStringWidth(value) / 2;
     }
 
     int color = 0xffffff;
@@ -228,25 +228,25 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
       color = flashColor;
     }
 
-    fontRendererObj.drawString(label, x - wLabel, y - 14, 0x404040);
+    fontRenderer.drawString(label, x - wLabel, y - 14, 0x404040);
     if (value != null) {
-      fontRendererObj.drawString(value, x - wValue, y, color);
+      fontRenderer.drawString(value, x - wValue, y, color);
     }
   }
 
   private void centered(String s, float x, float y) {
-    int xs = (int) x - fontRendererObj.getStringWidth(s) / 2;
-    int ys = (int) y - fontRendererObj.FONT_HEIGHT / 2;
-    fontRendererObj.drawString(s, xs, ys, 0xffffff);
+    int xs = (int) x - fontRenderer.getStringWidth(s) / 2;
+    int ys = (int) y - fontRenderer.FONT_HEIGHT / 2;
+    fontRenderer.drawString(s, xs, ys, 0xffffff);
   }
 
   private void drawInventoryTitle() {
-    fontRendererObj.drawString(playerInventory.getDisplayName().getUnformattedText(), 8, ySize - 96 + 2, 4210752);
+    fontRenderer.drawString(playerInventory.getDisplayName().getUnformattedText(), 8, ySize - 96 + 2, 4210752);
   }
 
   private void drawGuiTitle() {
     String s = minecoprocessor.getDisplayName().getUnformattedText();
-    fontRendererObj.drawString(s, xSize / 2 - fontRendererObj.getStringWidth(s) / 2, 6, 4210752);
+    fontRenderer.drawString(s, xSize / 2 - fontRenderer.getStringWidth(s) / 2, 6, 4210752);
   }
 
   @Override

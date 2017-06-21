@@ -47,7 +47,7 @@ public class MessageEnableGuiUpdates implements IMessage {
       if (message.pos == null) {
         return null;
       }
-      final EntityPlayerMP payer = ctx.getServerHandler().playerEntity;
+      final EntityPlayerMP payer = ctx.getServerHandler().player;
       payer.getServerWorld().addScheduledTask(new Worker(payer, message));
       return null;
     }
