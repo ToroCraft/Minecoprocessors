@@ -1,14 +1,13 @@
 package net.torocraft.minecoprocessors.blocks;
 
-import java.util.ArrayList;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ItemStackHelper;
@@ -351,11 +350,23 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
       return;
     }
 
+    boolean signed = stack.getTagCompound().hasKey("author");
+    JsonParser parser = null;
+
     StringBuilder code = new StringBuilder();
     for (int i = 0; i < pages.tagCount(); ++i) {
-      code.append(pages.getStringTagAt(i));
+      if (signed) {
+        if(parser == null){
+          parser = new JsonParser();
+        }
+        JsonObject o = parser.parse(pages.getStringTagAt(i)).getAsJsonObject();
+        code.append(o.get("text").getAsString());
+      } else {
+        code.append(pages.getStringTagAt(i));
+      }
       code.append("\n");
     }
+
     processor.load(code.toString());
     loaded = false;
     updatePlayers();
@@ -424,18 +435,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   public int getSizeInventory() {
     return 1;
   }
-/*
-  @Override
-  public boolean isEmpty() {
-    for (ItemStack itemstack : codeItemStacks) {
-      if (itemstack != null) {
-        return false;
-      }
-    }
 
-    return true;
-  }
-*/
   @Override
   public void clear() {
     codeItemStacks = new ItemStack[getSizeInventory()];
