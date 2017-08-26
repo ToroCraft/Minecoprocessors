@@ -13,16 +13,16 @@ import net.torocraft.minecoprocessors.network.MessageProcessorUpdate;
 public class CommonProxy {
 
   public void preInit(FMLPreInitializationEvent e) {
-    BlockMinecoprocessor.init();
     int packetId = 0;
     MessageEnableGuiUpdates.init(packetId++);
     MessageProcessorUpdate.init(packetId++);
     MessageProcessorAction.init(packetId++);
+    TileEntityMinecoprocessor.init();
+    MinecoprocessorGuiHandler.init();
   }
 
   public void init(FMLInitializationEvent e) {
-    TileEntityMinecoprocessor.init();
-    MinecoprocessorGuiHandler.init();
+
   }
 
   public void postInit(FMLPostInitializationEvent e) {

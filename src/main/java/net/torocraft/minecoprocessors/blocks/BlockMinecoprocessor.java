@@ -33,14 +33,16 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
+import net.minecraftforge.event.RegistryEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.gui.MinecoprocessorGuiHandler;
 
-// smoke particles
-
+@Mod.EventBusSubscriber
 public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEntityProvider {
 
   protected static final AxisAlignedBB AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 0.1875D, 1.0D);
@@ -52,18 +54,22 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 
   public static BlockMinecoprocessor INSTANCE;
   public static Item ITEM_INSTANCE;
+  private static ResourceLocation REGISTRY_NAME = new ResourceLocation(Minecoprocessors.MODID, NAME);
 
-  public static void init() {
-    INSTANCE = new BlockMinecoprocessor();
-    ResourceLocation resourceName = new ResourceLocation(Minecoprocessors.MODID, NAME);
-
-    INSTANCE.setRegistryName(resourceName);
-    GameRegistry.register(INSTANCE);
-
-    ITEM_INSTANCE = new ItemBlock(INSTANCE);
-    ITEM_INSTANCE.setRegistryName(resourceName);
-    GameRegistry.register(ITEM_INSTANCE);
+  @SubscribeEvent
+  public static void initBlock(final RegistryEvent.Register<Block> event) {
+    INSTANCE = (BlockMinecoprocessor) new BlockMinecoprocessor().setUnlocalizedName(NAME);
+    INSTANCE.setRegistryName(REGISTRY_NAME);
+    event.getRegistry().register(INSTANCE);
   }
+
+  @SubscribeEvent
+  public static void initItem(final RegistryEvent.Register<Item> event) {
+    ITEM_INSTANCE = new ItemBlock(INSTANCE);
+    ITEM_INSTANCE.setRegistryName(REGISTRY_NAME);
+    event.getRegistry().register(ITEM_INSTANCE);
+  }
+
 
   @SideOnly(Side.CLIENT)
   public void randomDisplayTick(IBlockState state, World world, BlockPos pos, Random rand) {
