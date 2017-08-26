@@ -298,9 +298,23 @@ public class Processor implements IProcessor {
       return false;
     }
     step = false;
-    process();
+
+    try {
+      process();
+    }catch (Exception e) {
+      error = getInstructionString();
+      fault = true;
+    }
     //prevTemp = getTemp();
     return true;
+  }
+
+  private String getInstructionString() {
+    try{
+      return InstructionUtil.compileLine(instruction, labels, ip);
+    } catch(Exception e) {
+      return "??";
+    }
   }
 
   private void process() {
