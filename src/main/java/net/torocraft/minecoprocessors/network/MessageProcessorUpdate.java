@@ -16,6 +16,7 @@ import net.torocraft.minecoprocessors.gui.GuiMinecoprocessor;
 public class MessageProcessorUpdate implements IMessage {
 
   public BlockPos pos;
+  public String name;
   public NBTTagCompound processorData;
 
   public static void init(int packetId) {
@@ -26,21 +27,24 @@ public class MessageProcessorUpdate implements IMessage {
 
   }
 
-  public MessageProcessorUpdate(NBTTagCompound processorData, BlockPos pos) {
+  public MessageProcessorUpdate(NBTTagCompound processorData, BlockPos pos, String name) {
     this.processorData = processorData;
     this.pos = pos;
+    this.name = name;
   }
 
   @Override
   public void fromBytes(ByteBuf buf) {
     processorData = ByteBufUtils.readTag(buf);
     pos = BlockPos.fromLong(buf.readLong());
+    name = ByteBufUtils.readUTF8String(buf);
   }
 
   @Override
   public void toBytes(ByteBuf buf) {
     ByteBufUtils.writeTag(buf, processorData);
     buf.writeLong(pos.toLong());
+    ByteBufUtils.writeUTF8String(buf, name);
   }
 
   public static class Handler implements IMessageHandler<MessageProcessorUpdate, IMessage> {
@@ -66,7 +70,7 @@ public class MessageProcessorUpdate implements IMessage {
             return;
           }
 
-          GuiMinecoprocessor.INSTANCE.updateData(message.processorData);
+          GuiMinecoprocessor.INSTANCE.updateData(message.processorData, message.name);
         }
       });
 

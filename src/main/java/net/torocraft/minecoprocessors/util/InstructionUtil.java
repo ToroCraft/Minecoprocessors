@@ -432,7 +432,7 @@ public class InstructionUtil {
     assert e != null;
   }
 
-  private static List<String> regex(final String pattern, final String screen, int flags) {
+  public static List<String> regex(final String pattern, final String screen, int flags) {
     Pattern p = Pattern.compile(pattern, flags);
     Matcher m = p.matcher(screen);
     List<String> l = new ArrayList<>();

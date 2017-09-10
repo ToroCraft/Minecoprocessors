@@ -49,11 +49,12 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     Minecoprocessors.NETWORK.sendToServer(new MessageEnableGuiUpdates(minecoprocessor.getPos(), true));
   }
 
-  public void updateData(NBTTagCompound processorData) {
+  public void updateData(NBTTagCompound processorData, String name) {
     if (processor == null) {
       processor = new Processor();
     }
     processor.readFromNBT(processorData);
+    minecoprocessor.setName(I18n.format(name));
   }
 
   @Override

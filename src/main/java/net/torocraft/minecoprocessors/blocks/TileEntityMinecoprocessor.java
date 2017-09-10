@@ -4,8 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
+import java.util.regex.Pattern;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -30,6 +32,7 @@ import net.torocraft.minecoprocessors.network.MessageProcessorUpdate;
 import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
 import net.torocraft.minecoprocessors.util.ByteUtil;
+import net.torocraft.minecoprocessors.util.InstructionUtil;
 
 public class TileEntityMinecoprocessor extends TileEntity implements ITickable, IInventory {
 
@@ -143,7 +146,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     }
 
     for (EntityPlayerMP player : playersToUpdate) {
-      Minecoprocessors.NETWORK.sendTo(new MessageProcessorUpdate(processor.writeToNBT(), pos), player);
+      Minecoprocessors.NETWORK.sendTo(new MessageProcessorUpdate(processor.writeToNBT(), pos, getName()), player);
     }
   }
 
@@ -298,6 +301,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     }
     processor.load(null);
     loaded = false;
+    setName(null);
     updatePlayers();
   }
 
@@ -332,9 +336,36 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
       }
       code.append("\n");
     }
+    updateNameFromCode(code.toString());
     processor.load(code.toString());
     loaded = false;
     updatePlayers();
+  }
+
+  private void updateNameFromCode(String code) {
+    String name = readNameFromHeader(code);
+    if (name != null && !name.isEmpty()) {
+      setName(name);
+    } else {
+      setName(null);
+    }
+  }
+
+  public static String readNameFromHeader(String code) {
+    try {
+      String firstLine = code.split("\\n")[0];
+      List<String> nameSearch = InstructionUtil.regex("^\\s*;\\s*(.*)", firstLine, Pattern.CASE_INSENSITIVE);
+      if (nameSearch.size() != 1) {
+        return null;
+      }
+      String name = nameSearch.get(0);
+      if (name != null && !name.isEmpty()) {
+        return name;
+      }
+    }catch(Exception ignore){
+
+    }
+    return null;
   }
 
   @Override

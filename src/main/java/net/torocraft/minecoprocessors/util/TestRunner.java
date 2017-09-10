@@ -1,6 +1,7 @@
 package net.torocraft.minecoprocessors.util;
 
 import net.torocraft.minecoprocessors.blocks.BlockMinecoprocessor;
+import net.torocraft.minecoprocessors.blocks.TileEntityMinecoprocessor;
 import net.torocraft.minecoprocessors.processor.Processor;
 
 /**
@@ -17,7 +18,17 @@ public class TestRunner {
     BlockMinecoprocessor.test();
     //runProcessor();
     runFaultRet();
+    testNameParser();
     System.out.println("pass!");
+  }
+
+  private static void testNameParser() {
+    assert "test title".equals(TileEntityMinecoprocessor.readNameFromHeader("; test title \n foo code \n \n"));
+    assert TileEntityMinecoprocessor.readNameFromHeader(";  \n foo code \n \n") == null;
+    assert TileEntityMinecoprocessor.readNameFromHeader(null) == null;
+    assert TileEntityMinecoprocessor.readNameFromHeader("") == null;
+    assert TileEntityMinecoprocessor.readNameFromHeader(" ") == null;
+    assert TileEntityMinecoprocessor.readNameFromHeader("asdf") == null;
   }
 
   private static void testProcessor() {
