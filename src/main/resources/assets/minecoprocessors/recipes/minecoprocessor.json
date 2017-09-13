@@ -19,6 +19,7 @@
     }
   },
   "result": {
-    "item": "minecoprocessors:minecoprocessor"
+    "item": "minecoprocessors:minecoprocessor",
+    "data": 0
   }
 }

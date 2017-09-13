@@ -1,7 +1,6 @@
 package net.torocraft.minecoprocessors.blocks;
 
 import java.util.Random;
-
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockRedstoneDiode;
 import net.minecraft.block.BlockRedstoneWire;
@@ -11,22 +10,21 @@ import net.minecraft.block.properties.PropertyBool;
 import net.minecraft.block.state.BlockStateContainer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.block.model.ModelBakery;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
-import net.minecraft.init.Items;
 import net.minecraft.inventory.InventoryHelper;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumBlockRenderType;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
-import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.Mirror;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Rotation;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -36,67 +34,77 @@ import net.minecraft.world.World;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.registry.GameRegistry;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.gui.MinecoprocessorGuiHandler;
+import net.torocraft.minecoprocessors.items.IMetaBlockName;
+import net.torocraft.minecoprocessors.items.ItemBlockMeta;
 
 @Mod.EventBusSubscriber
-public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEntityProvider {
+public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEntityProvider, IMetaBlockName {
 
   protected static final AxisAlignedBB AABB = new AxisAlignedBB(0.0D, 0.0D, 0.0D, 1.0D, 0.1875D, 1.0D);
 
   public static final PropertyBool ACTIVE = PropertyBool.create("active");
-  public static final PropertyBool HOT = PropertyBool.create("hot");
+  public static final PropertyBool OVERCLOCKED = PropertyBool.create("overclocked");
 
   public static final String NAME = "minecoprocessor";
 
-  public static BlockMinecoprocessor INSTANCE;
-  public static Item ITEM_INSTANCE;
   private static ResourceLocation REGISTRY_NAME = new ResourceLocation(Minecoprocessors.MODID, NAME);
+  private static ResourceLocation REGISTRY_OVERCLOCKED_NAME = new ResourceLocation(Minecoprocessors.MODID, NAME + "_overclocked");
+
+  public static BlockMinecoprocessor INSTANCE = (BlockMinecoprocessor) new BlockMinecoprocessor()
+      .setUnlocalizedName(NAME)
+      .setRegistryName(REGISTRY_NAME);
+
+  public static ItemBlockMeta ITEM_INSTANCE = (ItemBlockMeta) new ItemBlockMeta(INSTANCE).
+      setRegistryName(REGISTRY_NAME);
 
   @SubscribeEvent
   public static void initBlock(final RegistryEvent.Register<Block> event) {
-    INSTANCE = (BlockMinecoprocessor) new BlockMinecoprocessor().setUnlocalizedName(NAME);
-    INSTANCE.setRegistryName(REGISTRY_NAME);
     event.getRegistry().register(INSTANCE);
   }
 
   @SubscribeEvent
   public static void initItem(final RegistryEvent.Register<Item> event) {
-    ITEM_INSTANCE = new ItemBlock(INSTANCE);
-    ITEM_INSTANCE.setRegistryName(REGISTRY_NAME);
     event.getRegistry().register(ITEM_INSTANCE);
   }
 
-
-  @SideOnly(Side.CLIENT)
-  public void randomDisplayTick(IBlockState state, World world, BlockPos pos, Random rand) {
-    smokeTick(state, world, pos, rand);
+  public static void preRegisterRenders() {
+    ModelBakery.registerItemVariants(ITEM_INSTANCE, REGISTRY_NAME, REGISTRY_OVERCLOCKED_NAME);
   }
 
-  private void smokeTick(IBlockState state, World world, BlockPos pos, Random rand) {
-    boolean isHot = ((Boolean) state.getValue(HOT)).booleanValue();
-    if (isHot) {
-      double x, y, z;
-      for (int i = 0; i < rand.nextInt(4) + 4; i++) {
-        x = (double) ((float) pos.getX() + 0.5F) + (double) (rand.nextFloat() - 0.5F) * 0.5D;
-        y = (double) ((float) pos.getY() + 0.4F) + (double) (rand.nextFloat() - 0.5F) * 0.2D;
-        z = (double) ((float) pos.getZ() + 0.5F) + (double) (rand.nextFloat() - 0.5F) * 0.5D;
-        world.spawnParticle(EnumParticleTypes.SMOKE_NORMAL, x, y, z, 0.0D, 0.0D, 0.0D, new int[0]);
-      }
-    }
+  public static void registerRenders() {
+    registerRender(REGISTRY_NAME.toString(), 0);
+    registerRender(REGISTRY_OVERCLOCKED_NAME.toString(), 4);
+  }
+
+  private static void registerRender(String file, int meta) {
+    ModelResourceLocation model = new ModelResourceLocation(file, "inventory");
+    Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(ITEM_INSTANCE, meta, model);
   }
 
   @Override
-  public IBlockState getStateForPlacement(World worldIn, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ, int meta, EntityLivingBase placer) {
-    return super.getStateForPlacement(worldIn, pos, facing, hitX, hitY, hitZ, meta, placer).withProperty(HOT, Boolean.valueOf(false)).withProperty(ACTIVE, Boolean.valueOf(false));
+  public int damageDropped(IBlockState state) {
+    return getMetaFromState(state) & 4;
+  }
+
+  @Override
+  public void getSubBlocks(CreativeTabs itemIn, NonNullList<ItemStack> items) {
+    items.add(new ItemStack(ITEM_INSTANCE));
+    items.add(new ItemStack(ITEM_INSTANCE, 1, 4));
+  }
+
+  @Override
+  public IBlockState getStateForPlacement(World worldIn, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ, int meta,
+      EntityLivingBase placer) {
+    return super.getStateForPlacement(worldIn, pos, facing, hitX, hitY, hitZ, meta, placer)
+        .withProperty(OVERCLOCKED, Boolean.valueOf((meta & 4) > 0))
+        .withProperty(ACTIVE, Boolean.valueOf(false));
   }
 
   @Override
   protected BlockStateContainer createBlockState() {
-    return new BlockStateContainer(this, new IProperty[] {FACING, ACTIVE, HOT});
+    return new BlockStateContainer(this, new IProperty[]{FACING, ACTIVE, OVERCLOCKED});
   }
 
   protected IBlockState getPoweredState(IBlockState unpoweredState) {
@@ -113,8 +121,10 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
    * Convert the given metadata into a BlockState for this Block
    */
   public IBlockState getStateFromMeta(int meta) {
-    return this.getDefaultState().withProperty(FACING, EnumFacing.getHorizontal(meta)).withProperty(ACTIVE, Boolean.valueOf((meta & 8) > 0)).withProperty(HOT,
-        Boolean.valueOf((meta & 4) > 0));
+    IBlockState state = getDefaultState()
+        .withProperty(FACING, EnumFacing.getHorizontal(meta)).withProperty(ACTIVE, Boolean.valueOf((meta & 8) > 0))
+        .withProperty(OVERCLOCKED, Boolean.valueOf((meta & 4) > 0));
+    return state;
   }
 
   /**
@@ -128,10 +138,9 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
       i |= 8;
     }
 
-    if (((Boolean) state.getValue(HOT)).booleanValue()) {
+    if (((Boolean) state.getValue(OVERCLOCKED)).booleanValue()) {
       i |= 4;
     }
-
     return i;
   }
 
@@ -145,17 +154,12 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
     return EnumBlockRenderType.MODEL;
   }
 
-  public static void registerRenders() {
-    ModelResourceLocation model = new ModelResourceLocation(Minecoprocessors.MODID + ":" + NAME, "inventory");
-    Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(ITEM_INSTANCE, 0, model);
-  }
-
   public BlockMinecoprocessor() {
     super(true);
     this.setDefaultState(
-        this.blockState.getBaseState().withProperty(FACING, EnumFacing.NORTH).withProperty(HOT, Boolean.valueOf(false)).withProperty(ACTIVE, Boolean.valueOf(false)));
+        this.blockState.getBaseState().withProperty(FACING, EnumFacing.NORTH).withProperty(OVERCLOCKED, Boolean.valueOf(false))
+            .withProperty(ACTIVE, Boolean.valueOf(false)));
     setCreativeTab(CreativeTabs.REDSTONE);
-    setUnlocalizedName(NAME);
   }
 
   @Override
@@ -180,7 +184,8 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 
   protected void notifyNeighborsOnSide(World worldIn, BlockPos pos, IBlockState state, EnumFacing side) {
     BlockPos neighborPos = pos.offset(side);
-    if (net.minecraftforge.event.ForgeEventFactory.onNeighborNotify(worldIn, pos, worldIn.getBlockState(pos), java.util.EnumSet.of(side), false).isCanceled()) {
+    if (net.minecraftforge.event.ForgeEventFactory.onNeighborNotify(worldIn, pos, worldIn.getBlockState(pos), java.util.EnumSet.of(side), false)
+        .isCanceled()) {
       return;
     }
     worldIn.neighborChanged(neighborPos, this, pos);
@@ -211,21 +216,9 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
       changed = true;
     }
 
-    boolean blockIsHot = ((Boolean) state.getValue(HOT)).booleanValue();
-    boolean processorIsHot = te.getProcessor().isHot();
-
-    if (blockIsHot && !processorIsHot) {
-      state = state.withProperty(HOT, Boolean.valueOf(false));
-      changed = true;
-    } else if (!blockIsHot && processorIsHot) {
-      state = state.withProperty(HOT, Boolean.valueOf(true));
-      changed = true;
-    }
-
     if (changed) {
       world.setBlockState(pos, state, 2);
     }
-
   }
 
   public void updateInputPorts(World world, BlockPos pos, IBlockState state) {
@@ -253,7 +246,7 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
     BlockPos blockpos = pos;
     IBlockState adjacentState = worldIn.getBlockState(blockpos);
     Block block = adjacentState.getBlock();
-    
+
     int i = worldIn.getRedstonePower(blockpos, enumfacing);
 
     if (i >= 15) {
@@ -329,8 +322,8 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   @Override
   public int getWeakPower(IBlockState blockState, IBlockAccess blockAccess, BlockPos pos, EnumFacing side) {
     TileEntityMinecoprocessor te = ((TileEntityMinecoprocessor) blockAccess.getTileEntity(pos));
-    
-    if(te.getWorld().isRemote){
+
+    if (te.getWorld().isRemote) {
       return 0;
     }
 
@@ -375,10 +368,12 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   }
 
   @Override
-  public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ) {
+  public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, EnumFacing facing, float hitX,
+      float hitY, float hitZ) {
 
     if (!world.isRemote) {
-      player.openGui(Minecoprocessors.INSTANCE, MinecoprocessorGuiHandler.MINECOPROCESSOR_ENTITY_GUI, world, pos.getX(), pos.getY(), pos.getZ());
+      player.openGui(Minecoprocessors.INSTANCE, MinecoprocessorGuiHandler.MINECOPROCESSOR_ENTITY_GUI, world, pos.getX(), pos.getY(),
+          pos.getZ());
     }
 
     return true;
@@ -387,16 +382,6 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   @Override
   protected int getDelay(IBlockState state) {
     return 0;
-  }
-
-  @Override
-  public Item getItemDropped(IBlockState state, Random rand, int fortune) {
-    return ITEM_INSTANCE;
-  }
-
-  @Override
-  public ItemStack getItem(World worldIn, BlockPos pos, IBlockState state) {
-    return new ItemStack(ITEM_INSTANCE);
   }
 
   @Override
@@ -460,4 +445,8 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
     assert rotateFacing(EnumFacing.WEST, -2).equals(EnumFacing.EAST);
   }
 
+  @Override
+  public String getSpecialName(ItemStack stack) {
+    return getUnlocalizedName() + ((stack.getItemDamage() & 4) == 0 ? "" : "_overclocked");
+  }
 }
