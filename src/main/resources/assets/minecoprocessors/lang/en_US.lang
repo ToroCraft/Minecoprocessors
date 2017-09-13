@@ -1,4 +1,5 @@
 tile.minecoprocessor.name=Redstone Processor
+tile.minecoprocessor_overclocked.name=Overclocked Processor
 container.minecoprocessor=Redstone Processor
 gui.button.reset=reset
 gui.button.sleep=sleep
