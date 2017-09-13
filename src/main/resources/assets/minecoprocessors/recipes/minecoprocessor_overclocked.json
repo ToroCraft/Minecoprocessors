@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " d ",
+    "dmd",
+    " d "
+  ],
+  "key": {
+    "d": {
+      "item": "minecraft:diamond"
+    },
+
+    "m": {
+      "item": "minecoprocessors:minecoprocessor",
+      "data": 0
+    }
+  },
+  "result": {
+    "item": "minecoprocessors:minecoprocessor",
+    "data": 4
+  }
+}

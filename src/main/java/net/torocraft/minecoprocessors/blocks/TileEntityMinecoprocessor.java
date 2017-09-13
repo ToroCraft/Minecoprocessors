@@ -54,13 +54,14 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
   private boolean prevIsInactive;
   private boolean prevIsHot;
+  private boolean overClocked;
 
   public static void init() {
     GameRegistry.registerTileEntity(TileEntityMinecoprocessor.class, NAME);
   }
 
   public void onLoad() {
-    //processor.wake();
+    overClocked = world.getBlockState(pos).getValue(BlockMinecoprocessor.OVERCLOCKED);
   }
 
   @Override
@@ -104,7 +105,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
       return;
     }
 
-    if (world.getTotalWorldTime() % 2 != 0) {
+    if (!overClocked && world.getTotalWorldTime() % 2 != 0) {
       return;
     }
 
@@ -115,13 +116,13 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
       int priority = -1;
       world.updateBlockTick(pos, BlockMinecoprocessor.INSTANCE, 0, priority);
     }
-
+/*
     if (prevIsHot != processor.isHot()) {
       prevIsHot = processor.isHot();
       int priority = -1;
       world.updateBlockTick(pos, BlockMinecoprocessor.INSTANCE, 0, priority);
     }
-
+*/
     if (!loaded) {
       Processor.reset(prevPortValues);
       prevPortsRegister = 0x0f;
