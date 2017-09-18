@@ -28,6 +28,7 @@ import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.torocraft.minecoprocessors.Minecoprocessors;
+import net.torocraft.minecoprocessors.items.ItemBookCode;
 import net.torocraft.minecoprocessors.network.MessageProcessorUpdate;
 import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
@@ -325,17 +326,23 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     JsonParser parser = null;
 
     StringBuilder code = new StringBuilder();
-    for (int i = 0; i < pages.tagCount(); ++i) {
-      if (signed) {
-        if(parser == null){
-          parser = new JsonParser();
-        }
-        JsonObject o = parser.parse(pages.getStringTagAt(i)).getAsJsonObject();
-        code.append(o.get("text").getAsString());
-      } else {
-        code.append(pages.getStringTagAt(i));
+    if(ItemBookCode.isBookCode(stack)) {
+      for(String s : ItemBookCode.Data.loadFromStack(stack).getProgram()) {
+        code.append(s).append("\n");
       }
-      code.append("\n");
+    } else {
+      for (int i = 0; i < pages.tagCount(); ++i) {
+        if (signed) {
+          if(parser == null){
+            parser = new JsonParser();
+          }
+          JsonObject o = parser.parse(pages.getStringTagAt(i)).getAsJsonObject();
+          code.append(o.get("text").getAsString());
+        } else {
+          code.append(pages.getStringTagAt(i));
+        }
+        code.append("\n");
+      }
     }
     updateNameFromCode(code.toString());
     processor.load(code.toString());
@@ -386,7 +393,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   public void closeInventory(EntityPlayer player) {}
 
   public static boolean isBook(Item item) {
-    return item == Items.WRITABLE_BOOK || item == Items.WRITTEN_BOOK;
+    return item == ItemBookCode.INSTANCE || item == Items.WRITABLE_BOOK || item == Items.WRITTEN_BOOK;
   }
 
   @Override
