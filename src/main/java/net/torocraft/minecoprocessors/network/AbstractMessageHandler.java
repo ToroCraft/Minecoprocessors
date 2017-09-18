@@ -1,3 +1,9 @@
+/*
+ * Code and resources for our Code Book were taken from TIS-3D
+ * (https://github.com/MightyPirates/TIS-3D), released under the MIT license
+ * by Florian "Sangar" Nücke.
+ */
+
 package net.torocraft.minecoprocessors.network;
 
 import net.minecraft.util.IThreadListener;
