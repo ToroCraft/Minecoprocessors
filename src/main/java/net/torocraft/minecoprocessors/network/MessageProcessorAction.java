@@ -86,7 +86,7 @@ public class MessageProcessorAction implements IMessage {
         }
 
       } catch (Exception e) {
-        e.printStackTrace();
+        Minecoprocessors.proxy.handleUnexpectedException(e);
       }
     }
 
