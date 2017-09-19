@@ -297,23 +297,9 @@ public class Processor implements IProcessor {
       return false;
     }
     step = false;
-
-    try {
-      process();
-    }catch (Exception e) {
-      error = getInstructionString();
-      fault = true;
-    }
+    process();
     //prevTemp = getTemp();
     return true;
-  }
-
-  private String getInstructionString() {
-    try{
-      return InstructionUtil.compileLine(instruction, labels, ip);
-    } catch(Exception e) {
-      return "??";
-    }
   }
 
   private void process() {
@@ -543,6 +529,11 @@ public class Processor implements IProcessor {
   }
 
   private void processRet() {
+    if (sp <= 1) {
+      fault = true;
+      error = "ret";
+      return;
+    }
     ip = ByteUtil.setByteInShort(ip, stack[--sp], 1);
     ip = ByteUtil.setByteInShort(ip, stack[--sp], 0);
   }
