@@ -1,11 +1,24 @@
 package net.torocraft.minecoprocessors;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.torocraft.minecoprocessors.blocks.BlockMinecoprocessor;
 
 public class ClientProxy extends CommonProxy {
+
+  private boolean toldPlayerAboutException = false;
+
+  @Override
+  public void handleUnexpectedException(Exception e) {
+    super.handleUnexpectedException(e);
+    if(!toldPlayerAboutException) {
+      toldPlayerAboutException = true;
+      Minecraft.getMinecraft().ingameGUI.getChatGUI().printChatMessage(new TextComponentTranslation("minecoprocessors.error_chat"));
+    }
+  }
 
   @Override
   public void preInit(FMLPreInitializationEvent e) {

@@ -370,8 +370,8 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
       if (name != null && !name.isEmpty()) {
         return name;
       }
-    }catch(Exception ignore){
-
+    } catch (Exception e){
+      Minecoprocessors.proxy.handleUnexpectedException(e);
     }
     return null;
   }

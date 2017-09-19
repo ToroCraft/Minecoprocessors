@@ -69,7 +69,7 @@ public class MessageEnableGuiUpdates implements IMessage {
         TileEntityMinecoprocessor mp = (TileEntityMinecoprocessor) player.world.getTileEntity(message.pos);
         mp.enablePlayerGuiUpdates(player, message.enable);
       } catch (Exception e) {
-        e.printStackTrace();
+        Minecoprocessors.proxy.handleUnexpectedException(e);
       }
     }
 
