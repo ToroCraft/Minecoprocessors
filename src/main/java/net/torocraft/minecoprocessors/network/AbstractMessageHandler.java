@@ -39,7 +39,7 @@ public abstract class AbstractMessageHandler<T extends IMessage> implements IMes
     // --------------------------------------------------------------------- //
 
     @Nullable
-    protected World getWorld(final int dimension, final MessageContext context) {
+    protected static World getWorld(final int dimension, final MessageContext context) {
         switch (context.side) {
             case CLIENT:
                 return getWorldClient(dimension);

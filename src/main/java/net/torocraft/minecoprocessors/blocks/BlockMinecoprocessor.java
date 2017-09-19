@@ -107,19 +107,22 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
     return new BlockStateContainer(this, new IProperty[]{FACING, ACTIVE, OVERCLOCKED});
   }
 
+  @Override
   protected IBlockState getPoweredState(IBlockState unpoweredState) {
     return getUnpoweredState(unpoweredState);
   }
 
+  @Override
   protected IBlockState getUnpoweredState(IBlockState poweredState) {
-    Boolean obool = (Boolean) poweredState.getValue(ACTIVE);
-    EnumFacing enumfacing = (EnumFacing) poweredState.getValue(FACING);
+    Boolean obool = poweredState.getValue(ACTIVE);
+    EnumFacing enumfacing = poweredState.getValue(FACING);
     return INSTANCE.getDefaultState().withProperty(FACING, enumfacing).withProperty(ACTIVE, obool);
   }
 
   /**
    * Convert the given metadata into a BlockState for this Block
    */
+  @Override
   public IBlockState getStateFromMeta(int meta) {
     IBlockState state = getDefaultState()
         .withProperty(FACING, EnumFacing.getHorizontal(meta)).withProperty(ACTIVE, Boolean.valueOf((meta & 8) > 0))
@@ -130,15 +133,15 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   /**
    * Convert the BlockState into the correct metadata value
    */
+  @Override
   public int getMetaFromState(IBlockState state) {
-    int i = 0;
-    i = i | ((EnumFacing) state.getValue(FACING)).getHorizontalIndex();
+    int i = state.getValue(FACING).getHorizontalIndex();
 
-    if (((Boolean) state.getValue(ACTIVE)).booleanValue()) {
+    if (state.getValue(ACTIVE)) {
       i |= 8;
     }
 
-    if (((Boolean) state.getValue(OVERCLOCKED)).booleanValue()) {
+    if (state.getValue(OVERCLOCKED)) {
       i |= 4;
     }
     return i;
@@ -179,17 +182,17 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   }
 
   public void onPortChange(World worldIn, BlockPos pos, IBlockState state, int portIndex) {
-    this.notifyNeighborsOnSide(worldIn, pos, state, convertPortIndexToFacing((EnumFacing) state.getValue(FACING).getOpposite(), portIndex));
+    this.notifyNeighborsOnSide(worldIn, pos, convertPortIndexToFacing(state.getValue(FACING).getOpposite(), portIndex));
   }
 
-  protected void notifyNeighborsOnSide(World worldIn, BlockPos pos, IBlockState state, EnumFacing side) {
+  protected void notifyNeighborsOnSide(World worldIn, BlockPos pos, EnumFacing side) {
     BlockPos neighborPos = pos.offset(side);
     if (net.minecraftforge.event.ForgeEventFactory.onNeighborNotify(worldIn, pos, worldIn.getBlockState(pos), java.util.EnumSet.of(side), false)
         .isCanceled()) {
       return;
     }
     worldIn.neighborChanged(neighborPos, this, pos);
-    worldIn.notifyNeighborsOfStateExcept(neighborPos, this, (EnumFacing) side.getOpposite());
+    worldIn.notifyNeighborsOfStateExcept(neighborPos, this, side.getOpposite());
   }
 
   @Override
@@ -205,7 +208,7 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 
     boolean changed = false;
 
-    boolean blockActive = ((Boolean) state.getValue(ACTIVE)).booleanValue();
+    boolean blockActive = state.getValue(ACTIVE);
     boolean processorActive = !te.getProcessor().isWait() && !te.getProcessor().isFault();
 
     if (blockActive && !processorActive) {
@@ -221,11 +224,11 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
     }
   }
 
-  public void updateInputPorts(World world, BlockPos pos, IBlockState state) {
+  public static void updateInputPorts(World world, BlockPos pos, IBlockState state) {
     if (world.isRemote) {
       return;
     }
-    EnumFacing facing = (EnumFacing) state.getValue(FACING).getOpposite();
+    EnumFacing facing = state.getValue(FACING).getOpposite();
 
     boolean e = calculateInputStrength(world, pos.offset(EnumFacing.EAST), EnumFacing.EAST) > 0;
     boolean w = calculateInputStrength(world, pos.offset(EnumFacing.WEST), EnumFacing.WEST) > 0;
@@ -242,7 +245,7 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
     ((TileEntityMinecoprocessor) world.getTileEntity(pos)).updateInputPorts(values);
   }
 
-  protected int calculateInputStrength(World worldIn, BlockPos pos, EnumFacing enumfacing) {
+  protected static int calculateInputStrength(World worldIn, BlockPos pos, EnumFacing enumfacing) {
     BlockPos blockpos = pos;
     IBlockState adjacentState = worldIn.getBlockState(blockpos);
     Block block = adjacentState.getBlock();
@@ -256,7 +259,7 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
     int redstoneWirePower = 0;
 
     if (block == Blocks.REDSTONE_WIRE) {
-      redstoneWirePower = ((Integer) adjacentState.getValue(BlockRedstoneWire.POWER)).intValue();
+      redstoneWirePower = adjacentState.getValue(BlockRedstoneWire.POWER);
     }
 
     return Math.max(i, redstoneWirePower);
@@ -315,12 +318,12 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   }
 
   @Override
-  public int getStrongPower(IBlockState blockState, IBlockAccess blockAccess, BlockPos pos, EnumFacing side) {
-    return blockState.getWeakPower(blockAccess, pos, side);
+  public int getStrongPower(IBlockState state, IBlockAccess blockAccess, BlockPos pos, EnumFacing side) {
+    return state.getWeakPower(blockAccess, pos, side);
   }
 
   @Override
-  public int getWeakPower(IBlockState blockState, IBlockAccess blockAccess, BlockPos pos, EnumFacing side) {
+  public int getWeakPower(IBlockState state, IBlockAccess blockAccess, BlockPos pos, EnumFacing side) {
     TileEntityMinecoprocessor te = ((TileEntityMinecoprocessor) blockAccess.getTileEntity(pos));
 
     if (te.getWorld().isRemote) {
@@ -329,42 +332,42 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 
     boolean powered = false;
 
-    powered = powered || (isFrontPort(blockState, side) && te.getFrontPortSignal());
-    powered = powered || (isBackPort(blockState, side) && te.getBackPortSignal());
-    powered = powered || (isLeftPort(blockState, side) && te.getLeftPortSignal());
-    powered = powered || (isRightPort(blockState, side) && te.getRightPortSignal());
+    powered = powered || (isFrontPort(state, side) && te.getFrontPortSignal());
+    powered = powered || (isBackPort(state, side) && te.getBackPortSignal());
+    powered = powered || (isLeftPort(state, side) && te.getLeftPortSignal());
+    powered = powered || (isRightPort(state, side) && te.getRightPortSignal());
 
-    return powered ? getActiveSignal(blockAccess, pos, blockState) : 0;
+    return powered ? getActiveSignal(blockAccess, pos, state) : 0;
   }
 
-  public boolean isFrontPort(IBlockState blockState, EnumFacing side) {
+  public static boolean isFrontPort(IBlockState blockState, EnumFacing side) {
     return blockState.getValue(FACING) == side;
   }
 
-  public boolean isBackPort(IBlockState blockState, EnumFacing side) {
+  public static boolean isBackPort(IBlockState blockState, EnumFacing side) {
     return blockState.getValue(FACING).getOpposite() == side;
   }
 
-  public boolean isLeftPort(IBlockState blockState, EnumFacing side) {
+  public static boolean isLeftPort(IBlockState blockState, EnumFacing side) {
     return blockState.getValue(FACING).rotateYCCW() == side;
   }
 
-  public boolean isRightPort(IBlockState blockState, EnumFacing side) {
+  public static boolean isRightPort(IBlockState blockState, EnumFacing side) {
     return blockState.getValue(FACING).rotateY() == side;
   }
 
-  public BlockPos getFrontBlock(IBlockAccess blockAccess, BlockPos pos) {
-    return pos.offset((EnumFacing) blockAccess.getBlockState(pos).getValue(FACING));
+  public static BlockPos getFrontBlock(IBlockAccess blockAccess, BlockPos pos) {
+    return pos.offset(blockAccess.getBlockState(pos).getValue(FACING));
   }
 
   @Override
   public IBlockState withRotation(IBlockState state, Rotation rot) {
-    return state.withProperty(FACING, rot.rotate((EnumFacing) state.getValue(FACING)));
+    return state.withProperty(FACING, rot.rotate(state.getValue(FACING)));
   }
 
   @Override
   public IBlockState withMirror(IBlockState state, Mirror mirrorIn) {
-    return state.withRotation(mirrorIn.toRotation((EnumFacing) state.getValue(FACING)));
+    return state.withRotation(mirrorIn.toRotation(state.getValue(FACING)));
   }
 
   @Override

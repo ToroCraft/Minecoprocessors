@@ -14,7 +14,7 @@ public class MessageProcessorAction implements IMessage {
 
   public enum Action {
     RESET, PAUSE, STEP
-  };
+  }
 
   public Action action;
   public BlockPos pos;

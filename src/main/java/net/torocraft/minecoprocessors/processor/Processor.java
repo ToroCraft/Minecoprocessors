@@ -13,7 +13,6 @@ import net.torocraft.minecoprocessors.util.ParseException;
 
 //latch pins
 
-@SuppressWarnings({"rawtypes", "unchecked"})
 public class Processor implements IProcessor {
 
   private static final String NBT_STACK = "stack";
@@ -27,7 +26,7 @@ public class Processor implements IProcessor {
    * program
    */
   private List<Label> labels = new ArrayList<>();
-  private List program = new ArrayList();
+  private List<byte[]> program = new ArrayList<>();
 
   /*
    * state
@@ -198,7 +197,7 @@ public class Processor implements IProcessor {
       error = null;
     }
 
-    program = new ArrayList();
+    program = new ArrayList<>();
     NBTTagList programTag = (NBTTagList) c.getTag(NBT_PROGRAM);
     if (programTag != null) {
       for (int i = 0; i < programTag.tagCount(); i++) {
@@ -328,7 +327,7 @@ public class Processor implements IProcessor {
       ip = 0;
     }
 
-    instruction = (byte[]) program.get(ip);
+    instruction = program.get(ip);
 
     // System.out.println(pinchDump());
 
@@ -677,11 +676,11 @@ public class Processor implements IProcessor {
   }
 
   private void testOverflow(int z) {
-    overflow = z != (int) (byte) z;
+    overflow = z != (byte) z;
   }
 
   private void testOverflow(long z) {
-    overflow = z != (long) (byte) z;
+    overflow = z != (byte) z;
   }
 
   private byte getVariableOperand(int operandIndex) {
@@ -724,7 +723,7 @@ public class Processor implements IProcessor {
     testNbt();
   }
 
-  private void testCopyArray() {
+  private static void testCopyArray() {
     byte[] a = {1, 2, 3, 4, 5, 6};
     byte[] b = new byte[a.length];
     copy(b, a);
@@ -756,11 +755,11 @@ public class Processor implements IProcessor {
     assert labels.get(0).address == (short) 189;
     assert labels.get(0).name.equals("foobar");
     assert program.size() == 1;
-    byte[] instruction = (byte[]) program.get(0);
-    assert instruction[0] == 0x00;
-    assert instruction[1] == 0x01;
-    assert instruction[2] == 0x02;
-    assert instruction[3] == 0x03;
+    byte[] testInstruction = program.get(0);
+    assert testInstruction[0] == 0x00;
+    assert testInstruction[1] == 0x01;
+    assert testInstruction[2] == 0x02;
+    assert testInstruction[3] == 0x03;
     assert registers[0] == (byte) 0xee;
     assert registers[4] == (byte) 0xcc;
 
@@ -1104,14 +1103,14 @@ public class Processor implements IProcessor {
     return fault;
   }
 
-  private String pad(String s) {
+  private static String pad(String s) {
     if (s.length() == 1) {
       return "0" + s;
     }
     return s;
   }
 
-  private String fix(String s) {
+  private static String fix(String s) {
     if (s.length() > 2) {
       return s.substring(s.length() - 2, s.length());
     }
@@ -1176,7 +1175,7 @@ public class Processor implements IProcessor {
     return registers;
   }
 
-  public List getProgram() {
+  public List<byte[]> getProgram() {
     return program;
   }
 

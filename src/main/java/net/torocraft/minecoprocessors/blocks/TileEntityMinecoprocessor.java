@@ -1,6 +1,5 @@
 package net.torocraft.minecoprocessors.blocks;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.util.HashSet;
@@ -61,12 +60,13 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     GameRegistry.registerTileEntity(TileEntityMinecoprocessor.class, NAME);
   }
 
+  @Override
   public void onLoad() {
     overClocked = world.getBlockState(pos).getValue(BlockMinecoprocessor.OVERCLOCKED);
   }
 
   @Override
-  public boolean shouldRefresh(World world, BlockPos pos, IBlockState oldState, IBlockState newState) {
+  public boolean shouldRefresh(World worldIn, BlockPos blockPos, IBlockState oldState, IBlockState newState) {
     return BlockMinecoprocessor.INSTANCE != oldState.getBlock() || BlockMinecoprocessor.INSTANCE != newState.getBlock();
   }
 
@@ -127,7 +127,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     if (!loaded) {
       Processor.reset(prevPortValues);
       prevPortsRegister = 0x0f;
-      BlockMinecoprocessor.INSTANCE.updateInputPorts(world, pos, world.getBlockState(pos));
+      BlockMinecoprocessor.updateInputPorts(world, pos, world.getBlockState(pos));
       loaded = true;
     }
 
@@ -137,7 +137,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     }
 
     if (prevPortsRegister != processor.getRegisters()[Register.PORTS.ordinal()]) {
-      BlockMinecoprocessor.INSTANCE.updateInputPorts(world, pos, world.getBlockState(pos));
+      BlockMinecoprocessor.updateInputPorts(world, pos, world.getBlockState(pos));
       prevPortsRegister = processor.getRegisters()[Register.PORTS.ordinal()];
     }
   }
@@ -383,7 +383,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
   @Override
   public boolean isUsableByPlayer(EntityPlayer player) {
-    return world.getTileEntity(pos) != this ? false : player.getDistanceSq((double) pos.getX() + 0.5D, (double) pos.getY() + 0.5D, (double) pos.getZ() + 0.5D) <= 64.0D;
+    return world.getTileEntity(pos) == this && player.getDistanceSq(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D) <= 64.0D;
   }
 
   @Override

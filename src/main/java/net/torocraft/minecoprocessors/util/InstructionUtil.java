@@ -11,14 +11,13 @@ import net.torocraft.minecoprocessors.processor.Register;
 // which mean local? https://docs.oracle.com/cd/E19120-01/open.solaris/817-5477/esqaq/index.html
 
 
-@SuppressWarnings({"rawtypes", "unchecked"})
 public class InstructionUtil {
 
-  public static String compileFile(List instructions, List<Label> labels) {
+  public static String compileFile(List<byte[]> instructions, List<Label> labels) {
     StringBuilder file = new StringBuilder();
 
     for (short address = 0; address < instructions.size(); address++) {
-      file.append(compileLine((byte[]) instructions.get(address), labels, address));
+      file.append(compileLine(instructions.get(address), labels, address));
       file.append("\n");
     }
 
@@ -98,12 +97,12 @@ public class InstructionUtil {
     return line.toString();
   }
 
-  private static String lower(Enum e) {
+  private static String lower(Enum<?> e) {
     return e.toString().toLowerCase();
   }
 
-  public static List parseFile(String file, List<Label> labels) throws ParseException {
-    List instructions = new ArrayList<>();
+  public static List<byte[]> parseFile(String file, List<Label> labels) throws ParseException {
+    List<byte[]> instructions = new ArrayList<>();
 
     String[] lines = file.split("\\n\\r?");
 
@@ -597,7 +596,7 @@ public class InstructionUtil {
       file += "jmp test\n";
       List<Label> labels = new ArrayList<>();
 
-      List instructions = parseFile(file, labels);
+      List<byte[]> instructions = parseFile(file, labels);
 
       assert instructions.size() == 6;
       assert labels.size() == 4;
@@ -610,9 +609,9 @@ public class InstructionUtil {
       assert labels.get(2).name.equals("test2");
       assert labels.get(2).address == (short) 4;
 
-      assert InstructionCode.values()[((byte[]) instructions.get(0))[0]]
+      assert InstructionCode.values()[instructions.get(0)[0]]
           .equals(InstructionCode.CMP);
-      assert InstructionCode.values()[((byte[]) instructions.get(4))[0]]
+      assert InstructionCode.values()[instructions.get(4)[0]]
           .equals(InstructionCode.LOOP);
 
       String reCompiled = compileFile(instructions, labels);

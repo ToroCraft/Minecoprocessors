@@ -67,6 +67,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   /**
    * Draw the foreground layer for the GuiContainer (everything in front of the items)
    */
+  @Override
   protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
 
     GlStateManager.pushMatrix();
@@ -132,7 +133,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
 
     byte[] a = null;
     try {
-      a = (byte[]) processor.getProgram().get(processor.getIp());
+      a = processor.getProgram().get(processor.getIp());
     } catch (Exception e) {
       a = null;
     }
@@ -161,7 +162,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     drawLabeledValue(label, value, x, y, null, mouseX, mouseY);
   }
 
-  private String toHex(Byte b) {
+  private static String toHex(Byte b) {
     if (b == null) {
       return null;
     }
@@ -175,7 +176,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     return s;
   }
 
-  private String toHex(Short b) {
+  private static String toHex(Short b) {
     if (b == null) {
       return null;
     }
@@ -261,12 +262,12 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     int buttonId = 0;
     int x = 8 + guiLeft;
     int y = 34 + guiTop;
-    int width = 49;
-    int height = 10;
+    int buttonWidth = 49;
+    int buttonHeight = 10;
 
-    buttonReset = new ScaledGuiButton(buttonId++, x, y, width, height, I18n.format("gui.button.reset"));
-    buttonPause = new ScaledGuiButton(buttonId++, x, y + 11, width, height, I18n.format("gui.button.sleep"));
-    buttonStep = new ScaledGuiButton(buttonId++, x, y + 22, width, height, I18n.format("gui.button.step"));
+    buttonReset = new ScaledGuiButton(buttonId++, x, y, buttonWidth, buttonHeight, I18n.format("gui.button.reset"));
+    buttonPause = new ScaledGuiButton(buttonId++, x, y + 11, buttonWidth, buttonHeight, I18n.format("gui.button.sleep"));
+    buttonStep = new ScaledGuiButton(buttonId++, x, y + 22, buttonWidth, buttonHeight, I18n.format("gui.button.step"));
 
     buttonList.add(buttonReset);
     buttonList.add(buttonStep);
@@ -289,6 +290,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   /**
    * Draws the background layer of this container (behind the items).
    */
+  @Override
   protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
     GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
     this.mc.getTextureManager().bindTexture(BREWING_STAND_GUI_TEXTURES);
@@ -305,7 +307,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     int i1 = this.minecoprocessor.getField(0);
 
     if (i1 > 0) {
-      int j1 = (int) (28.0F * (1.0F - (float) i1 / 400.0F));
+      int j1 = (int) (28.0F * (1.0F - i1 / 400.0F));
 
       if (j1 > 0) {
         this.drawTexturedModalRect(i + 97, j + 16, 176, 0, 9, j1);
