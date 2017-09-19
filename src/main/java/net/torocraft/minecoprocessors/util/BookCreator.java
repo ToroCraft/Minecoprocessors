@@ -5,9 +5,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import javax.annotation.Nullable;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagString;
 import net.minecraft.util.text.ITextComponent;
@@ -38,78 +40,94 @@ public class BookCreator {
 
   @Nullable
   private static ItemStack loadBook(String name) throws IOException {
-    String path = PATH + name + ".txt";
-    InputStream is = BookCreator.class.getResourceAsStream(path);
-
-    if (is == null) {
-      System.out.println("Book file not found [" + path + "]");
-      return null;
-    }
-
     ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
-    BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
     String line;
     int lineNumber = 1;
-    NBTTagList pages = new NBTTagList();
-    String[] words;
-    StringBuilder page = new StringBuilder(256);
-
-    try {
-
-      while ((line = reader.readLine()) != null) {
-
-        line = line.trim();
-
-        if (lineNumber < 4 && line.length() == 0) {
-          continue;
-        }
-
-        if (lineNumber == 1) {
-          book.setTagInfo("title", new NBTTagString(line));
-        } else if (lineNumber == 2) {
-          book.setTagInfo("author", new NBTTagString(line));
-        } else {
-
-          if (line.length() == 0) {
-            page = writePage(pages, page);
-          }
-
-          words = line.split("\\s+");
-
-          for (String word : words) {
-            if (page.length() + word.length() > 255) {
-              page = writePage(pages, page);
-
-            } else if (page.length() > 0) {
-              page.append(" ");
-            }
-
-            page.append(word);
-          }
-
-        }
-
-        lineNumber++;
-      }
-
-      writePage(pages, page);
-
-    } catch (IndexOutOfBoundsException e) {
-      System.out.println(e.getMessage());
+    StringBuilder page = newPage();
+    BufferedReader reader = openBookReader(name);
+    while ((line = reader.readLine()) != null) {
+      page = processLine(lineNumber, line, page, book);
+      lineNumber++;
     }
-
-    book.setTagInfo("pages", pages);
-
+    writePage(book, page);
     return book;
   }
 
-  private static StringBuilder writePage(NBTTagList pages, StringBuilder page) {
+  private static BufferedReader openBookReader(String name) throws UnsupportedEncodingException {
+    String path = PATH + name + ".txt";
+    InputStream is = BookCreator.class.getResourceAsStream(path);
+    if (is == null) {
+     throw new IllegalArgumentException("Book file not found [" + path + "]");
+    }
+    return new BufferedReader(new InputStreamReader(is, "UTF-8"));
+  }
+
+  private static StringBuilder processLine(int lineNumber, String line, StringBuilder page, ItemStack book) {
+    line = line.trim();
+
+    if (lineNumber < 4 && line.length() == 0) {
+      return page;
+    }
+
+    if (lineNumber == 1) {
+      book.setTagInfo("title", new NBTTagString(line));
+    } else if (lineNumber == 2) {
+      book.setTagInfo("author", new NBTTagString(line));
+    } else {
+      page = processContentLine(line, page, book);
+    }
+
+    return page;
+  }
+
+  private static StringBuilder processContentLine(String line, StringBuilder page, ItemStack book) {
+    if (line.length() == 0) {
+      //writePage(book, page);
+      //page = newPage();
+    }
+
+    //TODO line limit on page, are these limits really needed?
+
+    String[] words = line.split("\\s+");
+
+    for (String word : words) {
+
+      if (page.length() + word.length() > 255) {
+        writePage(book, page);
+        page = newPage();
+
+      } else if (page.length() > 0) {
+        page.append(" ");
+      }
+
+      page.append(word);
+    }
+
+    return page;
+  }
+
+  private static void writePage(ItemStack book, StringBuilder page) {
+    NBTTagList pages = getPagesNbt(book);
     pages.appendTag(createPage(page.toString()));
-    page = new StringBuilder(256);
     if (pages.tagCount() >= 50) {
       throw new IndexOutOfBoundsException("out of book pages");
     }
-    return page;
+    book.setTagInfo("pages", pages);
+  }
+
+  private static NBTTagList getPagesNbt(ItemStack book) {
+    if (book.getTagCompound() == null) {
+      book.setTagCompound(new NBTTagCompound());
+    }
+    NBTTagList pages = book.getTagCompound().getTagList("pages", 8);
+    if (pages == null) {
+      pages = new NBTTagList();
+    }
+    return pages;
+  }
+
+  private static StringBuilder newPage() {
+    return new StringBuilder(256);
   }
 
   private static NBTTagString createPage(String page) {
