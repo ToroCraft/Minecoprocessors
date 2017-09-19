@@ -8,17 +8,22 @@ Minecoprocessors
         Manual
 
 ~~~
-§nGetting Started§r
-explain books and link to wiki
+§1Visit the Wiki§r
+
+For more information, visit the wiki:
+
+https://github.com/ToroCraft/Minecoprocessors/wiki
 ~~~
-§nInstructions§r
+§1Instructions§r
+
 §lMOV a, b§r Move
 §lPUSH a§r Push to Stack
 §lPOP a§r Pop from Stack
 §lNOP§r No Operation
 §lWFE§r Sleep (experimental)
 ~~~
-§nArithmetic Instructions§r
+§1Arithmetic Instructions§r
+
 §lADD a, b§r Add
 §lSUB a, b§r Subtract
 §lMUL a§r Multiply
@@ -26,7 +31,8 @@ explain books and link to wiki
 §lINC a§r Increment by 1
 §lDEC a§r Decrement by 1
 ~~~
-§nLogical Instructions§r
+§1Logical Instructions§r
+
 §lAND a, b§r Bitwise AND
 §lOR a, b§r Bitwise OR
 §lXOR a, b§r Bitwise XOR
@@ -34,7 +40,8 @@ explain books and link to wiki
 §lSHL a§r Shift Left
 §lSHR a§r Shift Right
 ~~~
-§nLoop Instructions§r
+§1Loop Instructions§r
+
 §lJMP label§r Jump
 §lJZ label§r Jump if Zero
 §lJNZ label§r not Zero
@@ -42,36 +49,66 @@ explain books and link to wiki
 §lRET§r Return
 §lCMP a, b§r Compare
 ~~~
-§nNumber Formats§r
+§1Number Formats§r
+
 §l-1§r two's complement
 §l0xff§r Hexadecimal
 §l0o377§r Octal
 §l11111111b§r Binary
 ~~~
-§nRegisters§r
+§1Registers§r
+
 The redstone processor has four one byte general purpose registers:
 §la b c d§r
 along with four port registers:
 §lpf pb pl pr§r
-which control the font, back, left and right ports respectively
+which control the font, back, left and right ports respectively.
 ~~~
-§nPorts§r
+§1Ports§r
+
 There is one additional register, §lports§r, that is used to set mode of the ports. There are three modes that the ports can be set to: input, output or reset.
 ~~~
 Put a zero value in corresponding low nibble bit to set a port as an output, or set it to one to use it as an input port.
 
 Set the corresponding bits in both the high and low nibble to use the port as a reset port.
 ~~~
-§nExample Ports Settings§r
-~~~
-§nFlags§r
+§1Flags§r
+
 §lZ§r Zero Flag
 §lC§r Carry Flag
 §lF§r Fault Flag
 §lS§r Sleep Flag
 ~~~
-§nRecipe§r
+
+ Example Programs
+
 ~~~
-§nOverclock Recipe§r
+§1Repeater§r
+
+mov ports, 0010b
+start:
+mov pf, pb
+jmp start
 ~~~
-§nExample Program§r
+§13 Input AND Gate§r
+
+mov ports, 1110b
+start:
+mov a, pb
+and a, pl
+and a, pr
+mov pf, a
+jmp start
+~~~
+§1Enabled-clock§r
+§1Pulse Multiplier§r
+
+mov ports, 0010b
+start:
+cmp pb, 0
+jz off
+not pf
+jmp start
+off:
+mov pf, 0
+jmp start
