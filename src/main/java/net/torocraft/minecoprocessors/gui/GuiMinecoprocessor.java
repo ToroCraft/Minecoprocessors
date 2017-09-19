@@ -21,6 +21,7 @@ import net.torocraft.minecoprocessors.network.MessageEnableGuiUpdates;
 import net.torocraft.minecoprocessors.network.MessageProcessorAction.Action;
 import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
+import net.torocraft.minecoprocessors.util.BookCreator;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
 
 // TODO mouse hovers
@@ -300,9 +301,8 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
       Minecoprocessors.NETWORK.sendToServer(new MessageProcessorAction(minecoprocessor.getPos(), Action.STEP));
     }
     if (button == buttonHelp) {
-      ItemStack stack = new ItemStack(Items.WRITTEN_BOOK);
-      // TODO add NBT content
-      this.mc.displayGuiScreen(new GuiScreenBook(mc.player, stack, false));
+      // TODO override the book GUI so that it returns the processor GUI when closed
+      this.mc.displayGuiScreen(new GuiScreenBook(mc.player, BookCreator.createBook("manual"), false));
     }
   }
 
