@@ -6,3 +6,4 @@ gui.button.reset=reset
 gui.button.sleep=sleep
 gui.button.step=step
 gui.button.wake=wake
+minecoprocessors.error_chat=An unexpected exception occurred in Minecoprocessors. This may cause severe problems and should be reported to the deveoper. Details have been logged.

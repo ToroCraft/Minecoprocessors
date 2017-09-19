@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.processor.InstructionCode;
 import net.torocraft.minecoprocessors.processor.Register;
 
@@ -306,15 +308,17 @@ public class InstructionUtil {
         }
       }
     } catch (Exception e) {
+      Minecoprocessors.proxy.handleUnexpectedException(e);
       throw new ParseException(line, "[" + label + "] is not a valid label", e);
     }
     throw new ParseException(line, "[" + label + "] has not been defined");
   }
 
   private static Register parseRegister(String line, String s) throws ParseException {
+    s = s.trim().toUpperCase();
     try {
-      return Register.valueOf(s.trim().toUpperCase());
-    } catch (Exception e) {
+      return Register.valueOf(s);
+    } catch (IllegalArgumentException e) {
       throw new ParseException(line, "[" + s + "] is not a valid register", e);
     }
   }
@@ -374,37 +378,39 @@ public class InstructionUtil {
     return (byte) i;
   }
 
-  private static int parseLiteralToInt(String line, String s) throws ParseException {
+  private static int parseInt(String s, int radix, String line) throws ParseException {
     try {
-      s = s.trim();
-      List<String> l;
-
-      l = regex("^([0-9-]+)d?$", s, Pattern.CASE_INSENSITIVE);
-      if (l.size() == 1) {
-        return Integer.parseInt(l.get(0), 10);
-      }
-
-      l = regex("^0o([0-7]+)$", s, Pattern.CASE_INSENSITIVE);
-      if (l.size() == 1) {
-        return Integer.parseInt(l.get(0), 8);
-      }
-
-      l = regex("^0x([0-9A-Fa-f]+)$", s, Pattern.CASE_INSENSITIVE);
-      if (l.size() == 1) {
-        return Integer.parseInt(l.get(0), 16);
-      }
-
-      l = regex("^([0-1]+)b$", s, Pattern.CASE_INSENSITIVE);
-      if (l.size() == 1) {
-        return Integer.parseInt(l.get(0), 2);
-      }
-
-      throw new ParseException(line, "invalid operand literal type [" + s + "]");
-    } catch (ParseException e) {
-      throw e;
-    } catch (Exception e) {
+      return Integer.parseInt(s, radix);
+    } catch (NumberFormatException e) {
       throw new ParseException(line, "[" + s + "] is not a valid operand literal", e);
     }
+  }
+
+  private static int parseLiteralToInt(String line, String s) throws ParseException {
+    s = s.trim();
+    List<String> l;
+
+    l = regex("^([0-9-]+)d?$", s, Pattern.CASE_INSENSITIVE);
+    if (l.size() == 1) {
+      return parseInt(l.get(0), 10, line);
+    }
+
+    l = regex("^0o([0-7]+)$", s, Pattern.CASE_INSENSITIVE);
+    if (l.size() == 1) {
+      return parseInt(l.get(0), 8, line);
+    }
+
+    l = regex("^0x([0-9A-Fa-f]+)$", s, Pattern.CASE_INSENSITIVE);
+    if (l.size() == 1) {
+      return parseInt(l.get(0), 16, line);
+    }
+
+    l = regex("^([0-1]+)b$", s, Pattern.CASE_INSENSITIVE);
+    if (l.size() == 1) {
+      return parseInt(l.get(0), 2, line);
+    }
+
+    throw new ParseException(line, "invalid operand literal type [" + s + "]");
   }
 
   private static void testParseLiteral() {
@@ -448,9 +454,10 @@ public class InstructionUtil {
   }
 
   private static InstructionCode parseInstructionCode(String line) throws ParseException {
+    line = line.toUpperCase().trim().split("\\s+")[0];
     try {
-      return InstructionCode.valueOf(line.toUpperCase().trim().split("\\s+")[0]);
-    } catch (Exception e) {
+      return InstructionCode.valueOf(line);
+    } catch (IllegalArgumentException e) {
       throw new ParseException(line, "invalid command", e);
     }
   }

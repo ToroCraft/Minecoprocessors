@@ -1,5 +1,7 @@
 package net.torocraft.minecoprocessors.gui;
 
+import java.util.List;
+
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
@@ -132,10 +134,16 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     String label = "NEXT";
 
     byte[] a = null;
-    try {
-      a = processor.getProgram().get(processor.getIp());
-    } catch (Exception e) {
-      a = null;
+    if(processor != null) {
+      try {
+        int ip = processor.getIp();
+        List<byte[]> program = processor.getProgram();
+        if(ip < program.size()) {
+          a = program.get(ip);
+        }
+      } catch (Exception e) {
+        Minecoprocessors.proxy.handleUnexpectedException(e);
+      }
     }
 
     int color = 0xffffff;

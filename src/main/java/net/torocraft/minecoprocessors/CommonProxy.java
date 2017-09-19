@@ -16,6 +16,10 @@ public class CommonProxy {
 
   public Logger logger;
 
+  public void handleUnexpectedException(Exception e) {
+    e.printStackTrace();
+  }
+
   public void preInit(FMLPreInitializationEvent e) {
     logger = e.getModLog();
     int packetId = 0;

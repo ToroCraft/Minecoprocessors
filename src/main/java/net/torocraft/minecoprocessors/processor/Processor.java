@@ -6,6 +6,7 @@ import java.util.List;
 import net.minecraft.nbt.NBTTagByteArray;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.util.ByteUtil;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
@@ -300,7 +301,8 @@ public class Processor implements IProcessor {
 
     try {
       process();
-    }catch (Exception e) {
+    } catch (Exception e) {
+      Minecoprocessors.proxy.handleUnexpectedException(e);
       error = getInstructionString();
       fault = true;
     }
@@ -312,6 +314,7 @@ public class Processor implements IProcessor {
     try{
       return InstructionUtil.compileLine(instruction, labels, ip);
     } catch(Exception e) {
+      Minecoprocessors.proxy.handleUnexpectedException(e);
       return "??";
     }
   }
@@ -543,6 +546,11 @@ public class Processor implements IProcessor {
   }
 
   private void processRet() {
+    if (sp <= 1) {
+      fault = true;
+      error = "ret";
+      return;
+    }
     ip = ByteUtil.setByteInShort(ip, stack[--sp], 1);
     ip = ByteUtil.setByteInShort(ip, stack[--sp], 0);
   }
@@ -565,7 +573,7 @@ public class Processor implements IProcessor {
       assert ip == (short) 0xabcd;
       assert sp == 0;
 
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -588,7 +596,7 @@ public class Processor implements IProcessor {
       processInc();
       assertRegisters(0, 0, 0, 0);
       assert zero;
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -611,7 +619,7 @@ public class Processor implements IProcessor {
       processDec();
       assertRegisters(0, 0, 0, 0);
       assert zero;
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -636,7 +644,7 @@ public class Processor implements IProcessor {
       processMul();
       assertRegisters(10, 0, 0, 2);
       assert !zero;
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -670,7 +678,7 @@ public class Processor implements IProcessor {
       assertRegisters(5, 0, 0, 0);
       assert !zero;
       assert fault;
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -794,7 +802,7 @@ public class Processor implements IProcessor {
       setupTest(0, 30, 0, 0, "mov a, 51");
       processMov();
       assertRegisters(51, 30, 0, 0);
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -831,7 +839,7 @@ public class Processor implements IProcessor {
       assert !overflow;
       assert !zero;
 
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -856,7 +864,7 @@ public class Processor implements IProcessor {
       assert !overflow;
       assert zero;
 
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -881,7 +889,7 @@ public class Processor implements IProcessor {
       assert !overflow;
       assert zero;
 
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -898,7 +906,7 @@ public class Processor implements IProcessor {
       assertRegisters(0, 0b010, 0, 0);
       assert zero;
 
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -915,7 +923,7 @@ public class Processor implements IProcessor {
       assertRegisters(0, 0b0101, 0, 0);
       assert zero;
 
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -932,7 +940,7 @@ public class Processor implements IProcessor {
       assertRegisters(0, 0, 0, 0);
       assert zero;
 
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -949,7 +957,7 @@ public class Processor implements IProcessor {
       assertRegisters(0, 0, 0, 0);
       assert zero;
 
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -961,7 +969,7 @@ public class Processor implements IProcessor {
       assertRegisters(0, 0, 0, 0);
       assert ip == (short) 111;
 
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -981,7 +989,7 @@ public class Processor implements IProcessor {
       assertRegisters(0, 0, 0, 0);
       assert ip == 0;
 
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -1000,7 +1008,7 @@ public class Processor implements IProcessor {
       assertRegisters(0, 0, 0, 0);
       assert ip == 0;
 
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -1027,7 +1035,7 @@ public class Processor implements IProcessor {
       assertRegisters(0b010, 20, 0, 0);
       assert !zero;
 
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -1050,7 +1058,7 @@ public class Processor implements IProcessor {
       assertRegisters(0, 8, 0, 0);
       assert zero;
 
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
@@ -1076,7 +1084,7 @@ public class Processor implements IProcessor {
       assert sp == 1;
       assert registers[Register.B.ordinal()] == (byte) 30;
 
-    } catch (Exception e) {
+    } catch (ParseException e) {
       throw new AssertionError(e);
     }
   }
