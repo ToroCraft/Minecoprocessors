@@ -6,3 +6,4 @@ gui.button.reset=reset
 gui.button.sleep=sleep
 gui.button.step=step
 gui.button.wake=wake
+gui.button.help=manual

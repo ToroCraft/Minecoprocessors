@@ -1,9 +1,12 @@
 package net.torocraft.minecoprocessors.gui;
 
 import net.minecraft.client.gui.GuiButton;
+import net.minecraft.client.gui.GuiScreenBook;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.init.Items;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
@@ -30,6 +33,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   private GuiButton buttonReset;
   private GuiButton buttonPause;
   private GuiButton buttonStep;
+  private GuiButton buttonHelp;
 
   private Processor processor;
 
@@ -268,10 +272,12 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     buttonReset = new ScaledGuiButton(buttonId++, x, y, buttonWidth, buttonHeight, I18n.format("gui.button.reset"));
     buttonPause = new ScaledGuiButton(buttonId++, x, y + 11, buttonWidth, buttonHeight, I18n.format("gui.button.sleep"));
     buttonStep = new ScaledGuiButton(buttonId++, x, y + 22, buttonWidth, buttonHeight, I18n.format("gui.button.step"));
+    buttonHelp = new ScaledGuiButton(buttonId++, guiLeft + 133, guiTop + 66, 35, buttonHeight, I18n.format("gui.button.help"));
 
     buttonList.add(buttonReset);
     buttonList.add(buttonStep);
     buttonList.add(buttonPause);
+    buttonList.add(buttonHelp);
   }
 
   @Override
@@ -284,6 +290,11 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     }
     if (button == buttonStep) {
       Minecoprocessors.NETWORK.sendToServer(new MessageProcessorAction(minecoprocessor.getPos(), Action.STEP));
+    }
+    if (button == buttonHelp) {
+      ItemStack stack = new ItemStack(Items.WRITTEN_BOOK);
+      // TODO add NBT content
+      this.mc.displayGuiScreen(new GuiScreenBook(mc.player, stack, false));
     }
   }
 
