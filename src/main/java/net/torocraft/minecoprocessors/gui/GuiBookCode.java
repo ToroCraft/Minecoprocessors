@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 /**
  * GUI for the code book, used to write and manage ASM programs.
  */
-@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @SideOnly(Side.CLIENT)
 public final class GuiBookCode extends GuiScreen {
     private static final int GUI_WIDTH = 148;
@@ -335,7 +334,7 @@ public final class GuiBookCode extends GuiScreen {
     }
 
     @Override
-    protected void actionPerformed(final GuiButton button) throws IOException {
+    protected void actionPerformed(final GuiButton button) {
         if (button == buttonNextPage) {
             changePage(1);
         } else if (button == buttonPreviousPage) {

@@ -5,7 +5,6 @@ import org.apache.logging.log4j.Logger;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.torocraft.minecoprocessors.blocks.BlockMinecoprocessor;
 import net.torocraft.minecoprocessors.blocks.TileEntityMinecoprocessor;
 import net.torocraft.minecoprocessors.gui.MinecoprocessorGuiHandler;
 import net.torocraft.minecoprocessors.network.MessageProcessorAction;

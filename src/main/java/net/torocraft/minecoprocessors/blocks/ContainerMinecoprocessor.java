@@ -59,7 +59,7 @@ public class ContainerMinecoprocessor extends Container {
   @Override
   public ItemStack transferStackInSlot(EntityPlayer playerIn, int fromSlot) {
     ItemStack previous = ItemStack.EMPTY;
-    Slot slot = (Slot) this.inventorySlots.get(fromSlot);
+    Slot slot = this.inventorySlots.get(fromSlot);
 
     if (slot != null && slot.getHasStack()) {
       ItemStack current = slot.getStack();
