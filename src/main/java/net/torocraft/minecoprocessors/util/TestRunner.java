@@ -78,5 +78,6 @@ public class TestRunner {
     }
 
     assert p.isFault();
+    assert p.getError().equals("ret");
   }
 }

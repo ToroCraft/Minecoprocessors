@@ -532,6 +532,7 @@ public class Processor implements IProcessor {
   private void processRet() {
     if (sp <= 1) {
       fault = true;
+      error = "ret";
       return;
     }
     ip = ByteUtil.setByteInShort(ip, stack[--sp], 1);
