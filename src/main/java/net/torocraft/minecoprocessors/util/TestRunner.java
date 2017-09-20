@@ -15,10 +15,10 @@ public class TestRunner {
     ByteUtil.test();
     InstructionUtil.test();
     testProcessor();
-    BlockMinecoprocessor.test();
+    RedstoneUtil.test();
     //runProcessor();
     runFaultRet();
-    testNameParser();
+//    testNameParser();
     System.out.println("pass!");
   }
 

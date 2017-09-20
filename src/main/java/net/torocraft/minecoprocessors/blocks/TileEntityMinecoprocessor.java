@@ -228,26 +228,26 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     return false;
   }
 
-  private boolean getPortSignal(int portIndex) {
+  private byte getPortSignal(int portIndex) {
     if (!isInOutputMode(processor.getRegisters()[Register.PORTS.ordinal()], portIndex)) {
-      return false;
+      return 0;
     }
-    return ByteUtil.getBit(processor.getRegisters()[Register.PF.ordinal() + portIndex], 0);
+    return processor.getRegisters()[Register.PF.ordinal() + portIndex];
   }
 
-  public boolean getFrontPortSignal() {
+  public byte getFrontPortSignal() {
     return getPortSignal(0);
   }
 
-  public boolean getBackPortSignal() {
+  public byte getBackPortSignal() {
     return getPortSignal(1);
   }
 
-  public boolean getLeftPortSignal() {
+  public byte getLeftPortSignal() {
     return getPortSignal(2);
   }
 
-  public boolean getRightPortSignal() {
+  public byte getRightPortSignal() {
     return getPortSignal(3);
   }
 
