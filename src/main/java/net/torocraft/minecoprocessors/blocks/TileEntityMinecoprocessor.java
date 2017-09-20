@@ -207,7 +207,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   private boolean updateInputPort(int portIndex, int powerValue) {
     byte[] registers = processor.getRegisters();
     byte ports = registers[Register.PORTS.ordinal()];
-    byte adc = registers[Register.PORTS.ordinal()];
+    byte adc = registers[Register.ADC.ordinal()];
     byte value;
 
     if (isADCMode(adc, portIndex)) {
