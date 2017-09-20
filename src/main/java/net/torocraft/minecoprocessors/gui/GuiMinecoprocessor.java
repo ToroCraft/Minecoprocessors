@@ -96,7 +96,8 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
 
     y = 114;
     drawLabeledShort("IP", processor == null ? null : processor.getIp(), 128 * 2, y, mouseX, mouseY);
-    drawBinaryRegister(Register.PORTS, 152 * 2, y, mouseX, mouseY);
+    drawRegister(Register.ADC, 142 * 2, y, mouseX, mouseY);
+    drawRegister(Register.PORTS, 158 * 2, y, mouseX, mouseY);
 
     centered(toHex(registers == null ? null : registers[Register.PF.ordinal()]), 176, 47);
     centered(toHex(registers == null ? null : registers[Register.PR.ordinal()]), 216, 86);
