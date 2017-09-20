@@ -9,10 +9,20 @@ public class RedstoneUtilTest {
 
   @Test
   public void testPortToPower() {
-    // TODO determine how the ADC will work
-    RedstoneUtil.portToPower((byte) 0xf0);
     Assert.assertEquals(0, RedstoneUtil.portToPower((byte) 0x00));
-    // test other values
+    Assert.assertEquals(0, RedstoneUtil.portToPower((byte) 0xf0));
+    Assert.assertEquals(1, RedstoneUtil.portToPower((byte) 0x11));
+    Assert.assertEquals(1, RedstoneUtil.portToPower((byte) 0xf1));
+    Assert.assertEquals(15, RedstoneUtil.portToPower((byte) 0xff));
+    Assert.assertEquals(15, RedstoneUtil.portToPower((byte) 0x0f));
+  }
+
+  @Test
+  public void testPowerToPort() {
+    Assert.assertEquals((byte) 0x00, RedstoneUtil.powerToPort(0));
+    Assert.assertEquals((byte) 0x01, RedstoneUtil.powerToPort(1));
+    Assert.assertEquals((byte) 0x0e, RedstoneUtil.powerToPort(14));
+    Assert.assertEquals((byte) 0x0f, RedstoneUtil.powerToPort(15));
   }
 
   @Test

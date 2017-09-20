@@ -48,17 +48,14 @@ public class RedstoneUtil {
   }
 
   public static int portToPower(byte port) {
-    // TODO determine how the ADC will work
-    if (port == 0) {
-      return  0;
+    return port & 0x0f;
+  }
+
+  public static byte powerToPort(int powerValue) {
+    if (powerValue > 15) {
+      powerValue = 15;
     }
-
-    int i = Byte.toUnsignedInt(port);
-
-    i = i >> 4;
-
-    //System.out.println(port + " -> " + i);
-    return i;
+    return (byte) powerValue;
   }
 
   public static boolean isFrontPort(IBlockState blockState, EnumFacing side) {

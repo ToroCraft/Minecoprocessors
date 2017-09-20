@@ -231,12 +231,12 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
     }
     EnumFacing facing = state.getValue(FACING).getOpposite();
 
-    boolean e = calculateInputStrength(world, pos.offset(EnumFacing.EAST), EnumFacing.EAST) > 0;
-    boolean w = calculateInputStrength(world, pos.offset(EnumFacing.WEST), EnumFacing.WEST) > 0;
-    boolean n = calculateInputStrength(world, pos.offset(EnumFacing.NORTH), EnumFacing.NORTH) > 0;
-    boolean s = calculateInputStrength(world, pos.offset(EnumFacing.SOUTH), EnumFacing.SOUTH) > 0;
+    int e = calculateInputStrength(world, pos.offset(EnumFacing.EAST), EnumFacing.EAST);
+    int w = calculateInputStrength(world, pos.offset(EnumFacing.WEST), EnumFacing.WEST);
+    int n = calculateInputStrength(world, pos.offset(EnumFacing.NORTH), EnumFacing.NORTH);
+    int s = calculateInputStrength(world, pos.offset(EnumFacing.SOUTH), EnumFacing.SOUTH);
 
-    boolean[] values = new boolean[4];
+    int[] values = new int[4];
 
     values[RedstoneUtil.convertFacingToPortIndex(facing, EnumFacing.NORTH)] = n;
     values[RedstoneUtil.convertFacingToPortIndex(facing, EnumFacing.SOUTH)] = s;
@@ -254,7 +254,7 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
     int i = worldIn.getRedstonePower(blockpos, enumfacing);
 
     if (i >= 15) {
-      return i;
+      return 15;
     }
 
     int redstoneWirePower = 0;

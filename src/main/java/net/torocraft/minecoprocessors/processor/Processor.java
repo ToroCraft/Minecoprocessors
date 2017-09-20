@@ -72,7 +72,7 @@ public class Processor implements IProcessor {
   }
 
   // TODO move to util class
-  static void reset(byte[] a) {
+  public static void reset(byte[] a) {
     for (int i = 0; i < a.length; i++) {
       a[i] = 0;
     }
@@ -82,6 +82,12 @@ public class Processor implements IProcessor {
   public static void reset(boolean[] a) {
     for (int i = 0; i < a.length; i++) {
       a[i] = false;
+    }
+  }
+
+  public static void reset(int[] a) {
+    for (int i = 0; i < a.length; i++) {
+      a[i] = 0;
     }
   }
 
