@@ -61,17 +61,6 @@ public class RedstoneUtil {
     return i;
   }
 
-  private static void testPortToPower() {
-    // TODO determine how the ADC will work
-    portToPower((byte)0xf0);
-//    assert portToPower((byte)0) == 0;
-//    assert portToPower((byte)1) == 1;
-//    assert portToPower((byte)17) == 1;
-//    assert portToPower((byte)18) == 2;
-//    assert portToPower((byte)33) == 2;
-//    assert portToPower((byte)34) == 3;
-  }
-
   public static boolean isFrontPort(IBlockState blockState, EnumFacing side) {
     return blockState.getValue(BlockHorizontal.FACING) == side;
   }
@@ -92,44 +81,4 @@ public class RedstoneUtil {
     return pos.offset(blockAccess.getBlockState(pos).getValue(BlockHorizontal.FACING));
   }
 
-  public static void test() {
-    testRotateFacing();
-    testConvertFacingToPortIndex();
-    testConvertPortIndexToFacing();
-    testPortToPower();
-  }
-
-  private static void testConvertPortIndexToFacing() {
-    int f = 0;
-    int b = 1;
-    int l = 2;
-    int r = 3;
-    assert convertPortIndexToFacing(EnumFacing.NORTH, f).equals(EnumFacing.NORTH);
-    assert convertPortIndexToFacing(EnumFacing.NORTH, r).equals(EnumFacing.EAST);
-    assert convertPortIndexToFacing(EnumFacing.NORTH, b).equals(EnumFacing.SOUTH);
-    assert convertPortIndexToFacing(EnumFacing.EAST, f).equals(EnumFacing.EAST);
-    assert convertPortIndexToFacing(EnumFacing.EAST, b).equals(EnumFacing.WEST);
-    assert convertPortIndexToFacing(EnumFacing.EAST, l).equals(EnumFacing.NORTH);
-    assert convertPortIndexToFacing(EnumFacing.SOUTH, b).equals(EnumFacing.NORTH);
-    assert convertPortIndexToFacing(EnumFacing.WEST, r).equals(EnumFacing.NORTH);
-  }
-
-  private static void testConvertFacingToPortIndex() {
-    int f = 0;
-    int b = 1;
-    int l = 2;
-    int r = 3;
-    assert convertFacingToPortIndex(EnumFacing.NORTH, EnumFacing.NORTH) == f;
-    assert convertFacingToPortIndex(EnumFacing.NORTH, EnumFacing.SOUTH) == b;
-    assert convertFacingToPortIndex(EnumFacing.EAST, EnumFacing.SOUTH) == r;
-    assert convertFacingToPortIndex(EnumFacing.WEST, EnumFacing.NORTH) == r;
-    assert convertFacingToPortIndex(EnumFacing.SOUTH, EnumFacing.EAST) == l;
-  }
-
-  private static void testRotateFacing() {
-    assert rotateFacing(EnumFacing.NORTH, -3).equals(EnumFacing.EAST);
-    assert rotateFacing(EnumFacing.NORTH, 0).equals(EnumFacing.NORTH);
-    assert rotateFacing(EnumFacing.EAST, 0).equals(EnumFacing.EAST);
-    assert rotateFacing(EnumFacing.WEST, -2).equals(EnumFacing.EAST);
-  }
 }

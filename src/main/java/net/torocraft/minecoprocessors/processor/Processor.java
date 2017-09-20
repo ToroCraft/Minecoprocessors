@@ -134,22 +134,6 @@ public class Processor implements IProcessor {
     return flags;
   }
 
-  private void testPackFlags() {
-    reset();
-    temp = (byte) 0xff;
-    assert packFlags() == Long.parseUnsignedLong("000000ff00000000", 16);
-    fault = true;
-    temp = 0;
-    assert packFlags() == Long.parseUnsignedLong("0000000000000001", 16);
-    zero = true;
-    assert packFlags() == Long.parseUnsignedLong("0000000000000003", 16);
-    overflow = true;
-    assert packFlags() == Long.parseUnsignedLong("0000000000000007", 16);
-    sp = (byte) 0xee;
-    ip = (short) 0xabcd;
-    assert packFlags() == Long.parseUnsignedLong("abcdee0000000007", 16);
-  }
-
   public void unPackFlags(long flags) {
     ip = ByteUtil.getShort(flags, 3);
     sp = ByteUtil.getByteInLong(flags, 5);
@@ -159,23 +143,6 @@ public class Processor implements IProcessor {
     overflow = ByteUtil.getBitInLong(flags, 2);
     carry = ByteUtil.getBitInLong(flags, 3);
     wait = ByteUtil.getBitInLong(flags, 4);
-  }
-
-  private void testUnpackFlags() {
-    reset();
-    unPackFlags(Long.parseUnsignedLong("abcdee0000000007", 16));
-    assert sp == (byte) 0xee;
-    assert ip == (short) 0xabcd;
-    assert zero;
-    assert overflow;
-    assert fault;
-
-    unPackFlags(Long.parseUnsignedLong("0000ff0000000000", 16));
-    assert sp == -1;
-    assert ip == 0;
-    assert !zero;
-    assert !overflow;
-    assert !fault;
   }
 
   private static void copy(byte[] a, byte[] b) {
@@ -440,7 +407,7 @@ public class Processor implements IProcessor {
     int a = getVariableOperand(0);
     int b = getVariableOperand(1);
     int z = a + b;
-    testOverflow(z);
+    testOverflow(this, z);
     zero = z == 0;
     registers[instruction[1]] = (byte) z;
   }
@@ -480,7 +447,7 @@ public class Processor implements IProcessor {
     int a = getVariableOperand(0);
     int b = getVariableOperand(1);
     int z = a - b;
-    testOverflow(z);
+    testOverflow(this, z);
     zero = z == 0;
     registers[instruction[1]] = (byte) z;
   }
@@ -489,7 +456,7 @@ public class Processor implements IProcessor {
     int a = getVariableOperand(0);
     int b = getVariableOperand(1);
     int z = a - b;
-    testOverflow(z);
+    testOverflow(this, z);
     zero = z == 0;
   }
 
@@ -568,50 +535,11 @@ public class Processor implements IProcessor {
     ip = ByteUtil.setByteInShort(ip, stack[--sp], 0);
   }
 
-  private void testProcessCall() {
-    try {
-      setupTest(0, 0, 0, 0, "call test_label");
-      ip = (short) 0xabcd;
-      processCall();
-      assertRegisters(0, 0, 0, 0);
-
-      assert stack[0] == (byte) 0xcd;
-      assert stack[1] == (byte) 0xab;
-
-      assert ip == (short) 111;
-      assert sp == 2;
-
-      processRet();
-
-      assert ip == (short) 0xabcd;
-      assert sp == 0;
-
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
-  }
-
   private void processInc() {
     int a = getVariableOperand(0);
     int z = a + 1;
     zero = z == 0;
     registers[instruction[1]] = (byte) z;
-  }
-
-  private void testProcessInc() {
-    try {
-      setupTest(10, 0, 0, 0, "inc a");
-      processInc();
-      assertRegisters(11, 0, 0, 0);
-      assert !zero;
-
-      setupTest(-1, 0, 0, 0, "inc a");
-      processInc();
-      assertRegisters(0, 0, 0, 0);
-      assert zero;
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
   }
 
   private void processDec() {
@@ -621,20 +549,12 @@ public class Processor implements IProcessor {
     registers[instruction[1]] = (byte) z;
   }
 
-  private void testProcessDec() {
-    try {
-      setupTest(10, 0, 0, 0, "dec a");
-      processDec();
-      assertRegisters(9, 0, 0, 0);
-      assert !zero;
+  private static void testOverflow(Processor processor, int z) {
+    processor.overflow = z != (byte) z;
+  }
 
-      setupTest(1, 0, 0, 0, "dec a");
-      processDec();
-      assertRegisters(0, 0, 0, 0);
-      assert zero;
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
+  private static void testOverflow(Processor processor, long z) {
+    processor.overflow = z != (byte) z;
   }
 
   private void processMul() {
@@ -642,24 +562,8 @@ public class Processor implements IProcessor {
     int b = getVariableOperand(0);
     long z = a * b;
     zero = z == 0;
-    testOverflow(z);
+    testOverflow(this, z);
     registers[Register.A.ordinal()] = (byte) z;
-  }
-
-  private void testProcessMul() {
-    try {
-      setupTest(0xff, 2, 0, 0, "mul b");
-      processMul();
-      assertRegisters(0xfe, 2, 0, 0);
-      assert !zero;
-
-      setupTest(5, 0, 0, 2, "mul d");
-      processMul();
-      assertRegisters(10, 0, 0, 2);
-      assert !zero;
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
   }
 
   private void processDiv() {
@@ -671,37 +575,8 @@ public class Processor implements IProcessor {
     }
     long z = a / b;
     zero = z == 0;
-    testOverflow(z);
+    testOverflow(this, z);
     registers[Register.A.ordinal()] = (byte) z;
-  }
-
-  private void testProcessDiv() {
-    try {
-      setupTest(10, 2, 0, 0, "div b");
-      processDiv();
-      assertRegisters(5, 2, 0, 0);
-      assert !zero;
-
-      setupTest(5, 0, 0, 2, "div d");
-      processDiv();
-      assertRegisters(2, 0, 0, 2);
-
-      setupTest(5, 0, 0, 0, "div d");
-      processDiv();
-      assertRegisters(5, 0, 0, 0);
-      assert !zero;
-      assert fault;
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  private void testOverflow(int z) {
-    overflow = z != (byte) z;
-  }
-
-  private void testOverflow(long z) {
-    overflow = z != (byte) z;
   }
 
   private byte getVariableOperand(int operandIndex) {
@@ -717,407 +592,11 @@ public class Processor implements IProcessor {
     return ByteUtil.getBit(instruction[3], operandIndex * 4);
   }
 
-  public void test() {
-    testCopyArray();
-    testTestOverFlow();
-    testProcessMov();
-    testProcessAdd();
-    testProcessAnd();
-    testProcessSub();
-    testProcessCmp();
-    testProcessJmp();
-    testProcessJz();
-    testProcessJnz();
-    testProcessNot();
-    testProcessOr();
-    testProcessShl();
-    testProcessShr();
-    testProcessXor();
-    testProcessPushPop();
-    testPackFlags();
-    testUnpackFlags();
-    testProcessCall();
-    testProcessInc();
-    testProcessDec();
-    testProcessMul();
-    testProcessDiv();
-    testNbt();
-  }
-
-  private static void testCopyArray() {
-    byte[] a = {1, 2, 3, 4, 5, 6};
-    byte[] b = new byte[a.length];
-    copy(b, a);
-    assert (b[0] == 1);
-    assert (b[5] == 6);
-  }
-
-  private void testNbt() {
-    flush();
-    labels.add(new Label((short) 189, "foobar"));
-    program.add(new byte[] {0x00, 0x01, 0x02, 0x03});
-    stack[0] = (byte) 0x99;
-    registers[0] = (byte) 0xee;
-    registers[4] = (byte) 0xcc;
-    zero = true;
-
-    NBTTagCompound c = writeToNBT();
-
-    flush();
-    assert !zero;
-    assert labels.size() == 0;
-    assert program.size() == 0;
-    reset(registers);
-
-    readFromNBT(c);
-
-    assert zero;
-    assert labels.size() == 1;
-    assert labels.get(0).address == (short) 189;
-    assert labels.get(0).name.equals("foobar");
-    assert program.size() == 1;
-    byte[] testInstruction = program.get(0);
-    assert testInstruction[0] == 0x00;
-    assert testInstruction[1] == 0x01;
-    assert testInstruction[2] == 0x02;
-    assert testInstruction[3] == 0x03;
-    assert registers[0] == (byte) 0xee;
-    assert registers[4] == (byte) 0xcc;
-
-  }
-
-  private void testTestOverFlow() {
-    testOverflow(1);
-    assert !overflow;
-
-    testOverflow(1000);
-    assert overflow;
-
-    testOverflow(128);
-    assert overflow;
-
-    testOverflow(127);
-    assert !overflow;
-
-    testOverflow(-128);
-    assert !overflow;
-
-    testOverflow(-129);
-    assert overflow;
-  }
-
-  private void testProcessMov() {
-    try {
-      setupTest(0, 30, 0, 0, "mov a, b");
-      processMov();
-      assertRegisters(30, 30, 0, 0);
-
-      setupTest(0, 30, 0, 0, "mov a, 51");
-      processMov();
-      assertRegisters(51, 30, 0, 0);
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  private void testProcessAdd() {
-    try {
-      setupTest(3, 30, 0, 0, "add a, b");
-      processAdd();
-      assertRegisters(33, 30, 0, 0);
-      assert !overflow;
-      assert !zero;
-
-      setupTest(11, 0, 0, 0, "add a, 51");
-      processAdd();
-      assertRegisters(62, 0, 0, 0);
-      assert !overflow;
-      assert !zero;
-
-      setupTest(-51, 0, 0, 0, "add a, 51");
-      processAdd();
-      assertRegisters(0, 0, 0, 0);
-      assert !overflow;
-      assert zero;
-
-      setupTest(130, 0, 130, 0, "add a, c");
-      processAdd();
-      assertRegisters(4, 0, 130, 0);
-      assert overflow;
-      assert !zero;
-
-      setupTest(1, 0, 0, 0, "add a, 0xf0");
-      processAdd();
-      assertRegisters(241, 0, 0, 0);
-      assert !overflow;
-      assert !zero;
-
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  private void testProcessSub() {
-    try {
-      setupTest(50, 0, 0, 10, "sub a, d");
-      processSub();
-      assertRegisters(40, 0, 0, 10);
-      assert !overflow;
-      assert !zero;
-
-      setupTest(-130, 0, 0, 130, "sub a, d");
-      processSub();
-      assertRegisters(-4, 0, 0, 130);
-      assert overflow;
-      assert !zero;
-
-      setupTest(130, 0, 0, 130, "sub a, d");
-      processSub();
-      assertRegisters(0, 0, 0, 130);
-      assert !overflow;
-      assert zero;
-
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  private void testProcessCmp() {
-    try {
-      setupTest(50, 0, 0, 10, "cmp a, d");
-      processCmp();
-      assertRegisters(50, 0, 0, 10);
-      assert !overflow;
-      assert !zero;
-
-      setupTest(-130, 0, 0, 130, "cmp a, d");
-      processCmp();
-      assertRegisters(-130, 0, 0, 130);
-      assert overflow;
-      assert !zero;
-
-      setupTest(130, 0, 0, 130, "cmp a, d");
-      processCmp();
-      assertRegisters(130, 0, 0, 130);
-      assert !overflow;
-      assert zero;
-
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  private void testProcessAnd() {
-    try {
-      setupTest(0b011111, 0b010, 0, 0, "and a, b");
-      processAnd();
-      assertRegisters(0b010, 0b010, 0, 0);
-      assert !zero;
-
-      setupTest(0b011101, 0b010, 0, 0, "and a, b");
-      processAnd();
-      assertRegisters(0, 0b010, 0, 0);
-      assert zero;
-
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  private void testProcessXor() {
-    try {
-      setupTest(0b0101, 0b0110, 0, 0, "xor a, b");
-      processXor();
-      assertRegisters(0b011, 0b0110, 0, 0);
-      assert !zero;
-
-      setupTest(0b0101, 0b0101, 0, 0, "xor a, b");
-      processXor();
-      assertRegisters(0, 0b0101, 0, 0);
-      assert zero;
-
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  private void testProcessOr() {
-    try {
-      setupTest(0b01000, 0, 0, 0b0111, "or d, a");
-      processOr();
-      assertRegisters(0b01000, 0, 0, 0b01111);
-      assert !zero;
-
-      setupTest(0, 0, 0, 0, "or d, a");
-      processOr();
-      assertRegisters(0, 0, 0, 0);
-      assert zero;
-
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  private void testProcessNot() {
-    try {
-      setupTest(0, 0, 0b1010, 0, "not c");
-      processNot();
-      assertRegisters(0, 0, 0b11110101, 0);
-      assert !zero;
-
-      setupTest(0, 0, 0b11111111, 0, "not c");
-      processNot();
-      assertRegisters(0, 0, 0, 0);
-      assert zero;
-
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  private void testProcessJmp() {
-    try {
-      setupTest(0, 0, 0, 0, "jmp test_label");
-      processJmp();
-      assertRegisters(0, 0, 0, 0);
-      assert ip == (short) 111;
-
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  private void testProcessJz() {
-    try {
-
-      setupTest(0, 0, 0, 0, "jz test_label");
-      zero = true;
-      processJz();
-      assertRegisters(0, 0, 0, 0);
-      assert ip == (short) 111;
-
-      setupTest(0, 0, 0, 0, "jz test_label");
-      zero = false;
-      processJz();
-      assertRegisters(0, 0, 0, 0);
-      assert ip == 0;
-
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  private void testProcessJnz() {
-    try {
-      setupTest(0, 0, 0, 0, "jnz test_label");
-      zero = false;
-      processJnz();
-      assertRegisters(0, 0, 0, 0);
-      assert ip == (short) 111;
-
-      setupTest(0, 0, 0, 0, "jnz test_label");
-      zero = true;
-      processJnz();
-      assertRegisters(0, 0, 0, 0);
-      assert ip == 0;
-
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  private void testProcessShl() {
-    try {
-      setupTest(0b01, 4, 0, 0, "shl a, b");
-      processShl();
-      assertRegisters(0b010000, 4, 0, 0);
-      assert !zero;
-
-      setupTest(0b01, 20, 0, 0, "shl a, b");
-      processShl();
-      assertRegisters(0, 20, 0, 0);
-      assert zero;
-
-      setupTest(0, 2, 0, 0, "shl a, b");
-      processShl();
-      assertRegisters(0, 2, 0, 0);
-      assert zero;
-
-      setupTest(0b01, 20, 0, 0, "shl a, 1");
-      processShl();
-      assertRegisters(0b010, 20, 0, 0);
-      assert !zero;
-
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  private void testProcessShr() {
-
-    try {
-      setupTest(0b10000000, 1, 0, 0, "shr a, b");
-      processShr();
-      assertRegisters(0b01000000, 1, 0, 0);
-      assert !zero;
-
-      setupTest(0b10000000, 100, 0, 0, "shr a, b");
-      processShr();
-      assertRegisters(0, 100, 0, 0);
-      assert zero;
-
-      setupTest(0xff, 8, 0, 0, "shr a, b");
-      processShr();
-      assertRegisters(0, 8, 0, 0);
-      assert zero;
-
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  private void testProcessPushPop() {
-    try {
-      reset();
-      registers[Register.A.ordinal()] = 30;
-      registers[Register.B.ordinal()] = 0;
-      instruction = InstructionUtil.parseLine("push a", new ArrayList<Label>(), (short) 0);
-      processPush();
-
-      assert sp == 1;
-      assert stack[0] == (byte) 30;
-
-      processPush();
-
-      assert sp == 2;
-      assert stack[1] == (byte) 30;
-
-      instruction = InstructionUtil.parseLine("pop b", new ArrayList<Label>(), (short) 0);
-      processPop();
-      assert sp == 1;
-      assert registers[Register.B.ordinal()] == (byte) 30;
-
-    } catch (ParseException e) {
-      throw new AssertionError(e);
-    }
-  }
-
   private void assertRegisters(int ax, int bx, int cx, int dx) {
     assert registers[Register.A.ordinal()] == (byte) ax;
     assert registers[Register.B.ordinal()] == (byte) bx;
     assert registers[Register.C.ordinal()] == (byte) cx;
     assert registers[Register.D.ordinal()] == (byte) dx;
-  }
-
-  private void setupTest(int ax, int bx, int cx, int dx, String line) throws ParseException {
-    reset();
-    labels = new ArrayList<>();
-    labels.add(new Label((short) 111, "test_label"));
-    registers[Register.A.ordinal()] = (byte) ax;
-    registers[Register.B.ordinal()] = (byte) bx;
-    registers[Register.C.ordinal()] = (byte) cx;
-    registers[Register.D.ordinal()] = (byte) dx;
-    instruction = InstructionUtil.parseLine(line, labels, (short) 0);
   }
 
   public boolean isFault() {

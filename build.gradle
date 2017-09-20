@@ -25,7 +25,8 @@ minecraft {
 }
 
 dependencies {
-
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.jmockit:jmockit:1.34'
 }
 
 processResources {
