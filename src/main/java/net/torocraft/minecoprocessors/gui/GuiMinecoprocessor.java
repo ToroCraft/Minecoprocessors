@@ -7,7 +7,6 @@ import net.minecraft.client.gui.GuiScreenBook;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.inventory.IInventory;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
@@ -321,7 +320,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     }
     if (button == buttonHelp) {
       // TODO override the book GUI so that it returns the processor GUI when closed
-      this.mc.displayGuiScreen(new GuiScreenBook(mc.player, BookCreator.createBook("manual"), false));
+      this.mc.displayGuiScreen(new GuiScreenBook(mc.player, BookCreator.manual, false));
     }
   }
 
