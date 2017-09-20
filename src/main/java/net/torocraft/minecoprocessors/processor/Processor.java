@@ -26,29 +26,29 @@ public class Processor implements IProcessor {
   /*
    * program
    */
-  private List<Label> labels = new ArrayList<>();
-  private List<byte[]> program = new ArrayList<>();
+  List<Label> labels = new ArrayList<>();
+  List<byte[]> program = new ArrayList<>();
 
   /*
    * state
    */
-  private byte[] instruction;
-  private byte[] stack = new byte[64];
-  private byte[] registers = new byte[Register.values().length];
-  private float temp;
+  byte[] instruction;
+  protected byte[] stack = new byte[64];
+  byte[] registers = new byte[Register.values().length];
+  float temp;
 
   /*
    * pointers
    */
-  private short ip;
-  private byte sp;
+  short ip;
+  byte sp;
 
   /*
    * flags
    */
-  private boolean fault;
-  private boolean zero;
-  private boolean overflow;
+  boolean fault;
+  boolean zero;
+  boolean overflow;
   private boolean carry;
   private boolean wait;
 
@@ -63,7 +63,7 @@ public class Processor implements IProcessor {
   private float tempVelocity;
   private float tempAcc;
 
-  private void flush() {
+  void flush() {
     reset();
     stack = new byte[Register.values().length];
 
@@ -72,7 +72,7 @@ public class Processor implements IProcessor {
   }
 
   // TODO move to util class
-  public static void reset(byte[] a) {
+  static void reset(byte[] a) {
     for (int i = 0; i < a.length; i++) {
       a[i] = 0;
     }
@@ -121,7 +121,7 @@ public class Processor implements IProcessor {
     }
   }
 
-  public long packFlags() {
+  long packFlags() {
     long flags = 0;
     flags = ByteUtil.setShort(flags, ip, 3);
     flags = ByteUtil.setByteInLong(flags, sp, 5);
@@ -134,7 +134,7 @@ public class Processor implements IProcessor {
     return flags;
   }
 
-  public void unPackFlags(long flags) {
+  void unPackFlags(long flags) {
     ip = ByteUtil.getShort(flags, 3);
     sp = ByteUtil.getByteInLong(flags, 5);
     temp = ByteUtil.getByteInLong(flags, 4);
@@ -149,6 +149,7 @@ public class Processor implements IProcessor {
     if (a.length != b.length) {
       new RuntimeException("WARNING: copying different sized a[" + a.length + "] b[" + b.length + "]").printStackTrace();
     }
+    // FIXME replace with System.arraycopy() ?
     for (int i = 0; i < Math.min(a.length, b.length); i++) {
       a[i] = b[i];
     }
@@ -160,6 +161,7 @@ public class Processor implements IProcessor {
     }
 
     byte[] registersNew = new byte[Register.values().length];
+    // FIXME replace with System.arraycopy() ?
     for (int i = 0; i < registersNew.length; i++) {
       registersNew[i] = registersIn[i];
     }
@@ -399,20 +401,20 @@ public class Processor implements IProcessor {
     fault = true;
   }
 
-  private void processMov() {
+  void processMov() {
     registers[instruction[1]] = getVariableOperand(1);
   }
 
-  private void processAdd() {
+  void processAdd() {
     int a = getVariableOperand(0);
     int b = getVariableOperand(1);
     int z = a + b;
-    testOverflow(this, z);
+    testOverflow(z);
     zero = z == 0;
     registers[instruction[1]] = (byte) z;
   }
 
-  private void processAnd() {
+  void processAnd() {
     byte a = getVariableOperand(0);
     byte b = getVariableOperand(1);
     byte z = (byte) (a & b);
@@ -420,7 +422,7 @@ public class Processor implements IProcessor {
     registers[instruction[1]] = z;
   }
 
-  private void processXor() {
+  void processXor() {
     byte a = getVariableOperand(0);
     byte b = getVariableOperand(1);
     byte z = (byte) (a ^ b);
@@ -428,7 +430,7 @@ public class Processor implements IProcessor {
     registers[instruction[1]] = z;
   }
 
-  private void processOr() {
+  void processOr() {
     byte a = getVariableOperand(0);
     byte b = getVariableOperand(1);
     byte z = (byte) (a | b);
@@ -436,31 +438,31 @@ public class Processor implements IProcessor {
     registers[instruction[1]] = z;
   }
 
-  private void processNot() {
+  void processNot() {
     byte a = getVariableOperand(0);
     byte z = (byte) ~a;
     zero = z == 0;
     registers[instruction[1]] = z;
   }
 
-  private void processSub() {
+  void processSub() {
     int a = getVariableOperand(0);
     int b = getVariableOperand(1);
     int z = a - b;
-    testOverflow(this, z);
+    testOverflow(z);
     zero = z == 0;
     registers[instruction[1]] = (byte) z;
   }
 
-  private void processCmp() {
+  void processCmp() {
     int a = getVariableOperand(0);
     int b = getVariableOperand(1);
     int z = a - b;
-    testOverflow(this, z);
+    testOverflow(z);
     zero = z == 0;
   }
 
-  private void processShl() {
+  void processShl() {
     byte a = getVariableOperand(0);
     byte b = getVariableOperand(1);
     if (b > 8) {
@@ -471,7 +473,7 @@ public class Processor implements IProcessor {
     registers[instruction[1]] = z;
   }
 
-  private void processShr() {
+  void processShr() {
     int a = getVariableOperand(0) & 0x00ff;
     int b = getVariableOperand(1) & 0x00ff;
     if (b > 8) {
@@ -482,27 +484,27 @@ public class Processor implements IProcessor {
     registers[instruction[1]] = z;
   }
 
-  private void processWfe() {
+  void processWfe() {
     wait = true;
   }
 
-  private void processJmp() {
+  void processJmp() {
     ip = labels.get(instruction[1]).address;
   }
 
-  private void processJz() {
+  void processJz() {
     if (zero) {
       processJmp();
     }
   }
 
-  private void processJnz() {
+  void processJnz() {
     if (!zero) {
       processJmp();
     }
   }
 
-  private void processPush() {
+  void processPush() {
     if (sp >= stack.length) {
       fault = true;
       return;
@@ -511,7 +513,7 @@ public class Processor implements IProcessor {
     stack[sp++] = a;
   }
 
-  private void processPop() {
+  void processPop() {
     if (sp <= 0) {
       fault = true;
       return;
@@ -519,13 +521,13 @@ public class Processor implements IProcessor {
     registers[instruction[1]] = stack[--sp];
   }
 
-  private void processCall() {
+  void processCall() {
     stack[sp++] = ByteUtil.getByteInShort(ip, 0);
     stack[sp++] = ByteUtil.getByteInShort(ip, 1);
     ip = labels.get(instruction[1]).address;
   }
 
-  private void processRet() {
+  void processRet() {
     if (sp <= 1) {
       fault = true;
       error = "ret";
@@ -535,38 +537,38 @@ public class Processor implements IProcessor {
     ip = ByteUtil.setByteInShort(ip, stack[--sp], 0);
   }
 
-  private void processInc() {
+  void processInc() {
     int a = getVariableOperand(0);
     int z = a + 1;
     zero = z == 0;
     registers[instruction[1]] = (byte) z;
   }
 
-  private void processDec() {
+  void processDec() {
     int a = getVariableOperand(0);
     int z = a - 1;
     zero = z == 0;
     registers[instruction[1]] = (byte) z;
   }
 
-  private static void testOverflow(Processor processor, int z) {
-    processor.overflow = z != (byte) z;
+  void testOverflow(int z) {
+    overflow = z != (byte) z;
   }
 
-  private static void testOverflow(Processor processor, long z) {
-    processor.overflow = z != (byte) z;
+  void testOverflow(long z) {
+    overflow = z != (byte) z;
   }
 
-  private void processMul() {
+  void processMul() {
     int a = registers[Register.A.ordinal()];
     int b = getVariableOperand(0);
     long z = a * b;
     zero = z == 0;
-    testOverflow(this, z);
+    testOverflow(z);
     registers[Register.A.ordinal()] = (byte) z;
   }
 
-  private void processDiv() {
+  void processDiv() {
     int a = registers[Register.A.ordinal()];
     int b = getVariableOperand(0);
     if (b == 0) {
@@ -575,7 +577,7 @@ public class Processor implements IProcessor {
     }
     long z = a / b;
     zero = z == 0;
-    testOverflow(this, z);
+    testOverflow(z);
     registers[Register.A.ordinal()] = (byte) z;
   }
 
@@ -590,13 +592,6 @@ public class Processor implements IProcessor {
 
   private boolean isLiteral(int operandIndex) {
     return ByteUtil.getBit(instruction[3], operandIndex * 4);
-  }
-
-  private void assertRegisters(int ax, int bx, int cx, int dx) {
-    assert registers[Register.A.ordinal()] == (byte) ax;
-    assert registers[Register.B.ordinal()] == (byte) bx;
-    assert registers[Register.C.ordinal()] == (byte) cx;
-    assert registers[Register.D.ordinal()] == (byte) dx;
   }
 
   public boolean isFault() {
@@ -625,7 +620,7 @@ public class Processor implements IProcessor {
     // s.append("] ");
   }
 
-  public String pinchDump() {
+  String pinchDump() {
     StringBuilder s = new StringBuilder();
 
     s.append("a|b|c|d[");

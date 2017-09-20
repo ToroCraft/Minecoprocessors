@@ -154,7 +154,7 @@ public class InstructionUtil {
     return parseCommandLine(line, labels, instruction);
   }
 
-  private static String removeComments(String line) {
+  static String removeComments(String line) {
     List<String> l = regex("^([^;]*);.*", line, Pattern.CASE_INSENSITIVE);
     if (l.size() == 1) {
       return l.get(0);
@@ -162,7 +162,7 @@ public class InstructionUtil {
     return line;
   }
 
-  private static String removeLabels(String line) {
+  static String removeLabels(String line) {
     List<String> l = regex("^\\s*[A-Za-z0-9-_]+:\\s*(.*)$", line, Pattern.CASE_INSENSITIVE);
     if (l.size() == 1) {
       return l.get(0);
@@ -348,7 +348,7 @@ public class InstructionUtil {
     return false;
   }
 
-  private static byte parseLiteral(String line, String s) throws ParseException {
+  static byte parseLiteral(String line, String s) throws ParseException {
     int i = parseLiteralToInt(line, s);
 
     if (i < 0) {
