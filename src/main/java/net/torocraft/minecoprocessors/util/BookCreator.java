@@ -35,7 +35,7 @@ public class BookCreator {
     String line;
     int lineNumber = 1;
     StringBuilder page = newPage();
-    try(BufferedReader reader = openBookReader("manual")) {
+    try(BufferedReader reader = openBookReader(name)) {
       while ((line = reader.readLine()) != null) {
         if (lineNumber == 1) {
           book.setTagInfo("title", new NBTTagString(line));
