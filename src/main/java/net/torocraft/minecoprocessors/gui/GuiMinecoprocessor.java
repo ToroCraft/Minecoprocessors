@@ -1,18 +1,15 @@
 package net.torocraft.minecoprocessors.gui;
 
-import io.netty.util.internal.StringUtil;
 import java.util.List;
 
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreenBook;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
-import net.minecraft.init.Items;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.StringUtils;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.torocraft.minecoprocessors.Minecoprocessors;
@@ -30,7 +27,7 @@ import net.torocraft.minecoprocessors.util.InstructionUtil;
 
 public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiContainer {
 
-  private static final ResourceLocation BREWING_STAND_GUI_TEXTURES = new ResourceLocation(Minecoprocessors.MODID, "textures/gui/minecoprocessor.png");
+  private static final ResourceLocation TEXTURES = new ResourceLocation(Minecoprocessors.MODID, "textures/gui/minecoprocessor.png");
 
   private final IInventory playerInventory;
   private final TileEntityMinecoprocessor minecoprocessor;
@@ -282,10 +279,15 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   }
 
   @Override
+  public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+    super.drawScreen(mouseX, mouseY, partialTicks);
+    renderHoveredToolTip(mouseX, mouseY);
+  }
+
+  @Override
   public void initGui() {
     super.initGui();
     drawButtons();
-
   }
 
   private void drawButtons() {
@@ -329,7 +331,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   @Override
   protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
     GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-    this.mc.getTextureManager().bindTexture(BREWING_STAND_GUI_TEXTURES);
+    this.mc.getTextureManager().bindTexture(TEXTURES);
     int i = (this.width - this.xSize) / 2;
     int j = (this.height - this.ySize) / 2;
     this.drawTexturedModalRect(i, j, 0, 0, this.xSize, this.ySize);
