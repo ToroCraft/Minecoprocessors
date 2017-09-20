@@ -187,10 +187,23 @@ public class Processor implements IProcessor {
     }
   }
 
+  private static byte[] addRegistersIfMissing(byte[] registersIn) {
+    if (registersIn.length >= Register.values().length) {
+     return registersIn;
+    }
+
+    byte[] registersNew = new byte[Register.values().length];
+    for (int i = 0; i < registersNew.length; i++) {
+      registersNew[i] = registersIn[i];
+    }
+    return registersNew;
+  }
+
   @Override
   public void readFromNBT(NBTTagCompound c) {
     stack = c.getByteArray(NBT_STACK);
-    registers = c.getByteArray(NBT_REGISTERS);
+    registers = addRegistersIfMissing(c.getByteArray(NBT_REGISTERS));
+
     unPackFlags(c.getLong(NBT_FLAGS));
 
     error = c.getString(NBT_ERROR);

@@ -57,7 +57,7 @@ public class RedstoneUtil {
 
     i = i >> 4;
 
-    System.out.println(port + " -> " + i);
+    //System.out.println(port + " -> " + i);
     return i;
   }
 

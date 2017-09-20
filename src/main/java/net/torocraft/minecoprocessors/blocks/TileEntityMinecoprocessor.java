@@ -192,6 +192,10 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     return !ByteUtil.getBit(ports, portIndex) && !ByteUtil.getBit(ports, portIndex + 4);
   }
 
+  private static boolean isADCMode(byte adc, int portIndex) {
+    return ByteUtil.getBit(adc, portIndex);
+  }
+
   // TODO support clock mode
   @SuppressWarnings("unused")
   private static boolean isInClockMode(byte ports, int portIndex) {
@@ -232,7 +236,17 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     if (!isInOutputMode(processor.getRegisters()[Register.PORTS.ordinal()], portIndex)) {
       return 0;
     }
-    return processor.getRegisters()[Register.PF.ordinal() + portIndex];
+    byte signal = processor.getRegisters()[Register.PF.ordinal() + portIndex];
+
+    try {
+      if (!isADCMode(processor.getRegisters()[Register.ADC.ordinal()], portIndex)) {
+        signal = signal == 0 ? 0 : (byte) 0xff;
+      }
+    }catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    return signal;
   }
 
   public byte getFrontPortSignal() {
