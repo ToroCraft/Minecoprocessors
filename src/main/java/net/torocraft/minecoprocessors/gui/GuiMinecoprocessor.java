@@ -1,5 +1,6 @@
 package net.torocraft.minecoprocessors.gui;
 
+import io.netty.util.internal.StringUtil;
 import java.util.List;
 
 import net.minecraft.client.gui.GuiButton;
@@ -11,6 +12,7 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.StringUtils;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.torocraft.minecoprocessors.Minecoprocessors;
@@ -97,10 +99,8 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     drawFlag("S", processor == null ? null : processor.isWait(), 157 * 2, y, 0x00ff00, mouseX, mouseY);
 
     y = 114;
-    drawLabeledShort("IP", processor == null ? null : processor.getIp(), 130 * 2, y, mouseX, mouseY);
-    // drawLabeledByte("TEMP", processor == null ? null : processor.getTemp(), 157 * 2, y);
-
-    //drawTemp(mouseX, mouseY, y);
+    drawLabeledShort("IP", processor == null ? null : processor.getIp(), 128 * 2, y, mouseX, mouseY);
+    drawBinaryRegister(Register.PORTS, 152 * 2, y, mouseX, mouseY);
 
     centered(toHex(registers == null ? null : registers[Register.PF.ordinal()]), 176, 47);
     centered(toHex(registers == null ? null : registers[Register.PR.ordinal()]), 216, 86);
@@ -175,6 +175,20 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     drawLabeledValue(label, value, x, y, null, mouseX, mouseY);
   }
 
+  private void drawBinaryRegister(Register register, int x, int y, int mouseX, int mouseY) {
+    byte[] registers = processor == null ? null : processor.getRegisters();
+    String label = register.toString();
+    String value = toBinary(registers == null ? null : registers[register.ordinal()]);
+    drawLabeledValue(label, value, x, y, null, mouseX, mouseY);
+  }
+
+  private static String toBinary(Byte b) {
+    if (b == null) {
+      return null;
+    }
+    return leftPad(Integer.toBinaryString(b), 8);
+  }
+
   private static String toHex(Byte b) {
     if (b == null) {
       return null;
@@ -183,10 +197,23 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     if (s.length() > 2) {
       return s.substring(s.length() - 2, s.length());
     }
-    if (s.length() < 2) {
-      s = "0" + s;
+    return leftPad(s, 2);
+  }
+
+  public static String leftPad(final String str, final int size) {
+    if (str == null) {
+      return null;
     }
-    return s;
+    final int pads = size - str.length();
+    if (pads <= 0) {
+      return str;
+    }
+    StringBuilder buf = new StringBuilder();
+    for (int i = 0; i < pads; i++) {
+      buf.append("0");
+    }
+    buf.append(str);
+    return buf.toString();
   }
 
   private static String toHex(Short b) {
@@ -197,17 +224,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     if (s.length() > 4) {
       return s.substring(s.length() - 4, s.length());
     }
-    // TODO make this better 😲
-    if (s.length() < 2) {
-      s = "0" + s;
-    }
-    if (s.length() < 3) {
-      s = "0" + s;
-    }
-    if (s.length() < 4) {
-      s = "0" + s;
-    }
-    return s;
+    return leftPad(s, 4);
   }
 
   private void drawFlag(String label, Boolean flag, int x, int y, int mouseX, int mouseY) {
