@@ -20,30 +20,38 @@ public class BookCreator {
 
   private static final String PATH = "/assets/minecoprocessors/books/";
   private static final String PAGE_DELIMITER = "~~~";
-  public static final ItemStack manual = new ItemStack(Items.WRITTEN_BOOK);
+  public static final ItemStack manual;
 
   static {
+    try {
+      manual = loadBook("manual");
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private static ItemStack loadBook(String name) throws IOException {
+    ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
     String line;
     int lineNumber = 1;
     StringBuilder page = newPage();
     try(BufferedReader reader = openBookReader("manual")) {
       while ((line = reader.readLine()) != null) {
         if (lineNumber == 1) {
-          manual.setTagInfo("title", new NBTTagString(line));
+          book.setTagInfo("title", new NBTTagString(line));
         } else if (lineNumber == 2) {
-          manual.setTagInfo("author", new NBTTagString(line));
+          book.setTagInfo("author", new NBTTagString(line));
         } else if (PAGE_DELIMITER.equals(line)) {
-          writePage(manual, page);
+          writePage(book, page);
           page = newPage();
         } else {
           page.append(line).append("\n");
         }
         lineNumber++;
       }
-      writePage(manual, page);
-    } catch(IOException e) {
-      throw new UncheckedIOException(e);
     }
+    writePage(book, page);
+    return book;
   }
 
   private static BufferedReader openBookReader(String name) throws FileNotFoundException {
