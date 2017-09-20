@@ -1,10 +1,13 @@
 package net.torocraft.minecoprocessors.util;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -17,59 +20,44 @@ public class BookCreator {
 
   private static final String PATH = "/assets/minecoprocessors/books/";
   private static final String PAGE_DELIMITER = "~~~";
+  public static final ItemStack manual = new ItemStack(Items.WRITTEN_BOOK);
 
-  public static ItemStack createBook(String name) {
-    ItemStack book = null;
-    try {
-      book = loadBook(name);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-
-    if (book == null) {
-      book = new ItemStack(Items.BOOK);
-    }
-    return book;
-  }
-
-  private static ItemStack loadBook(String name) throws IOException {
-    ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
+  static {
     String line;
     int lineNumber = 1;
     StringBuilder page = newPage();
-    BufferedReader reader = openBookReader(name);
-    while ((line = reader.readLine()) != null) {
-      if (lineNumber == 1) {
-        book.setTagInfo("title", new NBTTagString(line));
-      } else if (lineNumber == 2) {
-        book.setTagInfo("author", new NBTTagString(line));
-      } else if (PAGE_DELIMITER.equals(line)) {
-        writePage(book, page);
-        page = newPage();
-      } else {
-        page.append(line).append("\n");
+    try(BufferedReader reader = openBookReader("manual")) {
+      while ((line = reader.readLine()) != null) {
+        if (lineNumber == 1) {
+          manual.setTagInfo("title", new NBTTagString(line));
+        } else if (lineNumber == 2) {
+          manual.setTagInfo("author", new NBTTagString(line));
+        } else if (PAGE_DELIMITER.equals(line)) {
+          writePage(manual, page);
+          page = newPage();
+        } else {
+          page.append(line).append("\n");
+        }
+        lineNumber++;
       }
-      lineNumber++;
+      writePage(manual, page);
+    } catch(IOException e) {
+      throw new UncheckedIOException(e);
     }
-    writePage(book, page);
-    return book;
   }
 
-  private static BufferedReader openBookReader(String name) throws UnsupportedEncodingException {
+  private static BufferedReader openBookReader(String name) throws FileNotFoundException {
     String path = PATH + name + ".txt";
     InputStream is = BookCreator.class.getResourceAsStream(path);
     if (is == null) {
-      throw new IllegalArgumentException("Book file not found [" + path + "]");
+      throw new FileNotFoundException("Book file not found [" + path + "]");
     }
-    return new BufferedReader(new InputStreamReader(is, "UTF-8"));
+    return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
   }
 
   private static void writePage(ItemStack book, StringBuilder page) {
     NBTTagList pages = getPagesNbt(book);
     pages.appendTag(createPage(page.toString()));
-    if (pages.tagCount() >= 50) {
-      throw new IndexOutOfBoundsException("out of book pages");
-    }
     book.setTagInfo("pages", pages);
   }
 
