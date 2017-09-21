@@ -528,6 +528,10 @@ public class Processor implements IProcessor {
   }
 
   void processCall() {
+    if (sp >= stack.length - 1) {
+      fault = true;
+      return;
+    }
     stack[sp++] = ByteUtil.getByteInShort(ip, 0);
     stack[sp++] = ByteUtil.getByteInShort(ip, 1);
     ip = labels.get(instruction[1]).address;
