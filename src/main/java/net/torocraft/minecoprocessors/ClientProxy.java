@@ -3,7 +3,6 @@ package net.torocraft.minecoprocessors;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.torocraft.minecoprocessors.blocks.BlockMinecoprocessor;
 
@@ -30,11 +29,6 @@ public class ClientProxy extends CommonProxy {
   public void init(FMLInitializationEvent e) {
     super.init(e);
     BlockMinecoprocessor.registerRenders();
-  }
-
-  @Override
-  public void postInit(FMLPostInitializationEvent e) {
-    super.postInit(e);
   }
 
 }

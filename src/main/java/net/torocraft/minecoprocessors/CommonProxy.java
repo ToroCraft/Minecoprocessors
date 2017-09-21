@@ -3,7 +3,6 @@ package net.torocraft.minecoprocessors;
 import org.apache.logging.log4j.Logger;
 
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.torocraft.minecoprocessors.blocks.TileEntityMinecoprocessor;
 import net.torocraft.minecoprocessors.gui.MinecoprocessorGuiHandler;
@@ -31,11 +30,7 @@ public class CommonProxy {
     MinecoprocessorGuiHandler.init();
   }
 
-  public void init(FMLInitializationEvent e) {
-
-  }
-
-  public void postInit(FMLPostInitializationEvent e) {
+  public void init(@SuppressWarnings("unused") FMLInitializationEvent e) {
 
   }
 }

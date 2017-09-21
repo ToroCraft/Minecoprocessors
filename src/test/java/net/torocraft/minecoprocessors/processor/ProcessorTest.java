@@ -13,15 +13,6 @@ import org.junit.Test;
 public class ProcessorTest {
 
   @Test
-  public void testCopyArray() {
-    byte[] a = {1, 2, 3, 4, 5, 6};
-    byte[] b = new byte[a.length];
-    Deencapsulation.invoke(Processor.class, "copy", b, a);
-    Assert.assertEquals(1, b[0]);
-    Assert.assertEquals(6, b[5]);
-  }
-
-  @Test
   public void testNbt() {
     Processor processor = new Processor();
     processor.flush();

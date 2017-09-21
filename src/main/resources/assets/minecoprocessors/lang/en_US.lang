@@ -7,4 +7,4 @@ gui.button.sleep=sleep
 gui.button.step=step
 gui.button.wake=wake
 gui.button.help=manual
-minecoprocessors.error_chat=An unexpected exception occurred in Minecoprocessors. This may cause severe problems and should be reported to the deveoper. Details have been logged.
+minecoprocessors.error_chat=An unexpected exception occurred in Minecoprocessors. This may cause severe problems and should be reported to the developer. Details have been logged.

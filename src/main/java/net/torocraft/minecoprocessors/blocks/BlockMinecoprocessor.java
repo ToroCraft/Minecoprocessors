@@ -20,7 +20,6 @@ import net.minecraft.inventory.InventoryHelper;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumBlockRenderType;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.Mirror;
@@ -153,11 +152,6 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
     return AABB;
   }
 
-  @Override
-  public EnumBlockRenderType getRenderType(IBlockState state) {
-    return EnumBlockRenderType.MODEL;
-  }
-
   public BlockMinecoprocessor() {
     super(true);
     this.setDefaultState(
@@ -178,8 +172,7 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
 
   @Override
   protected void updateState(World worldIn, BlockPos pos, IBlockState state) {
-    int priority = -1;
-    worldIn.updateBlockTick(pos, this, 0, priority);
+    worldIn.updateBlockTick(pos, this, 0, -1);
   }
 
   public void onPortChange(World worldIn, BlockPos pos, IBlockState state, int portIndex) {
@@ -247,11 +240,10 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
   }
 
   protected static int calculateInputStrength(World worldIn, BlockPos pos, EnumFacing enumfacing) {
-    BlockPos blockpos = pos;
-    IBlockState adjacentState = worldIn.getBlockState(blockpos);
+    IBlockState adjacentState = worldIn.getBlockState(pos);
     Block block = adjacentState.getBlock();
 
-    int i = worldIn.getRedstonePower(blockpos, enumfacing);
+    int i = worldIn.getRedstonePower(pos, enumfacing);
 
     if (i >= 15) {
       return 15;
@@ -291,8 +283,6 @@ public class BlockMinecoprocessor extends BlockRedstoneDiode implements ITileEnt
     if (te.getWorld().isRemote) {
       return 0;
     }
-
-    boolean powered = false;
 
     if (RedstoneUtil.isFrontPort(state, side)) {
       return RedstoneUtil.portToPower(te.getFrontPortSignal());

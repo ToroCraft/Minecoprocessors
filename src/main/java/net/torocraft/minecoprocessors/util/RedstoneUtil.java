@@ -52,10 +52,7 @@ public class RedstoneUtil {
   }
 
   public static byte powerToPort(int powerValue) {
-    if (powerValue > 15) {
-      powerValue = 15;
-    }
-    return (byte) powerValue;
+    return (byte) Math.min(powerValue, 15);
   }
 
   public static boolean isFrontPort(IBlockState blockState, EnumFacing side) {

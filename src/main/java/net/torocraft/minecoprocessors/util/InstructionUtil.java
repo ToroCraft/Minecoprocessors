@@ -94,7 +94,7 @@ public class InstructionUtil {
       case WFE:
         break;
       default:
-
+        throw new RuntimeException("Command enum had unexpected value");
     }
     return line.toString();
   }
@@ -125,12 +125,8 @@ public class InstructionUtil {
   public static void parseLineForLabels(String line, List<Label> labels, short lineAddress)
       throws ParseException {
     line = removeComments(line);
-    if (line.trim().length() < 1) {
-      return;
-    }
-    if (isLabelInstruction(line)) {
+    if (!line.trim().isEmpty() && isLabelInstruction(line)) {
       parseLabelLine(line, labels, lineAddress);
-      return;
     }
   }
 
@@ -254,7 +250,7 @@ public class InstructionUtil {
       case WFE:
         return instruction;
       default:
-        throw new ParseException(line, "invalid command [" + instructionCode + "]");
+        throw new RuntimeException("instructionCode enum had unexpected value");
     }
   }
 
