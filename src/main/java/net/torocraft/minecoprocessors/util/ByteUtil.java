@@ -29,7 +29,7 @@ public class ByteUtil {
       throw new IndexOutOfBoundsException("position of " + position);
     }
     int mask = ~(0xff << position * 8);
-    int insert = b << position * 8;
+    int insert = (b << position * 8) & ~mask;
     return (short) (s & mask | insert);
   }
 
@@ -38,7 +38,7 @@ public class ByteUtil {
       throw new IndexOutOfBoundsException("byte position of " + position);
     }
     int mask = ~(0xff << position * 8);
-    int insert = b << position * 8;
+    int insert = (b << position * 8) & ~mask;
     return i & mask | insert;
   }
 
@@ -47,7 +47,7 @@ public class ByteUtil {
       throw new IndexOutOfBoundsException("position of " + position);
     }
     long mask = ~(0xffL << position * 8);
-    long insert = (long) b << position * 8;
+    long insert = ((long) b << position * 8) & ~mask;
     return l & mask | insert;
   }
 
@@ -60,7 +60,7 @@ public class ByteUtil {
       throw new IndexOutOfBoundsException("short position of " + position);
     }
     long mask = ~(0xffffL << position * 16);
-    long insert = (long) b << position * 16;
+    long insert = ((long) b << position * 16) & ~mask;
     return l & mask | insert;
   }
 
