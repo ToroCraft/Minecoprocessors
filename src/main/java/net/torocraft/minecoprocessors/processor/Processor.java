@@ -168,7 +168,7 @@ public class Processor implements IProcessor {
 
     byte[] registersNew = new byte[Register.values().length];
     // FIXME replace with System.arraycopy() ?
-    for (int i = 0; i < registersNew.length; i++) {
+    for (int i = 0; i < registersNew.length && i < registersIn.length; i++) {
       registersNew[i] = registersIn[i];
     }
     return registersNew;
