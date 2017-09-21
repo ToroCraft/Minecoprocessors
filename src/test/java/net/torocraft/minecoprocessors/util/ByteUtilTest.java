@@ -25,17 +25,17 @@ public class ByteUtilTest {
   }
 
   @Test
-  public void testGetByteInShort() {
+  public void testGetByte() {
     short s = (short) 0xabcd;
-    Assert.assertEquals((byte) 0xcd, ByteUtil.getByteInShort(s, 0));
-    Assert.assertEquals((byte) 0xab, ByteUtil.getByteInShort(s, 1));
+    Assert.assertEquals((byte) 0xcd, ByteUtil.getByte(s, 0));
+    Assert.assertEquals((byte) 0xab, ByteUtil.getByte(s, 1));
   }
 
   @Test
-  public void testSetByteInShort() {
+  public void testSetByte() {
     short s = (short) 0x0f00;
-    Assert.assertEquals((short) 0x0fab, ByteUtil.setByteInShort(s, (byte) 0xab, 0));
-    Assert.assertEquals((short) 0x6900, ByteUtil.setByteInShort(s, (byte) 0x69, 1));
+    Assert.assertEquals((short) 0x0fab, ByteUtil.setByte(s, (byte) 0xab, 0));
+    Assert.assertEquals((short) 0x6900, ByteUtil.setByte(s, (byte) 0x69, 1));
   }
 
   @Test
@@ -64,7 +64,7 @@ public class ByteUtilTest {
   }
 
   @Test
-  public void testByteMethods() {
+  public void testByteInIntMethods() {
     int i = 0x12345678;
     Assert.assertEquals(0x78, ByteUtil.getByte(i, 0));
     Assert.assertEquals(0x56, ByteUtil.getByte(i, 1));
@@ -87,43 +87,43 @@ public class ByteUtilTest {
   @Test
   public void testByteInLongMethods() {
     long l = Long.parseLong("0123456789abcdef", 16);
-    Assert.assertEquals((byte) 0xef, ByteUtil.getByteInLong(l, 0));
-    Assert.assertEquals((byte) 0xcd, ByteUtil.getByteInLong(l, 1));
-    Assert.assertEquals((byte) 0xab, ByteUtil.getByteInLong(l, 2));
-    Assert.assertEquals((byte) 0x89, ByteUtil.getByteInLong(l, 3));
-    Assert.assertEquals((byte) 0x01, ByteUtil.getByteInLong(l, 7));
+    Assert.assertEquals((byte) 0xef, ByteUtil.getByte(l, 0));
+    Assert.assertEquals((byte) 0xcd, ByteUtil.getByte(l, 1));
+    Assert.assertEquals((byte) 0xab, ByteUtil.getByte(l, 2));
+    Assert.assertEquals((byte) 0x89, ByteUtil.getByte(l, 3));
+    Assert.assertEquals((byte) 0x01, ByteUtil.getByte(l, 7));
 
-    l = ByteUtil.setByteInLong(l, (byte) 0x33, 1);
+    l = ByteUtil.setByte(l, (byte) 0x33, 1);
     Assert.assertEquals("123456789ab33ef", Long.toString(l, 16));
 
-    l = ByteUtil.setByteInLong(l, (byte) 0xee, 4);
+    l = ByteUtil.setByte(l, (byte) 0xee, 4);
     Assert.assertEquals("12345ee89ab33ef", Long.toString(l, 16));
 
-    l = ByteUtil.setByteInLong(l, (byte) 0xff, 7);
+    l = ByteUtil.setByte(l, (byte) 0xff, 7);
     Assert.assertEquals("ff2345ee89ab33ef", Long.toUnsignedString(l, 16));
   }
 
   @Test
-  public void testBitInLongMethods() {
+  public void testBitMethods() {
     long l = Long.parseLong("0110010", 2);
 
-    Assert.assertFalse(ByteUtil.getBitInLong(l, 0));
-    Assert.assertTrue(ByteUtil.getBitInLong(l, 1));
-    Assert.assertFalse(ByteUtil.getBitInLong(l, 2));
-    Assert.assertFalse(ByteUtil.getBitInLong(l, 3));
-    Assert.assertTrue(ByteUtil.getBitInLong(l, 4));
-    Assert.assertTrue(ByteUtil.getBitInLong(l, 5));
-    Assert.assertFalse(ByteUtil.getBitInLong(l, 6));
-    Assert.assertFalse(ByteUtil.getBitInLong(l, 7));
+    Assert.assertFalse(ByteUtil.getBit(l, 0));
+    Assert.assertTrue(ByteUtil.getBit(l, 1));
+    Assert.assertFalse(ByteUtil.getBit(l, 2));
+    Assert.assertFalse(ByteUtil.getBit(l, 3));
+    Assert.assertTrue(ByteUtil.getBit(l, 4));
+    Assert.assertTrue(ByteUtil.getBit(l, 5));
+    Assert.assertFalse(ByteUtil.getBit(l, 6));
+    Assert.assertFalse(ByteUtil.getBit(l, 7));
 
-    l = ByteUtil.setBitInLong(l, true, 0);
+    l = ByteUtil.setBit(l, true, 0);
     Assert.assertEquals("110011", Long.toBinaryString(l));
 
-    l = ByteUtil.setBitInLong(l, true, 2);
+    l = ByteUtil.setBit(l, true, 2);
     Assert.assertEquals("110111", Long.toBinaryString(l));
 
-    l = ByteUtil.setBitInLong(l, false, 0);
-    l = ByteUtil.setBitInLong(l, false, 2);
+    l = ByteUtil.setBit(l, false, 0);
+    l = ByteUtil.setBit(l, false, 2);
     Assert.assertEquals("110010", Long.toBinaryString(l));
   }
 }
