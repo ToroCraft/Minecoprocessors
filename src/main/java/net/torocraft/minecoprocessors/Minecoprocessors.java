@@ -4,7 +4,6 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.SidedProxy;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
@@ -22,7 +21,7 @@ public class Minecoprocessors {
   public static SimpleNetworkWrapper NETWORK = NetworkRegistry.INSTANCE
       .newSimpleChannel(Minecoprocessors.MODID);
 
-  @SidedProxy(clientSide = "net.torocraft.minecoprocessors.ClientProxy", serverSide = "net.torocraft.minecoprocessors.ServerProxy")
+  @SidedProxy(clientSide = "net.torocraft.minecoprocessors.ClientProxy", serverSide = "net.torocraft.minecoprocessors.CommonProxy")
   public static CommonProxy proxy;
 
   @EventHandler
@@ -33,11 +32,6 @@ public class Minecoprocessors {
   @EventHandler
   public void init(FMLInitializationEvent e) {
     proxy.init(e);
-  }
-
-  @EventHandler
-  public void postInit(FMLPostInitializationEvent e) {
-    proxy.postInit(e);
   }
 
 }

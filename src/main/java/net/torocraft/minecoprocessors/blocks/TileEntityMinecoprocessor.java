@@ -54,7 +54,6 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   private byte prevPortsRegister = 0x0f;
 
   private boolean prevIsInactive;
-  private boolean prevIsHot;
   private boolean overClocked;
 
   public static void init() {
@@ -144,10 +143,6 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   }
 
   public void updatePlayers() {
-    if (playersToUpdate.size() < 1) {
-      return;
-    }
-
     for (EntityPlayerMP player : playersToUpdate) {
       Minecoprocessors.NETWORK.sendTo(new MessageProcessorUpdate(processor.writeToNBT(), pos, getName()), player);
     }
@@ -212,8 +207,10 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
     if (isADCMode(adc, portIndex)) {
       value = RedstoneUtil.powerToPort(powerValue);
-    }else {
-      value = powerValue == 0 ? 0 : (byte) 0xff;
+    } else if(powerValue == 0) {
+      value = 0;
+    } else {
+      value = (byte) 0xff;
     }
 
     if (isInInputMode(ports, portIndex) && prevPortValues[portIndex] != value) {
@@ -229,7 +226,6 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
         processor.reset();
         return true;
       }
-      return false;
     }
 
     return false;
@@ -242,7 +238,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     byte signal = processor.getRegisters()[Register.PF.ordinal() + portIndex];
 
     if (!isADCMode(processor.getRegisters()[Register.ADC.ordinal()], portIndex)) {
-      signal = signal == 0 ? 0 : (byte) 0xff;
+      return signal == 0 ? 0 : (byte) 0xff;
     }
 
     return signal;
@@ -277,7 +273,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
   @Override
   public ItemStack getStackInSlot(int index) {
-    return index >= 0 && index < codeItemStacks.size() ? (ItemStack) codeItemStacks.get(index) : ItemStack.EMPTY;
+    return index >= 0 && index < codeItemStacks.size() ? codeItemStacks.get(index) : ItemStack.EMPTY;
   }
 
   @Override
@@ -365,10 +361,10 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
   private void updateNameFromCode(String code) {
     String name = readNameFromHeader(code);
-    if (name != null && !name.isEmpty()) {
-      setName(name);
-    } else {
+    if ("".equals(name)) {
       setName(null);
+    } else {
+      setName(name);
     }
   }
 

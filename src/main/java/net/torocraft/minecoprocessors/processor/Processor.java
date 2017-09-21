@@ -3,6 +3,7 @@ package net.torocraft.minecoprocessors.processor;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagByteArray;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -130,35 +131,25 @@ public class Processor implements IProcessor {
   long packFlags() {
     long flags = 0;
     flags = ByteUtil.setShort(flags, ip, 3);
-    flags = ByteUtil.setByteInLong(flags, sp, 5);
-    flags = ByteUtil.setByteInLong(flags, getTemp(), 4);
-    flags = ByteUtil.setBitInLong(flags, fault, 0);
-    flags = ByteUtil.setBitInLong(flags, zero, 1);
-    flags = ByteUtil.setBitInLong(flags, overflow, 2);
-    flags = ByteUtil.setBitInLong(flags, carry, 3);
-    flags = ByteUtil.setBitInLong(flags, wait, 4);
+    flags = ByteUtil.setByte(flags, sp, 5);
+    flags = ByteUtil.setByte(flags, getTemp(), 4);
+    flags = ByteUtil.setBit(flags, fault, 0);
+    flags = ByteUtil.setBit(flags, zero, 1);
+    flags = ByteUtil.setBit(flags, overflow, 2);
+    flags = ByteUtil.setBit(flags, carry, 3);
+    flags = ByteUtil.setBit(flags, wait, 4);
     return flags;
   }
 
   void unPackFlags(long flags) {
     ip = ByteUtil.getShort(flags, 3);
-    sp = ByteUtil.getByteInLong(flags, 5);
-    temp = ByteUtil.getByteInLong(flags, 4);
-    fault = ByteUtil.getBitInLong(flags, 0);
-    zero = ByteUtil.getBitInLong(flags, 1);
-    overflow = ByteUtil.getBitInLong(flags, 2);
-    carry = ByteUtil.getBitInLong(flags, 3);
-    wait = ByteUtil.getBitInLong(flags, 4);
-  }
-
-  private static void copy(byte[] a, byte[] b) {
-    if (a.length != b.length) {
-      new RuntimeException("WARNING: copying different sized a[" + a.length + "] b[" + b.length + "]").printStackTrace();
-    }
-    // FIXME replace with System.arraycopy() ?
-    for (int i = 0; i < Math.min(a.length, b.length); i++) {
-      a[i] = b[i];
-    }
+    sp = ByteUtil.getByte(flags, 5);
+    temp = ByteUtil.getByte(flags, 4);
+    fault = ByteUtil.getBit(flags, 0);
+    zero = ByteUtil.getBit(flags, 1);
+    overflow = ByteUtil.getBit(flags, 2);
+    carry = ByteUtil.getBit(flags, 3);
+    wait = ByteUtil.getBit(flags, 4);
   }
 
   private static byte[] addRegistersIfMissing(byte[] registersIn) {
@@ -189,16 +180,16 @@ public class Processor implements IProcessor {
     program = new ArrayList<>();
     NBTTagList programTag = (NBTTagList) c.getTag(NBT_PROGRAM);
     if (programTag != null) {
-      for (int i = 0; i < programTag.tagCount(); i++) {
-        program.add(((NBTTagByteArray) programTag.get(i)).getByteArray());
+      for (NBTBase tag : programTag) {
+        program.add(((NBTTagByteArray) tag).getByteArray());
       }
     }
 
     labels = new ArrayList<>();
     NBTTagList labelTag = (NBTTagList) c.getTag(NBT_LABELS);
     if (labelTag != null) {
-      for (int i = 0; i < labelTag.tagCount(); i++) {
-        labels.add(Label.fromNbt((NBTTagCompound) labelTag.get(i)));
+      for (NBTBase tag : labelTag) {
+        labels.add(Label.fromNbt((NBTTagCompound) tag));
       }
     }
   }
@@ -213,8 +204,8 @@ public class Processor implements IProcessor {
       c.setString(NBT_ERROR, error);
     }
     NBTTagList programTag = new NBTTagList();
-    for (Object b : program) {
-      programTag.appendTag(new NBTTagByteArray((byte[]) b));
+    for (byte[] b : program) {
+      programTag.appendTag(new NBTTagByteArray(b));
     }
     c.setTag(NBT_PROGRAM, programTag);
 
@@ -401,10 +392,8 @@ public class Processor implements IProcessor {
         processDec();
         return;
       default:
-        break;
+        throw new RuntimeException("InstructionCode enum had unexpected value");
     }
-
-    fault = true;
   }
 
   void processMov() {
@@ -532,8 +521,8 @@ public class Processor implements IProcessor {
       fault = true;
       return;
     }
-    stack[sp++] = ByteUtil.getByteInShort(ip, 0);
-    stack[sp++] = ByteUtil.getByteInShort(ip, 1);
+    stack[sp++] = ByteUtil.getByte(ip, 0);
+    stack[sp++] = ByteUtil.getByte(ip, 1);
     ip = labels.get(instruction[1]).address;
   }
 
@@ -543,8 +532,8 @@ public class Processor implements IProcessor {
       error = "ret";
       return;
     }
-    ip = ByteUtil.setByteInShort(ip, stack[--sp], 1);
-    ip = ByteUtil.setByteInShort(ip, stack[--sp], 0);
+    ip = ByteUtil.setByte(ip, stack[--sp], 1);
+    ip = ByteUtil.setByte(ip, stack[--sp], 0);
   }
 
   void processInc() {
@@ -559,10 +548,6 @@ public class Processor implements IProcessor {
     int z = a - 1;
     zero = z == 0;
     registers[instruction[1]] = (byte) z;
-  }
-
-  void testOverflow(int z) {
-    overflow = z != (byte) z;
   }
 
   void testOverflow(long z) {
