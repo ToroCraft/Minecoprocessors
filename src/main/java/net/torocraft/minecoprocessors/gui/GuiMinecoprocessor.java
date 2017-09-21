@@ -1,7 +1,7 @@
 package net.torocraft.minecoprocessors.gui;
 
+import java.util.ArrayList;
 import java.util.List;
-
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreenBook;
 import net.minecraft.client.renderer.GlStateManager;
@@ -14,15 +14,13 @@ import net.minecraft.util.math.MathHelper;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.blocks.ContainerMinecoprocessor;
 import net.torocraft.minecoprocessors.blocks.TileEntityMinecoprocessor;
-import net.torocraft.minecoprocessors.network.MessageProcessorAction;
 import net.torocraft.minecoprocessors.network.MessageEnableGuiUpdates;
+import net.torocraft.minecoprocessors.network.MessageProcessorAction;
 import net.torocraft.minecoprocessors.network.MessageProcessorAction.Action;
 import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
 import net.torocraft.minecoprocessors.util.BookCreator;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
-
-// TODO mouse hovers
 
 public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiContainer {
 
@@ -30,19 +28,17 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
 
   private final IInventory playerInventory;
   private final TileEntityMinecoprocessor minecoprocessor;
+  private final List<String> hoveredFeature = new ArrayList<>(5);
 
   private GuiButton buttonReset;
   private GuiButton buttonPause;
   private GuiButton buttonStep;
   private GuiButton buttonHelp;
-
   private Processor processor;
 
   public BlockPos getPos() {
     return minecoprocessor.getPos();
   }
-
-  // TODO add sequence number to packets and ignore it if it is older than the last received on
 
   public static GuiMinecoprocessor INSTANCE;
 
@@ -74,11 +70,15 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
    */
   @Override
   protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
+    hoveredFeature.clear();
 
     GlStateManager.pushMatrix();
     GlStateManager.scale(0.5d, 0.5d, 0.5d);
     int scale = 2;
-    int y = 20 * scale;
+    int y;
+
+    mouseX = (mouseX - guiLeft) * scale;
+    mouseY = (mouseY - guiTop) * scale;
 
     byte[] registers = processor == null ? null : processor.getRegisters();
 
@@ -95,14 +95,18 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     drawFlag("S", processor == null ? null : processor.isWait(), 157 * 2, y, 0x00ff00, mouseX, mouseY);
 
     y = 114;
-    drawLabeledShort("IP", processor == null ? null : processor.getIp(), 128 * 2, y, mouseX, mouseY);
+    boolean mouseIsOver = drawLabeledShort("IP", processor == null ? null : processor.getIp(), 128 * 2, y, mouseX, mouseY);
+    if (mouseIsOver) {
+      hoveredFeature.add("Instruction Pointer");
+    }
+
     drawRegister(Register.ADC, 142 * 2, y, mouseX, mouseY);
     drawRegister(Register.PORTS, 158 * 2, y, mouseX, mouseY);
 
-    centered(toHex(registers == null ? null : registers[Register.PF.ordinal()]), 176, 47);
-    centered(toHex(registers == null ? null : registers[Register.PR.ordinal()]), 216, 86);
-    centered(toHex(registers == null ? null : registers[Register.PL.ordinal()]), 137, 86);
-    centered(toHex(registers == null ? null : registers[Register.PB.ordinal()]), 176, 125);
+    drawPortRegister(Register.PF, 176, 47, mouseX, mouseY);
+    drawPortRegister(Register.PR, 216, 86, mouseX, mouseY);
+    drawPortRegister(Register.PL, 137, 86, mouseX, mouseY);
+    drawPortRegister(Register.PB, 176, 125, mouseX, mouseY);
 
     drawCode();
 
@@ -116,17 +120,50 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
       pauseText = "gui.button.wake";
     }
     buttonPause.displayString = I18n.format(pauseText);
-
     buttonStep.enabled = processor != null && processor.isWait();
   }
 
-  @SuppressWarnings("unused")
-  private void drawTemp(int mouseX, int mouseY, int y) {
-    Integer tempColor = null;
-    if (processor != null && processor.isHot()) {
-      tempColor = 0xff0000;
+  private void drawPortRegister(Register register, int x, int y, int mouseX, int mouseY) {
+    byte[] registers = processor == null ? null : processor.getRegisters();
+    byte value = registers == null ? 0 : registers[register.ordinal()];
+    boolean mouseIsOver = centered(toHex(value), x, y, mouseX, mouseY);
+    if (mouseIsOver) {
+
+      int portIndex = register.ordinal() - Register.PF.ordinal();
+      byte ports = registers[Register.PORTS.ordinal()];
+      byte adc = registers[Register.ADC.ordinal()];
+
+      switch (register) {
+        case PF:
+          hoveredFeature.add("Front Port - PF");
+          break;
+        case PB:
+          hoveredFeature.add("Back Port - PB");
+          break;
+        case PL:
+          hoveredFeature.add("Left Port - PL");
+          break;
+        case PR:
+          hoveredFeature.add("Right Port - PR");
+          break;
+      }
+
+      if (TileEntityMinecoprocessor.isInOutputMode(ports, portIndex)) {
+        hoveredFeature.add("Output Port");
+      } else if (TileEntityMinecoprocessor.isInInputMode(ports, portIndex)) {
+        hoveredFeature.add("Input Port");
+      } else if (TileEntityMinecoprocessor.isInResetMode(ports, portIndex)) {
+        hoveredFeature.add("Reset Port");
+      }
+
+      if (TileEntityMinecoprocessor.isADCMode(adc, portIndex)) {
+        hoveredFeature.add("Analog Mode");
+      } else {
+        hoveredFeature.add("Digital Mode");
+      }
+
+      hoveredFeature.add(String.format("0x%s %sb %s", toHex(value), toBinary(value), Integer.toString(value, 10)));
     }
-    drawLabeledValue("TEMP", processor == null ? null : Integer.toUnsignedString(processor.getTemp()), 157 * 2, y, tempColor, mouseX, mouseY);
   }
 
   private void drawCode() {
@@ -136,11 +173,11 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     String label = "NEXT";
 
     byte[] a = null;
-    if(processor != null) {
+    if (processor != null) {
       try {
         int ip = processor.getIp();
         List<byte[]> program = processor.getProgram();
-        if(ip < program.size()) {
+        if (ip < program.size()) {
           a = program.get(ip);
         }
       } catch (Exception e) {
@@ -168,22 +205,34 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   private void drawRegister(Register register, int x, int y, int mouseX, int mouseY) {
     byte[] registers = processor == null ? null : processor.getRegisters();
     String label = register.toString();
-    String value = toHex(registers == null ? null : registers[register.ordinal()]);
-    drawLabeledValue(label, value, x, y, null, mouseX, mouseY);
+    byte value = registers == null ? 0 : registers[register.ordinal()];
+
+    boolean mouseIsOver = drawLabeledValue(label, toHex(value), x, y, null, mouseX, mouseY);
+    if (mouseIsOver) {
+      hoveredFeature.add(label + " Register");
+      if (Register.PORTS.equals(register)) {
+        hoveredFeature.add("I/O port direction");
+      } else if (Register.ADC.equals(register)) {
+        hoveredFeature.add("ADC/DAC switch");
+      } else {
+        hoveredFeature.add("General Purpose");
+      }
+      hoveredFeature.add(String.format("0x%s %sb %s", toHex(value), toBinary(value), Integer.toString(value, 10)));
+    }
   }
 
-  private void drawBinaryRegister(Register register, int x, int y, int mouseX, int mouseY) {
-    byte[] registers = processor == null ? null : processor.getRegisters();
-    String label = register.toString();
-    String value = toBinary(registers == null ? null : registers[register.ordinal()]);
-    drawLabeledValue(label, value, x, y, null, mouseX, mouseY);
-  }
-
-  private static String toBinary(Byte b) {
+  static String toBinary(Byte b) {
     if (b == null) {
       return null;
     }
-    return leftPad(Integer.toBinaryString(b), 8);
+    return maxLength(leftPad(Integer.toBinaryString(b), 8), 8);
+  }
+
+  private static String maxLength(String s, int l) {
+    if (s.length() > l) {
+      return s.substring(s.length() - l, s.length());
+    }
+    return s;
   }
 
   private static String toHex(Byte b) {
@@ -232,7 +281,24 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     if (flag == null) {
       flag = false;
     }
-    drawLabeledValue(label, flag ? "1" : "0", x, y, flag ? flashColor : null, mouseX, mouseY);
+    boolean mouseIsOver = drawLabeledValue(label, flag ? "1" : "0", x, y, flag ? flashColor : null, mouseX, mouseY);
+    if (mouseIsOver) {
+      switch (label) {
+        case "Z":
+          hoveredFeature.add("Zero Flag");
+          break;
+        case "C":
+          hoveredFeature.add("Carry Flag");
+          break;
+        case "F":
+          hoveredFeature.add("Fault Indicator");
+          break;
+        case "S":
+          hoveredFeature.add("Sleep Indicator");
+          break;
+      }
+      hoveredFeature.add(Boolean.toString(flag).toUpperCase());
+    }
   }
 
   @SuppressWarnings("unused")
@@ -240,11 +306,12 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     drawLabeledValue(label, toHex(b), x, y, null, mouseX, mouseY);
   }
 
-  private void drawLabeledShort(String label, Short b, int x, int y, int mouseX, int mouseY) {
-    drawLabeledValue(label, toHex(b), x, y, null, mouseX, mouseY);
+  private boolean drawLabeledShort(String label, Short b, int x, int y, int mouseX, int mouseY) {
+    return drawLabeledValue(label, toHex(b), x, y, null, mouseX, mouseY);
   }
 
-  private void drawLabeledValue(String label, String value, int x, int y, Integer flashColor, int mouseX, int mouseY) {
+  private boolean drawLabeledValue(String label, String value, int x, int y, Integer flashColor, int mouseX, int mouseY) {
+
     int wLabel = fontRenderer.getStringWidth(label) / 2;
     int wValue = 0;
     if (value != null) {
@@ -261,12 +328,24 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     if (value != null) {
       fontRenderer.drawString(value, x - wValue, y, color);
     }
+
+    int wMax = Math.max(wLabel, wValue);
+    boolean mouseIsOver = mouseX > (x - wMax) && mouseX < (x + wMax);
+    mouseIsOver = mouseIsOver && mouseY > y - 14 && mouseY < y + 14;
+
+    return mouseIsOver;
   }
 
-  private void centered(String s, float x, float y) {
-    int xs = (int) x - fontRenderer.getStringWidth(s) / 2;
-    int ys = (int) y - fontRenderer.FONT_HEIGHT / 2;
+  private boolean centered(String s, float x, float y, int mouseX, int mouseY) {
+    int hWidth = fontRenderer.getStringWidth(s) / 2;
+    int hHeight = fontRenderer.FONT_HEIGHT / 2;
+    int xs = (int) x - hWidth;
+    int ys = (int) y - hHeight;
     fontRenderer.drawString(s, xs, ys, 0xffffff);
+
+    boolean mouseIsOver = mouseX > (x - hWidth) && mouseX < (x + hWidth);
+    mouseIsOver = mouseIsOver && mouseY > y - hHeight - 2 && mouseY < y + hHeight + 2;
+    return mouseIsOver;
   }
 
   private void drawInventoryTitle() {
@@ -282,6 +361,14 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   public void drawScreen(int mouseX, int mouseY, float partialTicks) {
     super.drawScreen(mouseX, mouseY, partialTicks);
     renderHoveredToolTip(mouseX, mouseY);
+    renderFeatureToolTip(mouseX, mouseY);
+  }
+
+  private void renderFeatureToolTip(int x, int y) {
+    if (hoveredFeature.size() == 0) {
+      return;
+    }
+    drawHoveringText(hoveredFeature, x, y, fontRenderer);
   }
 
   @Override

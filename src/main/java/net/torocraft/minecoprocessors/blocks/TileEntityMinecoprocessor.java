@@ -185,19 +185,19 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     return updated;
   }
 
-  private static boolean isInInputMode(byte ports, int portIndex) {
+  public static boolean isInInputMode(byte ports, int portIndex) {
     return ByteUtil.getBit(ports, portIndex) && !ByteUtil.getBit(ports, portIndex + 4);
   }
 
-  private static boolean isInOutputMode(byte ports, int portIndex) {
+  public static boolean isInOutputMode(byte ports, int portIndex) {
     return !ByteUtil.getBit(ports, portIndex) && !ByteUtil.getBit(ports, portIndex + 4);
   }
 
-  private static boolean isADCMode(byte adc, int portIndex) {
+  public static boolean isADCMode(byte adc, int portIndex) {
     return ByteUtil.getBit(adc, portIndex);
   }
 
-  private static boolean isInResetMode(byte ports, int portIndex) {
+  public static boolean isInResetMode(byte ports, int portIndex) {
     return ByteUtil.getBit(ports, portIndex) && ByteUtil.getBit(ports, portIndex + 4);
   }
   
