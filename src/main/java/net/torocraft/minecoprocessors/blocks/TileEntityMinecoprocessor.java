@@ -241,12 +241,8 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     }
     byte signal = processor.getRegisters()[Register.PF.ordinal() + portIndex];
 
-    try {
-      if (!isADCMode(processor.getRegisters()[Register.ADC.ordinal()], portIndex)) {
-        signal = signal == 0 ? 0 : (byte) 0xff;
-      }
-    }catch (Exception e) {
-      throw new RuntimeException(e);
+    if (!isADCMode(processor.getRegisters()[Register.ADC.ordinal()], portIndex)) {
+      signal = signal == 0 ? 0 : (byte) 0xff;
     }
 
     return signal;
