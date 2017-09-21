@@ -48,7 +48,7 @@ public class RedstoneUtil {
   }
 
   public static int portToPower(byte port) {
-    return port & 0x0f;
+    return port & 0x0f error!
   }
 
   public static byte powerToPort(int powerValue) {
