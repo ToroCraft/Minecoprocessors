@@ -35,6 +35,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   private GuiButton buttonStep;
   private GuiButton buttonHelp;
   private Processor processor;
+  private byte[] registers = new byte[Register.values().length];
 
   public BlockPos getPos() {
     return minecoprocessor.getPos();
@@ -56,6 +57,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     }
     processor.readFromNBT(processorData);
     minecoprocessor.setName(I18n.format(name));
+    registers = processor.getRegisters();
   }
 
   @Override
@@ -79,8 +81,6 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
 
     mouseX = (mouseX - guiLeft) * scale;
     mouseY = (mouseY - guiTop) * scale;
-
-    byte[] registers = processor == null ? null : processor.getRegisters();
 
     y = 50;
     drawRegister(Register.A, 130 * 2, y, mouseX, mouseY);
@@ -124,8 +124,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   }
 
   private void drawPortRegister(Register register, int x, int y, int mouseX, int mouseY) {
-    byte[] registers = processor == null ? null : processor.getRegisters();
-    byte value = registers == null ? 0 : registers[register.ordinal()];
+    byte value = registers[register.ordinal()];
     boolean mouseIsOver = centered(toHex(value), x, y, mouseX, mouseY);
     if (mouseIsOver) {
 
@@ -203,9 +202,8 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   }
 
   private void drawRegister(Register register, int x, int y, int mouseX, int mouseY) {
-    byte[] registers = processor == null ? null : processor.getRegisters();
     String label = register.toString();
-    byte value = registers == null ? 0 : registers[register.ordinal()];
+    byte value = registers[register.ordinal()];
 
     boolean mouseIsOver = drawLabeledValue(label, toHex(value), x, y, null, mouseX, mouseY);
     if (mouseIsOver) {
