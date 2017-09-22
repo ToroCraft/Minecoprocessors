@@ -11,6 +11,60 @@ import org.junit.Test;
 public class InstructionUtilTest {
 
   @Test
+  public void isRegister() {
+    Assert.assertTrue(InstructionUtil.isRegister("a"));
+    Assert.assertTrue(InstructionUtil.isRegister("B"));
+    Assert.assertTrue(InstructionUtil.isRegister("PORTs"));
+    Assert.assertTrue(InstructionUtil.isRegister("pf"));
+    Assert.assertFalse(InstructionUtil.isRegister("15"));
+    Assert.assertFalse(InstructionUtil.isRegister("-15"));
+    Assert.assertFalse(InstructionUtil.isRegister("0xf0"));
+    Assert.assertFalse(InstructionUtil.isRegister("010b"));
+    Assert.assertFalse(InstructionUtil.isRegister("0o010"));
+    Assert.assertFalse(InstructionUtil.isRegister(null));
+  }
+
+  @Test
+  public void isLiteral() {
+    Assert.assertTrue(InstructionUtil.isLiteral("15"));
+    Assert.assertTrue(InstructionUtil.isLiteral("-15"));
+    Assert.assertTrue(InstructionUtil.isLiteral("0xf0"));
+    Assert.assertTrue(InstructionUtil.isLiteral("010b"));
+    Assert.assertTrue(InstructionUtil.isLiteral("0o010"));
+    // TODO don't detect over sized operands
+    // Assert.assertFalse(InstructionUtil.isLiteral("0xf00"));
+    Assert.assertFalse(InstructionUtil.isLiteral("a"));
+    Assert.assertFalse(InstructionUtil.isLiteral("015b"));
+    Assert.assertFalse(InstructionUtil.isLiteral("0xg3"));
+    Assert.assertFalse(InstructionUtil.isLiteral("label_name"));
+    Assert.assertFalse(InstructionUtil.isLiteral("a"));
+  }
+
+  @Test
+  public void splitDoubleOperandString() {
+    List<String> l = InstructionUtil.splitDoubleOperandString("test a, b");
+    Assert.assertEquals(2, l.size());
+    Assert.assertEquals("a", l.get(0));
+    Assert.assertEquals("b", l.get(1));
+  }
+
+  @Test
+  public void splitDoubleOperandString_literals() {
+    List<String> l = InstructionUtil.splitDoubleOperandString("test a, 0xff");
+    Assert.assertEquals(2, l.size());
+    Assert.assertEquals("a", l.get(0));
+    Assert.assertEquals("0xff", l.get(1));
+  }
+
+  @Test
+  public void splitDoubleOperandString_label() {
+    List<String> l = InstructionUtil.splitDoubleOperandString("test a, test_label-op");
+    Assert.assertEquals(2, l.size());
+    Assert.assertEquals("a", l.get(0));
+    Assert.assertEquals("test_label-op", l.get(1));
+  }
+
+  @Test
   public void testIsLiteral() {
     testIsNotLiteral("abc");
     testIsNotLiteral("-0x0aF");
@@ -84,29 +138,41 @@ public class InstructionUtilTest {
 
   @Test
   public void testStandardOperands() throws ParseException {
-    byte[] instruction = InstructionUtil.parseLine("mov A, B ; test mov", null, (short) 0);
+    byte[] instruction;
+    List<Label> labels = new ArrayList<>();
+    labels.add(new Label((short) 13, "TEST_LABEL1"));
+    labels.add(new Label((short) 14, "TEST_LABEL2"));
+    labels.add(new Label((short) 15, "TEST_LABEL3"));
+
+    instruction = InstructionUtil.parseLine("mov A, B ; test mov", labels, (short) 0);
     Assert.assertEquals((byte) InstructionCode.MOV.ordinal(), instruction[0]);
     Assert.assertEquals((byte) Register.A.ordinal(), instruction[1]);
     Assert.assertEquals((byte) Register.B.ordinal(), instruction[2]);
     Assert.assertEquals((byte) 0b00000000, instruction[3]);
 
-    instruction = InstructionUtil.parseLine("moV \t D  \t , d", null, (short) 0);
+    instruction = InstructionUtil.parseLine("moV \t D  \t , d", labels, (short) 0);
     Assert.assertEquals((byte) InstructionCode.MOV.ordinal(), instruction[0]);
     Assert.assertEquals((byte) Register.D.ordinal(), instruction[1]);
     Assert.assertEquals((byte) Register.D.ordinal(), instruction[2]);
     Assert.assertEquals((byte) 0b00000000, instruction[3]);
 
-    instruction = InstructionUtil.parseLine("add a,b", null, (short) 0);
+    instruction = InstructionUtil.parseLine("add a,b", labels, (short) 0);
     Assert.assertEquals((byte) InstructionCode.ADD.ordinal(), instruction[0]);
     Assert.assertEquals((byte) Register.A.ordinal(), instruction[1]);
     Assert.assertEquals((byte) Register.B.ordinal(), instruction[2]);
     Assert.assertEquals((byte) 0b00000000, instruction[3]);
 
-    instruction = InstructionUtil.parseLine("Sub a,25", null, (short) 0);
+    instruction = InstructionUtil.parseLine("Sub a,25", labels, (short) 0);
     Assert.assertEquals((byte) InstructionCode.SUB.ordinal(), instruction[0]);
     Assert.assertEquals((byte) Register.A.ordinal(), instruction[1]);
     Assert.assertEquals((byte) 25, instruction[2]);
     Assert.assertEquals((byte) 0b00010000, instruction[3]);
+
+    instruction = InstructionUtil.parseLine("DJNZ d, TEST_LABEL2", labels, (short) 0);
+    Assert.assertEquals((byte) InstructionCode.DJNZ.ordinal(), instruction[0]);
+    Assert.assertEquals((byte) Register.D.ordinal(), instruction[1]);
+    Assert.assertEquals((byte) (byte) 1, instruction[2]);
+    Assert.assertEquals((byte) 0b00000000, instruction[3]);
   }
 
   @Test
@@ -134,27 +200,27 @@ public class InstructionUtilTest {
   public void testCompileLine() throws ParseException {
     List<Label> labels = new ArrayList<>();
     labels.add(new Label((short) 56, "test"));
+    testParseCompile("mov A, pr ; test mov", "mov a, pr");
+    testParseCompile("mov A, 36 ; test mov", "mov a, 36");
+    testParseCompile("push a ; test single op", "push a");
+    testParseCompile("push 89 ; test single op", "push 89");
+    testParseCompile("push 89", "test:\npush 89", (short) 56);
+    testParseCompile("jmp test", "jmp test");
+    testParseCompile("ret", "ret");
+    testParseCompile("Jc   test", "jc test");
+    testParseCompile("djnz A,test", "djnz a, test");
+    testParseCompile("jnc test ", "jnc test");
+  }
 
-    byte[] instruction = InstructionUtil.parseLine("mov A, pr ; test mov", labels, (short) 0);
-    Assert.assertEquals("mov a, pr", InstructionUtil.compileLine(instruction, labels, (short) 0));
+  private void testParseCompile(String in, String out) throws ParseException {
+    testParseCompile(in, out, (short) 0);
+  }
 
-    instruction = InstructionUtil.parseLine("mov A, 36 ; test mov", labels, (short) 0);
-    Assert.assertEquals("mov a, 36", InstructionUtil.compileLine(instruction, labels, (short) 0));
-
-    instruction = InstructionUtil.parseLine("push a ; test single op", labels, (short) 0);
-    Assert.assertEquals("push a", InstructionUtil.compileLine(instruction, labels, (short) 0));
-
-    instruction = InstructionUtil.parseLine("push 89 ; test single op", null, (short) 0);
-    Assert.assertEquals("push 89", InstructionUtil.compileLine(instruction, labels, (short) 0));
-
-    instruction = InstructionUtil.parseLine("push 89", labels, (short) 0);
-    Assert.assertEquals("test:\npush 89", InstructionUtil.compileLine(instruction, labels, (short) 56));
-
-    instruction = InstructionUtil.parseLine("jmp test", labels, (short) 0);
-    Assert.assertEquals("jmp test", InstructionUtil.compileLine(instruction, labels, (short) 0));
-
-    instruction = InstructionUtil.parseLine("ret", labels, (short) 0);
-    Assert.assertEquals("ret", InstructionUtil.compileLine(instruction, labels, (short) 0));
+  private void testParseCompile(String in, String out, short address) throws ParseException {
+    List<Label> labels = new ArrayList<>();
+    labels.add(new Label((short) 56, "test"));
+    byte[] instruction = InstructionUtil.parseLine(in, labels, (short) 0);
+    Assert.assertEquals(out, InstructionUtil.compileLine(instruction, labels, address));
   }
 
   @Test

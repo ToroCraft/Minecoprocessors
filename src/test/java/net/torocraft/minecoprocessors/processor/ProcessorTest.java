@@ -225,7 +225,7 @@ public class ProcessorTest {
     Processor processor = setupTest(0, 0, 0, 0, "jmp test_label");
     processor.processJmp();
     assertRegisters(processor, 0, 0, 0, 0);
-    assert processor.ip == (short) 111;
+    Assert.assertEquals((short)111, processor.ip);
   }
 
   @Test
@@ -234,13 +234,15 @@ public class ProcessorTest {
     processor.zero = true;
     processor.processJz();
     assertRegisters(processor, 0, 0, 0, 0);
-    assert processor.ip == (short) 111;
+    Assert.assertEquals((short)111, processor.ip);
+
 
     processor = setupTest(0, 0, 0, 0, "jz test_label");
     processor.zero = false;
     processor.processJz();
     assertRegisters(processor, 0, 0, 0, 0);
-    assert processor.ip == 0;
+    Assert.assertEquals((short)0, processor.ip);
+
   }
 
   @Test
@@ -257,6 +259,59 @@ public class ProcessorTest {
     assertRegisters(processor, 0, 0, 0, 0);
     assert processor.ip == 0;
   }
+
+  @Test
+  public void testProcessJc() throws ParseException {
+    Processor processor = setupTest(0, 0, 0, 0, "jc test_label");
+    processor.carry = true;
+    processor.processJc();
+    assertRegisters(processor, 0, 0, 0, 0);
+    Assert.assertEquals((short)111, processor.ip);
+
+    processor = setupTest(0, 0, 0, 0, "jc test_label");
+    processor.carry = false;
+    processor.processJc();
+    assertRegisters(processor, 0, 0, 0, 0);
+    Assert.assertEquals((short)0, processor.ip);
+  }
+
+  @Test
+  public void testProcessJnc() throws ParseException {
+    Processor processor = setupTest(0, 0, 0, 0, "jnc test_label");
+    processor.carry = false;
+    processor.processJnc();
+    assertRegisters(processor, 0, 0, 0, 0);
+    Assert.assertEquals((short)111, processor.ip);
+
+    processor = setupTest(0, 0, 0, 0, "jnc test_label");
+    processor.carry = true;
+    processor.processJnc();
+    assertRegisters(processor, 0, 0, 0, 0);
+    Assert.assertEquals((short)0, processor.ip);
+  }
+
+  @Test
+  public void testProcessDjnz() throws ParseException {
+    //TODO there is nothing that enforces the second argument to be label
+
+    Processor processor = setupTest(0, 3, 0, 0, "djnz b, test_label");
+    processor.processDjnz();
+    assertRegisters(processor, 0, 2, 0, 0);
+    Assert.assertFalse(processor.zero);
+    Assert.assertEquals((short)111, processor.ip);
+
+    processor = setupTest(0, 2, 0, 0, "djnz b, test_label");
+    processor.processDjnz();
+    assertRegisters(processor, 0, 1, 0, 0);
+    Assert.assertFalse(processor.zero);
+    Assert.assertEquals((short)111, processor.ip);
+
+    processor = setupTest(0, 1, 0, 0, "djnz b, test_label");
+    processor.processDjnz();
+    assertRegisters(processor, 0, 0, 0, 0);
+    Assert.assertTrue(processor.zero);
+  }
+
 
   @Test
   public void testProcessShl() throws ParseException {

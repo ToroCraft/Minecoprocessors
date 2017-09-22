@@ -25,5 +25,8 @@ public enum InstructionCode {
   INT,
   WFE,
   INC,
-  DEC
+  DEC,
+  DJNZ,
+  JC,
+  JNC
 }

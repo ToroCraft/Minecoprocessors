@@ -43,6 +43,8 @@ public class InstructionUtil {
     InstructionCode command = InstructionCode.values()[instruction[0]];
     line.append(command.toString().toLowerCase());
 
+    Label label;
+
     switch (command) {
       case MOV:
       case ADD:
@@ -62,15 +64,26 @@ public class InstructionUtil {
           line.append(lower(Register.values()[instruction[2]]));
         }
         break;
+      case DJNZ:
+        line.append(" ");
+        line.append(lower(Register.values()[instruction[1]]));
+        line.append(", ");
+        label = labels.get(instruction[2]);
+        if (label != null) {
+          line.append(label.name.toLowerCase());
+        }
+        break;
       case JMP:
       case JNZ:
       case JZ:
+      case JC:
+      case JNC:
       case LOOP:
       case CALL:
-        Label l = labels.get(instruction[1]);
-        if (l != null) {
+        label = labels.get(instruction[1]);
+        if (label != null) {
           line.append(" ");
-          line.append(l.name.toLowerCase());
+          line.append(label.name.toLowerCase());
         }
         break;
       case MUL:
@@ -217,6 +230,7 @@ public class InstructionUtil {
     instruction[0] = (byte) instructionCode.ordinal();
 
     switch (instructionCode) {
+
       case MOV:
       case ADD:
       case AND:
@@ -226,11 +240,14 @@ public class InstructionUtil {
       case SHL:
       case SHR:
       case SUB:
-        return parseDoubleOperands(line, instruction);
+      case DJNZ:
+        return parseDoubleOperands(line, instruction, labels);
 
       case JMP:
       case JNZ:
       case JZ:
+      case JC:
+      case JNC:
       case LOOP:
       case CALL:
         return parseLabelOperand(line, instruction, labels);
@@ -243,44 +260,54 @@ public class InstructionUtil {
       case INT:
       case INC:
       case DEC:
-        return parseSingleOperand(line, instruction);
+        return parseSingleOperand(line, instruction, labels);
 
       case RET:
       case NOP:
       case WFE:
         return instruction;
+
       default:
         throw new RuntimeException("instructionCode enum had unexpected value");
     }
   }
 
-  private static byte[] parseSingleOperand(String line, byte[] instruction) throws ParseException {
+  private static byte[] parseSingleOperand(String line, byte[] instruction, List<Label> labels) throws ParseException {
     List<String> l = regex("^\\s*[A-Z]+\\s+([A-Z0-9]+)\\s*$", line, Pattern.CASE_INSENSITIVE);
     if (l.size() != 1) {
       throw new ParseException(line, "incorrect operand format");
     }
-    instruction = parseVariableOperand(line, instruction, l.get(0), 0);
+    instruction = parseVariableOperand(line, instruction, l.get(0), 0, labels);
     return instruction;
   }
 
-  private static byte[] parseDoubleOperands(String line, byte[] instruction) throws ParseException {
-    List<String> l = regex("^\\s*[A-Z]+\\s+([A-Z]+)\\s*,\\s*([A-Z0-9]+)\\s*$", line,
-        Pattern.CASE_INSENSITIVE);
+  static List<String> splitDoubleOperandString(String line) {
+    return regex("^\\s*[A-Z]+\\s+([A-Z]+)\\s*,\\s*([A-Z0-9_-]+)\\s*$", line, Pattern.CASE_INSENSITIVE);
+  }
+
+  private static byte[] parseDoubleOperands(String line, byte[] instruction, List<Label> labels) throws ParseException {
+    List<String> l = splitDoubleOperandString(line);
     if (l.size() != 2) {
       throw new ParseException(line, "incorrect operand format");
     }
-    instruction = parseVariableOperand(line, instruction, l.get(0), 0);
-    instruction = parseVariableOperand(line, instruction, l.get(1), 1);
+    instruction = parseVariableOperand(line, instruction, l.get(0), 0, labels);
+    instruction = parseVariableOperand(line, instruction, l.get(1), 1, labels);
     return instruction;
   }
 
-  private static byte[] parseVariableOperand(String line, byte[] instruction, String operand,
-      int operandIndex) throws ParseException {
+  static byte[] parseVariableOperand(String line, byte[] instruction, String operand,
+      int operandIndex, List<Label> labels) throws ParseException {
+
     if (isLiteral(operand)) {
       instruction[operandIndex + 1] = parseLiteral(line, operand);
       instruction[3] = ByteUtil.setBit(instruction[3], true, operandIndex * 4);
-    } else {
+
+    } else if (isRegister(operand)) {
       instruction[operandIndex + 1] = (byte) parseRegister(line, operand).ordinal();
+
+    } else {
+      instruction[operandIndex + 1] = parseLabel(line, operand.toLowerCase(), labels);
+
     }
     return instruction;
   }
@@ -319,7 +346,23 @@ public class InstructionUtil {
     }
   }
 
-  private static boolean isLiteral(String s) {
+  static boolean isRegister(String operand) {
+    if (operand == null) {
+      return false;
+    }
+    try {
+      Register.valueOf(operand.toUpperCase());
+      return true;
+    } catch (IllegalArgumentException ignore){
+      return false;
+    }
+  }
+
+  static boolean isLiteral(String s) {
+    if (s == null) {
+      return false;
+    }
+
     s = s.trim();
 
     if (s.matches("^[0-9-]+$")) {

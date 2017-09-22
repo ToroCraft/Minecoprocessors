@@ -13,8 +13,6 @@ import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
 import net.torocraft.minecoprocessors.util.ParseException;
 
-//latch pins
-
 public class Processor implements IProcessor {
 
   private static final String NBT_STACK = "stack";
@@ -50,19 +48,14 @@ public class Processor implements IProcessor {
   boolean fault;
   boolean zero;
   boolean overflow;
-  private boolean carry;
-  private boolean wait;
+  boolean carry;
+  boolean wait;
 
   /*
    * tmp
    */
   private boolean step;
   private String error;
-  
-  @SuppressWarnings("unused")
-  private byte prevTemp;
-  private float tempVelocity;
-  private float tempAcc;
 
   void flush() {
     reset();
@@ -218,62 +211,12 @@ public class Processor implements IProcessor {
     return c;
   }
 
-  @SuppressWarnings("unused")
-  private void tempUpdate() {
-    tempVelocity += tempAcc;
-
-    if (tempVelocity > 0.2f) {
-      tempVelocity = 0.2f;
-    } else if (tempVelocity < -0.1f) {
-      tempVelocity = -0.1f;
-    }
-
-    if (tempVelocity != 0) {
-      temp = temp + tempVelocity;
-    }
-
-    if (temp > 125f) {
-      temp = 125f;
-    } else if (temp < 0) {
-      temp = 0f;
-    }
-
-  }
-
-  @SuppressWarnings("unused")
-  private void coolCycle() {
-    if (temp == 0) {
-      tempAcc = 0;
-      return;
-    }
-    if (temp > 0) {
-      tempAcc = -0.003f;
-    } else if (temp < 0) {
-      tempAcc = 0;
-      temp = 0;
-      tempVelocity = 0;
-    }
-  }
-
-
-  @SuppressWarnings("unused")
-  private void heatCycle() {
-    tempAcc = 0.002f;
-  }
-
-
   /**
    * returns true if GUI should be updated after this tick
    */
   @Override
   public boolean tick() {
-    //tempUpdate();
-    //coolCycle();
-
     if (fault || (wait && !step)) {
-     // boolean cooled = prevTemp != getTemp();
-      //prevTemp = getTemp();
-      ///return cooled;
       return false;
     }
     step = false;
@@ -285,7 +228,6 @@ public class Processor implements IProcessor {
       error = getInstructionString();
       fault = true;
     }
-    //prevTemp = getTemp();
     return true;
   }
 
@@ -310,10 +252,6 @@ public class Processor implements IProcessor {
     }
 
     instruction = program.get(ip);
-
-    // System.out.println(pinchDump());
-
-    //heatCycle();
 
     ip++;
 
@@ -391,6 +329,15 @@ public class Processor implements IProcessor {
       case DEC:
         processDec();
         return;
+      case DJNZ:
+        processDjnz();
+        break;
+      case JC:
+        processJc();
+        break;
+      case JNC:
+        processJnc();
+        break;
       default:
         throw new RuntimeException("InstructionCode enum had unexpected value");
     }
@@ -497,6 +444,26 @@ public class Processor implements IProcessor {
     if (!zero) {
       processJmp();
     }
+  }
+
+  void processJc() {
+    if (carry) {
+      processJmp();
+    }
+  }
+
+  void processJnc() {
+    if (!carry) {
+      processJmp();
+    }
+  }
+
+  void processDjnz() {
+    processDec();
+    byte tmp = instruction[1];
+    instruction[1] = instruction[2];
+    processJnz();
+    instruction[1] = tmp;
   }
 
   void processPush() {
