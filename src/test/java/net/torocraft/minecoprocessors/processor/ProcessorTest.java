@@ -1,7 +1,6 @@
 package net.torocraft.minecoprocessors.processor;
 
 import java.util.ArrayList;
-import mockit.Deencapsulation;
 import net.minecraft.nbt.NBTTagCompound;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
@@ -70,7 +69,7 @@ public class ProcessorTest {
     processor.testOverflow(-129);
     Assert.assertTrue(processor.overflow);
 
-    processor.testOverflow((long)129);
+    processor.testOverflow((long) 129);
     Assert.assertTrue(processor.overflow);
   }
 
@@ -225,7 +224,7 @@ public class ProcessorTest {
     Processor processor = setupTest(0, 0, 0, 0, "jmp test_label");
     processor.processJmp();
     assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals((short)111, processor.ip);
+    Assert.assertEquals((short) 111, processor.ip);
   }
 
   @Test
@@ -234,14 +233,13 @@ public class ProcessorTest {
     processor.zero = true;
     processor.processJz();
     assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals((short)111, processor.ip);
-
+    Assert.assertEquals((short) 111, processor.ip);
 
     processor = setupTest(0, 0, 0, 0, "jz test_label");
     processor.zero = false;
     processor.processJz();
     assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals((short)0, processor.ip);
+    Assert.assertEquals((short) 0, processor.ip);
 
   }
 
@@ -266,13 +264,13 @@ public class ProcessorTest {
     processor.carry = true;
     processor.processJc();
     assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals((short)111, processor.ip);
+    Assert.assertEquals((short) 111, processor.ip);
 
     processor = setupTest(0, 0, 0, 0, "jc test_label");
     processor.carry = false;
     processor.processJc();
     assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals((short)0, processor.ip);
+    Assert.assertEquals((short) 0, processor.ip);
   }
 
   @Test
@@ -281,13 +279,13 @@ public class ProcessorTest {
     processor.carry = false;
     processor.processJnc();
     assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals((short)111, processor.ip);
+    Assert.assertEquals((short) 111, processor.ip);
 
     processor = setupTest(0, 0, 0, 0, "jnc test_label");
     processor.carry = true;
     processor.processJnc();
     assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals((short)0, processor.ip);
+    Assert.assertEquals((short) 0, processor.ip);
   }
 
   @Test
@@ -298,20 +296,19 @@ public class ProcessorTest {
     processor.processDjnz();
     assertRegisters(processor, 0, 2, 0, 0);
     Assert.assertFalse(processor.zero);
-    Assert.assertEquals((short)111, processor.ip);
+    Assert.assertEquals((short) 111, processor.ip);
 
     processor = setupTest(0, 2, 0, 0, "djnz b, test_label");
     processor.processDjnz();
     assertRegisters(processor, 0, 1, 0, 0);
     Assert.assertFalse(processor.zero);
-    Assert.assertEquals((short)111, processor.ip);
+    Assert.assertEquals((short) 111, processor.ip);
 
     processor = setupTest(0, 1, 0, 0, "djnz b, test_label");
     processor.processDjnz();
     assertRegisters(processor, 0, 0, 0, 0);
     Assert.assertTrue(processor.zero);
   }
-
 
   @Test
   public void testProcessShl() throws ParseException {
@@ -351,6 +348,47 @@ public class ProcessorTest {
     processor = setupTest(0xff, 8, 0, 0, "shr a, b");
     processor.processShr();
     assertRegisters(processor, 0, 8, 0, 0);
+    Assert.assertTrue(processor.zero);
+  }
+
+  @Test
+  public void testProcessSal() throws ParseException {
+    Processor processor = setupTest(0b01, 4, 0, 0, "sal a, b");
+    processor.processSal();
+    assertRegisters(processor, 0b010000, 4, 0, 0);
+    Assert.assertFalse(processor.zero);
+
+    processor = setupTest(0b01, 20, 0, 0, "sal a, b");
+    processor.processSal();
+    assertRegisters(processor, 0, 20, 0, 0);
+    Assert.assertTrue(processor.zero);
+
+    processor = setupTest(0, 2, 0, 0, "sal a, b");
+    processor.processSal();
+    assertRegisters(processor, 0, 2, 0, 0);
+    Assert.assertTrue(processor.zero);
+
+    processor = setupTest(0b01, 20, 0, 0, "sal a, 1");
+    processor.processSal();
+    assertRegisters(processor, 0b010, 20, 0, 0);
+    Assert.assertFalse(processor.zero);
+  }
+
+  @Test
+  public void testProcessSar() throws ParseException {
+    Processor processor = setupTest(0b10000000, 1, 0, 0, "sar a, b");
+    processor.processSar();
+    assertRegisters(processor, 0b11000000, 1, 0, 0);
+    Assert.assertFalse(processor.zero);
+
+    processor = setupTest(0b10000000, 100, 0, 0, "sar a, b");
+    processor.processSar();
+    assertRegisters(processor, 0b11111111, 100, 0, 0);
+    Assert.assertFalse(processor.zero);
+
+    processor = setupTest(0x0, 5, 0, 0, "sar a, b");
+    processor.processSar();
+    assertRegisters(processor, 0, 5, 0, 0);
     Assert.assertTrue(processor.zero);
   }
 

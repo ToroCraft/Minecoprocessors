@@ -2,13 +2,11 @@ package net.torocraft.minecoprocessors.processor;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagByteArray;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.torocraft.minecoprocessors.Minecoprocessors;
-import net.torocraft.minecoprocessors.gui.GuiMinecoprocessor;
 import net.torocraft.minecoprocessors.util.ByteUtil;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
@@ -148,7 +146,7 @@ public class Processor implements IProcessor {
 
   private static byte[] addRegistersIfMissing(byte[] registersIn) {
     if (registersIn.length >= Register.values().length) {
-     return registersIn;
+      return registersIn;
     }
 
     byte[] registersNew = new byte[Register.values().length];
@@ -233,9 +231,9 @@ public class Processor implements IProcessor {
   }
 
   private String getInstructionString() {
-    try{
+    try {
       return InstructionUtil.compileLine(instruction, labels, ip);
-    } catch(Exception e) {
+    } catch (Exception e) {
       Minecoprocessors.proxy.handleUnexpectedException(e);
       return "??";
     }
@@ -339,6 +337,12 @@ public class Processor implements IProcessor {
       case JNC:
         processJnc();
         break;
+      case SAL:
+        processSal();
+        break;
+      case SAR:
+        processSar();
+        break;
       default:
         throw new RuntimeException("InstructionCode enum had unexpected value");
     }
@@ -423,6 +427,18 @@ public class Processor implements IProcessor {
       b = 8;
     }
     byte z = (byte) (a >>> b);
+    zero = z == 0;
+    registers[instruction[1]] = z;
+  }
+
+  void processSal() {
+    processShl();
+  }
+
+  void processSar() {
+    int a = getVariableOperand(0);
+    byte n = (byte) Math.min(getVariableOperand(1), 8);
+    byte z = (byte) (a >> n);
     zero = z == 0;
     registers[instruction[1]] = z;
   }

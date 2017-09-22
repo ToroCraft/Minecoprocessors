@@ -30,5 +30,7 @@ public enum InstructionCode {
   JC,
   JNC,
   ROR,
-  ROL
+  ROL,
+  SAR,
+  SAL
 }

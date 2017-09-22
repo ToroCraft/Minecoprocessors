@@ -57,6 +57,8 @@ public class InstructionUtil {
       case SUB:
       case ROR:
       case ROL:
+      case SAL:
+      case SAR:
         line.append(" ");
         line.append(lower(Register.values()[instruction[1]]));
         line.append(", ");
@@ -245,6 +247,8 @@ public class InstructionUtil {
       case DJNZ:
       case ROR:
       case ROL:
+      case SAL:
+      case SAR:
         return parseDoubleOperands(line, instruction, labels);
 
       case JMP:
@@ -385,10 +389,7 @@ public class InstructionUtil {
       return true;
     }
 
-    if (s.matches("^[0-1]+b$")) {
-      return true;
-    }
-    return false;
+    return s.matches("^[0-1]+b$");
   }
 
   static byte parseLiteral(String line, String s) throws ParseException {
