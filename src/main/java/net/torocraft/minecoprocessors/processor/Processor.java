@@ -430,13 +430,17 @@ public class Processor implements IProcessor {
   void processRor() {
     int a = getVariableOperand(0) & 0x0ff;
     byte n = (byte) Math.min(getVariableOperand(1), 8);
-    registers[instruction[1]] = (byte) ((a >>> n) | (a << 8 - n));
+    byte z = (byte) ((a >>> n) | (a << 8 - n));
+    zero = z == 0;
+    registers[instruction[1]] = z;
   }
 
   void processRol() {
     int a = getVariableOperand(0) & 0x0ff;
     byte n = (byte) Math.min(getVariableOperand(1), 8);
-    registers[instruction[1]] = (byte) ((a << n) | (a >>> 8 - n));
+    byte z = (byte) ((a << n) | (a >>> 8 - n));
+    zero = z == 0;
+    registers[instruction[1]] = z;
   }
 
   void processWfe() {

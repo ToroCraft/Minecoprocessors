@@ -26,9 +26,9 @@ public class ProcessorTest {
     NBTTagCompound c = processor.writeToNBT();
 
     processor.flush();
-    assert !processor.zero;
-    assert processor.labels.size() == 0;
-    assert processor.program.size() == 0;
+    Assert.assertFalse(processor.zero);
+    Assert.assertEquals(0, processor.labels.size());
+    Assert.assertEquals(0, processor.program.size());
     Processor.reset(processor.registers);
 
     processor.readFromNBT(c);
@@ -199,7 +199,7 @@ public class ProcessorTest {
     Processor processor = setupTest(0b01000, 0, 0, 0b0111, "or d, a");
     processor.processOr();
     assertRegisters(processor, 0b01000, 0, 0, 0b01111);
-    assert !processor.zero;
+    Assert.assertFalse(processor.zero);
 
     processor = setupTest(0, 0, 0, 0, "or d, a");
     processor.processOr();
@@ -212,7 +212,7 @@ public class ProcessorTest {
     Processor processor = setupTest(0, 0, 0b1010, 0, "not c");
     processor.processNot();
     assertRegisters(processor, 0, 0, 0b11110101, 0);
-    assert !processor.zero;
+    Assert.assertFalse(processor.zero);
 
     processor = setupTest(0, 0, 0b11111111, 0, "not c");
     processor.processNot();
@@ -251,13 +251,13 @@ public class ProcessorTest {
     processor.zero = false;
     processor.processJnz();
     assertRegisters(processor, 0, 0, 0, 0);
-    assert processor.ip == (short) 111;
+    Assert.assertEquals((short) 111, processor.ip);
 
     processor = setupTest(0, 0, 0, 0, "jnz test_label");
     processor.zero = true;
     processor.processJnz();
     assertRegisters(processor, 0, 0, 0, 0);
-    assert processor.ip == 0;
+    Assert.assertEquals(0, processor.ip);
   }
 
   @Test
@@ -318,22 +318,22 @@ public class ProcessorTest {
     Processor processor = setupTest(0b01, 4, 0, 0, "shl a, b");
     processor.processShl();
     assertRegisters(processor, 0b010000, 4, 0, 0);
-    assert !processor.zero;
+    Assert.assertFalse(processor.zero);
 
     processor = setupTest(0b01, 20, 0, 0, "shl a, b");
     processor.processShl();
     assertRegisters(processor, 0, 20, 0, 0);
-    assert processor.zero;
+    Assert.assertTrue(processor.zero);
 
     processor = setupTest(0, 2, 0, 0, "shl a, b");
     processor.processShl();
     assertRegisters(processor, 0, 2, 0, 0);
-    assert processor.zero;
+    Assert.assertTrue(processor.zero);
 
     processor = setupTest(0b01, 20, 0, 0, "shl a, 1");
     processor.processShl();
     assertRegisters(processor, 0b010, 20, 0, 0);
-    assert !processor.zero;
+    Assert.assertFalse(processor.zero);
   }
 
   @Test
@@ -341,17 +341,17 @@ public class ProcessorTest {
     Processor processor = setupTest(0b10000000, 1, 0, 0, "shr a, b");
     processor.processShr();
     assertRegisters(processor, 0b01000000, 1, 0, 0);
-    assert !processor.zero;
+    Assert.assertFalse(processor.zero);
 
     processor = setupTest(0b10000000, 100, 0, 0, "shr a, b");
     processor.processShr();
     assertRegisters(processor, 0, 100, 0, 0);
-    assert processor.zero;
+    Assert.assertTrue(processor.zero);
 
     processor = setupTest(0xff, 8, 0, 0, "shr a, b");
     processor.processShr();
     assertRegisters(processor, 0, 8, 0, 0);
-    assert processor.zero;
+    Assert.assertTrue(processor.zero);
   }
 
   @Test
@@ -359,22 +359,22 @@ public class ProcessorTest {
     Processor processor = setupTest(0b01, 4, 0, 0, "rol a, b");
     processor.processRol();
     assertRegisters(processor, 0b010000, 4, 0, 0);
-    assert !processor.zero;
+    Assert.assertFalse(processor.zero);
 
     processor = setupTest(0b11110000, 2, 0, 0, "rol a, b");
     processor.processRol();
     assertRegisters(processor, 0b11000011, 2, 0, 0);
-    assert !processor.zero;
+    Assert.assertFalse(processor.zero);
 
     processor = setupTest(0b11110000, 30, 0, 0, "rol a, b");
     processor.processRol();
     assertRegisters(processor, 0b11110000, 30, 0, 0);
-    assert !processor.zero;
+    Assert.assertFalse(processor.zero);
 
     processor = setupTest(0, 30, 0, 0, "rol a, b");
     processor.processRol();
     assertRegisters(processor, 0, 30, 0, 0);
-    assert processor.zero;
+    Assert.assertTrue(processor.zero);
   }
 
   @Test
@@ -382,22 +382,22 @@ public class ProcessorTest {
     Processor processor = setupTest(0b01, 4, 0, 0, "ror a, b");
     processor.processRor();
     assertRegisters(processor, 0b00010000, 4, 0, 0);
-    assert !processor.zero;
+    Assert.assertFalse(processor.zero);
 
     processor = setupTest(0b11110000, 2, 0, 0, "ror a, b");
     processor.processRor();
     assertRegisters(processor, 0b00111100, 2, 0, 0);
-    assert !processor.zero;
+    Assert.assertFalse(processor.zero);
 
     processor = setupTest(0b11110000, 30, 0, 0, "ror a, b");
     processor.processRor();
     assertRegisters(processor, 0b11110000, 30, 0, 0);
-    assert !processor.zero;
+    Assert.assertFalse(processor.zero);
 
     processor = setupTest(0, 30, 0, 0, "ror a, b");
     processor.processRor();
     assertRegisters(processor, 0, 30, 0, 0);
-    assert processor.zero;
+    Assert.assertTrue(processor.zero);
   }
 
   @Test
@@ -422,7 +422,7 @@ public class ProcessorTest {
     Assert.assertEquals(1, processor.sp);
     Assert.assertEquals((byte) 30, processor.registers[Register.B.ordinal()]);
   }
-  
+
   @Test
   public void testPackFlags() {
     Processor processor = new Processor();
@@ -488,12 +488,12 @@ public class ProcessorTest {
     Processor processor = setupTest(10, 0, 0, 0, "inc a");
     processor.processInc();
     assertRegisters(processor, 11, 0, 0, 0);
-    assert !processor.zero;
+    Assert.assertFalse(processor.zero);
 
     processor = setupTest(-1, 0, 0, 0, "inc a");
     processor.processInc();
     assertRegisters(processor, 0, 0, 0, 0);
-    assert processor.zero;
+    Assert.assertTrue(processor.zero);
   }
 
   @Test
@@ -501,12 +501,12 @@ public class ProcessorTest {
     Processor processor = setupTest(10, 0, 0, 0, "dec a");
     processor.processDec();
     assertRegisters(processor, 9, 0, 0, 0);
-    assert !processor.zero;
+    Assert.assertFalse(processor.zero);
 
     processor = setupTest(1, 0, 0, 0, "dec a");
     processor.processDec();
     assertRegisters(processor, 0, 0, 0, 0);
-    assert processor.zero;
+    Assert.assertTrue(processor.zero);
   }
 
   @Test
@@ -514,12 +514,12 @@ public class ProcessorTest {
     Processor processor = setupTest(0xff, 2, 0, 0, "mul b");
     processor.processMul();
     assertRegisters(processor, 0xfe, 2, 0, 0);
-    assert !processor.zero;
+    Assert.assertFalse(processor.zero);
 
     processor = setupTest(5, 0, 0, 2, "mul d");
     processor.processMul();
     assertRegisters(processor, 10, 0, 0, 2);
-    assert !processor.zero;
+    Assert.assertFalse(processor.zero);
   }
 
   @Test
@@ -527,7 +527,7 @@ public class ProcessorTest {
     Processor processor = setupTest(10, 2, 0, 0, "div b");
     processor.processDiv();
     assertRegisters(processor, 5, 2, 0, 0);
-    assert !processor.zero;
+    Assert.assertFalse(processor.zero);
 
     processor = setupTest(5, 0, 0, 2, "div d");
     processor.processDiv();
@@ -536,8 +536,8 @@ public class ProcessorTest {
     processor = setupTest(5, 0, 0, 0, "div d");
     processor.processDiv();
     assertRegisters(processor, 5, 0, 0, 0);
-    assert !processor.zero;
-    assert processor.fault;
+    Assert.assertFalse(processor.zero);
+    Assert.assertTrue(processor.fault);
   }
 
   @Ignore
