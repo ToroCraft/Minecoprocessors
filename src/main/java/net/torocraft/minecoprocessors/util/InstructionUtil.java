@@ -153,7 +153,6 @@ public class InstructionUtil {
 
   public static byte[] parseLine(String line, List<Label> labels, short lineAddress)
       throws ParseException {
-    byte[] instruction = new byte[4];
     line = removeComments(line);
     if (line.trim().length() < 1) {
       return null;
@@ -168,7 +167,7 @@ public class InstructionUtil {
       return null;
     }
 
-    return parseCommandLine(line, labels, instruction);
+    return parseCommandLine(line, labels);
   }
 
   static String removeComments(String line) {
@@ -232,10 +231,11 @@ public class InstructionUtil {
     return line.matches("^\\s*[A-Za-z0-9-_]+:.*$");
   }
 
-  private static byte[] parseCommandLine(String line, List<Label> labels, byte[] instruction)
+  private static byte[] parseCommandLine(String line, List<Label> labels)
       throws ParseException {
     InstructionCode instructionCode = parseInstructionCode(line);
-    instruction[0] = (byte) instructionCode.ordinal();
+
+    byte[] instruction;
 
     switch (instructionCode) {
 
@@ -253,7 +253,8 @@ public class InstructionUtil {
       case ROL:
       case SAL:
       case SAR:
-        return parseDoubleOperands(line, instruction, labels);
+        instruction =  parseDoubleOperands(line, labels);
+        break;
 
       case JMP:
       case JNZ:
@@ -262,7 +263,8 @@ public class InstructionUtil {
       case JNC:
       case LOOP:
       case CALL:
-        return parseLabelOperand(line, instruction, labels);
+        instruction = parseLabelOperand(line, labels);
+        break;
 
       case MUL:
       case DIV:
@@ -272,7 +274,8 @@ public class InstructionUtil {
       case INT:
       case INC:
       case DEC:
-        return parseSingleOperand(line, instruction, labels);
+        instruction = parseSingleOperand(line, labels);
+        break;
 
       case RET:
       case NOP:
@@ -282,14 +285,19 @@ public class InstructionUtil {
       case CLC:
       case SEZ:
       case SEC:
-        return instruction;
+        instruction = new byte[1];
+        break;
 
       default:
         throw new RuntimeException("instructionCode enum had unexpected value");
     }
+
+    instruction[0] = (byte) instructionCode.ordinal();
+    return instruction;
   }
 
-  private static byte[] parseSingleOperand(String line, byte[] instruction, List<Label> labels) throws ParseException {
+  private static byte[] parseSingleOperand(String line, List<Label> labels) throws ParseException {
+    byte[] instruction = new byte[4];
     List<String> l = regex("^\\s*[A-Z]+\\s+([A-Z0-9]+)\\s*$", line, Pattern.CASE_INSENSITIVE);
     if (l.size() != 1) {
       throw new ParseException(line, "incorrect operand format");
@@ -302,7 +310,8 @@ public class InstructionUtil {
     return regex("^\\s*[A-Z]+\\s+([A-Z]+)\\s*,\\s*([A-Z0-9_-]+)\\s*$", line, Pattern.CASE_INSENSITIVE);
   }
 
-  private static byte[] parseDoubleOperands(String line, byte[] instruction, List<Label> labels) throws ParseException {
+  private static byte[] parseDoubleOperands(String line, List<Label> labels) throws ParseException {
+    byte[] instruction = new byte[4];
     List<String> l = splitDoubleOperandString(line);
     if (l.size() != 2) {
       throw new ParseException(line, "incorrect operand format");
@@ -329,8 +338,9 @@ public class InstructionUtil {
     return instruction;
   }
 
-  private static byte[] parseLabelOperand(String line, byte[] instruction, List<Label> labels)
+  private static byte[] parseLabelOperand(String line, List<Label> labels)
       throws ParseException {
+    byte[] instruction = new byte[2];
     List<String> l = regex("^\\s*[A-Z]+\\s+([A-Z_-]+)\\s*$", line, Pattern.CASE_INSENSITIVE);
     if (l.size() != 1) {
       throw new ParseException(line, "incorrect label format");

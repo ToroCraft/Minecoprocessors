@@ -219,7 +219,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     }
   }
 
-  static String toBinary(Byte b) {
+  public static String toBinary(Byte b) {
     if (b == null) {
       return null;
     }

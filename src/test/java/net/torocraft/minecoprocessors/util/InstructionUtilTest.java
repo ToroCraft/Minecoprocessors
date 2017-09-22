@@ -3,6 +3,7 @@ package net.torocraft.minecoprocessors.util;
 import java.util.ArrayList;
 import java.util.List;
 import mockit.Deencapsulation;
+import net.torocraft.minecoprocessors.gui.GuiMinecoprocessor;
 import net.torocraft.minecoprocessors.processor.InstructionCode;
 import net.torocraft.minecoprocessors.processor.Register;
 import org.junit.Assert;
@@ -273,4 +274,54 @@ public class InstructionUtilTest {
 
     Assert.assertEquals(expected, reCompiled);
   }
+
+  /**
+   * Instruction Format:
+   *
+   * <ul>
+   *   <li><b>byte0:</b> instruction ID (ordinal of InstructionCode enum)</li>
+   *   <li><b>byte1:</b> first operand value</li>
+   *   <li><b>byte2:</b> second operand value</li>
+   *   <li><b>byte3_nibble0:</b> operand type</li>
+   *   <li><b>byte3_nibble1:</b> operand type</li>
+   * </ul>
+   *
+   * Operand Types:
+   *
+   * <ul>
+   *   <li><b>0:</b> Register ID (ordinal value of the Register enum)</li>
+   *   <li><b>1:</b> Literal Value</li>
+   *   <li><b>2:</b> Label</li>
+   *   <li><b>3:</b> Memory</li>
+   * </ul>
+   *
+   */
+  @Test
+  public void parseVariableOperand() throws ParseException {
+    List<Label> labels = new ArrayList<>();
+    byte[] instruction = new byte[4];
+
+    instruction = InstructionUtil.parseVariableOperand("", instruction, "0xfe", 0, labels);
+    Assert.assertEquals((byte) 0, instruction[0]);
+    Assert.assertEquals((byte) 0xfe, instruction[1]);
+    Assert.assertEquals((byte) 0, instruction[2]);
+    Assert.assertEquals((byte) 1, instruction[3]);
+
+    instruction = new byte[4];
+    instruction = InstructionUtil.parseVariableOperand("", instruction, "b", 1, labels);
+    Assert.assertEquals((byte) 0, instruction[0]);
+    Assert.assertEquals((byte) 0, instruction[1]);
+    Assert.assertEquals((byte) 1, instruction[2]);
+    Assert.assertEquals((byte) 0, instruction[3]);
+  }
+
+  private static void printInstruction(byte[] instruction) {
+    System.out.print("Instruction: ");
+    for (byte b : instruction) {
+      System.out.print(GuiMinecoprocessor.toBinary(b));
+      System.out.print("  ");
+    }
+    System.out.println();
+  }
+
 }
