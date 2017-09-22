@@ -355,6 +355,52 @@ public class ProcessorTest {
   }
 
   @Test
+  public void testProcessRol() throws ParseException {
+    Processor processor = setupTest(0b01, 4, 0, 0, "rol a, b");
+    processor.processRol();
+    assertRegisters(processor, 0b010000, 4, 0, 0);
+    assert !processor.zero;
+
+    processor = setupTest(0b11110000, 2, 0, 0, "rol a, b");
+    processor.processRol();
+    assertRegisters(processor, 0b11000011, 2, 0, 0);
+    assert !processor.zero;
+
+    processor = setupTest(0b11110000, 30, 0, 0, "rol a, b");
+    processor.processRol();
+    assertRegisters(processor, 0b11110000, 30, 0, 0);
+    assert !processor.zero;
+
+    processor = setupTest(0, 30, 0, 0, "rol a, b");
+    processor.processRol();
+    assertRegisters(processor, 0, 30, 0, 0);
+    assert processor.zero;
+  }
+
+  @Test
+  public void testProcessRor() throws ParseException {
+    Processor processor = setupTest(0b01, 4, 0, 0, "ror a, b");
+    processor.processRor();
+    assertRegisters(processor, 0b00010000, 4, 0, 0);
+    assert !processor.zero;
+
+    processor = setupTest(0b11110000, 2, 0, 0, "ror a, b");
+    processor.processRor();
+    assertRegisters(processor, 0b00111100, 2, 0, 0);
+    assert !processor.zero;
+
+    processor = setupTest(0b11110000, 30, 0, 0, "ror a, b");
+    processor.processRor();
+    assertRegisters(processor, 0b11110000, 30, 0, 0);
+    assert !processor.zero;
+
+    processor = setupTest(0, 30, 0, 0, "ror a, b");
+    processor.processRor();
+    assertRegisters(processor, 0, 30, 0, 0);
+    assert processor.zero;
+  }
+
+  @Test
   public void testProcessPushPop() throws ParseException {
     Processor processor = new Processor();
     processor.reset();
@@ -376,8 +422,7 @@ public class ProcessorTest {
     Assert.assertEquals(1, processor.sp);
     Assert.assertEquals((byte) 30, processor.registers[Register.B.ordinal()]);
   }
-
-
+  
   @Test
   public void testPackFlags() {
     Processor processor = new Processor();

@@ -210,6 +210,8 @@ public class InstructionUtilTest {
     testParseCompile("Jc   test", "jc test");
     testParseCompile("djnz A,test", "djnz a, test");
     testParseCompile("jnc test ", "jnc test");
+    testParseCompile("ROR a, 5", "ror a, 5");
+    testParseCompile("ROL pf, 1 ", "rol pf, 1");
   }
 
   private void testParseCompile(String in, String out) throws ParseException {

@@ -28,5 +28,7 @@ public enum InstructionCode {
   DEC,
   DJNZ,
   JC,
-  JNC
+  JNC,
+  ROR,
+  ROL
 }

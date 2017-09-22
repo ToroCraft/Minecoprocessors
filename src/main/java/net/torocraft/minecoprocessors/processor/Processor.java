@@ -8,6 +8,7 @@ import net.minecraft.nbt.NBTTagByteArray;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.torocraft.minecoprocessors.Minecoprocessors;
+import net.torocraft.minecoprocessors.gui.GuiMinecoprocessor;
 import net.torocraft.minecoprocessors.util.ByteUtil;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
@@ -424,6 +425,18 @@ public class Processor implements IProcessor {
     byte z = (byte) (a >>> b);
     zero = z == 0;
     registers[instruction[1]] = z;
+  }
+
+  void processRor() {
+    int a = getVariableOperand(0) & 0x0ff;
+    byte n = (byte) Math.min(getVariableOperand(1), 8);
+    registers[instruction[1]] = (byte) ((a >>> n) | (a << 8 - n));
+  }
+
+  void processRol() {
+    int a = getVariableOperand(0) & 0x0ff;
+    byte n = (byte) Math.min(getVariableOperand(1), 8);
+    registers[instruction[1]] = (byte) ((a << n) | (a >>> 8 - n));
   }
 
   void processWfe() {

@@ -55,6 +55,8 @@ public class InstructionUtil {
       case SHL:
       case SHR:
       case SUB:
+      case ROR:
+      case ROL:
         line.append(" ");
         line.append(lower(Register.values()[instruction[1]]));
         line.append(", ");
@@ -241,6 +243,8 @@ public class InstructionUtil {
       case SHR:
       case SUB:
       case DJNZ:
+      case ROR:
+      case ROL:
         return parseDoubleOperands(line, instruction, labels);
 
       case JMP:
