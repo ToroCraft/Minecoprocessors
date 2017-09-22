@@ -32,5 +32,10 @@ public enum InstructionCode {
   ROR,
   ROL,
   SAR,
-  SAL
+  SAL,
+  HLT,
+  CLZ,
+  CLC,
+  SEZ,
+  SEC
 }

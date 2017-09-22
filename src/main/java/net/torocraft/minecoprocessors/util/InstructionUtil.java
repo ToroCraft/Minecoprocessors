@@ -105,10 +105,14 @@ public class InstructionUtil {
           line.append(lower(Register.values()[instruction[1]]));
         }
         break;
-
       case RET:
       case NOP:
       case WFE:
+      case HLT:
+      case CLZ:
+      case CLC:
+      case SEZ:
+      case SEC:
         break;
       default:
         throw new RuntimeException("Command enum had unexpected value");
@@ -273,6 +277,11 @@ public class InstructionUtil {
       case RET:
       case NOP:
       case WFE:
+      case HLT:
+      case CLZ:
+      case CLC:
+      case SEZ:
+      case SEC:
         return instruction;
 
       default:

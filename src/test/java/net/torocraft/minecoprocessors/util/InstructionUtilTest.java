@@ -214,6 +214,11 @@ public class InstructionUtilTest {
     testParseCompile("ROL pf, 1 ", "rol pf, 1");
     testParseCompile("SAL a, 5", "sal a, 5");
     testParseCompile("SAR pf, 1 ", "sar pf, 1");
+    testParseCompile("HLT ", "hlt");
+    testParseCompile("CLZ ", "clz");
+    testParseCompile("CLC ", "clc");
+    testParseCompile("SEZ ", "sez");
+    testParseCompile("SEC ", "sec");
   }
 
   private void testParseCompile(String in, String out) throws ParseException {

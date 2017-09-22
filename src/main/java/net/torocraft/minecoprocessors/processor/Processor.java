@@ -340,8 +340,29 @@ public class Processor implements IProcessor {
       case SAL:
         processSal();
         break;
+      case ROR:
+        processRor();
+        break;
+      case ROL:
+        processRol();
+        break;
       case SAR:
         processSar();
+        break;
+      case HLT:
+        processHlt();
+        break;
+      case CLZ:
+        processClz();
+        break;
+      case CLC:
+        processClc();
+        break;
+      case SEZ:
+        processSez();
+        break;
+      case SEC:
+        processSec();
         break;
       default:
         throw new RuntimeException("InstructionCode enum had unexpected value");
@@ -461,6 +482,26 @@ public class Processor implements IProcessor {
 
   void processWfe() {
     wait = true;
+  }
+
+  void processHlt() {
+    fault = true;
+  }
+
+  void processClz() {
+    zero = false;
+  }
+
+  void processClc() {
+    carry = false;
+  }
+
+  void processSez() {
+    zero = true;
+  }
+
+  void processSec() {
+    carry = true;
   }
 
   void processJmp() {

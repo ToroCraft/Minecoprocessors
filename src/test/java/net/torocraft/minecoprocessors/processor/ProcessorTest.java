@@ -44,7 +44,6 @@ public class ProcessorTest {
     Assert.assertEquals(0x03, testInstruction[3]);
     Assert.assertEquals((byte) 0xee, processor.registers[0]);
     Assert.assertEquals((byte) 0xcc, processor.registers[4]);
-
   }
 
   @Test
@@ -79,6 +78,46 @@ public class ProcessorTest {
     Assert.assertFalse(processor.isWait());
     processor.processWfe();
     Assert.assertTrue(processor.isWait());
+  }
+
+  @Test
+  public void testProcessHlt() throws ParseException {
+    Processor processor = new Processor();
+    Assert.assertFalse(processor.isFault());
+    processor.processHlt();
+    Assert.assertTrue(processor.isFault());
+  }
+
+  @Test
+  public void testProcessClz() throws ParseException {
+    Processor processor = new Processor();
+    processor.zero = true;
+    processor.processClz();
+    Assert.assertFalse(processor.isZero());
+  }
+
+  @Test
+  public void testProcessClc() throws ParseException {
+    Processor processor = new Processor();
+    processor.carry = true;
+    processor.processClc();
+    Assert.assertFalse(processor.isCarry());
+  }
+
+  @Test
+  public void testProcessSez() throws ParseException {
+    Processor processor = new Processor();
+    processor.zero = false;
+    processor.processSez();
+    Assert.assertTrue(processor.isZero());
+  }
+
+  @Test
+  public void testProcessSec() throws ParseException {
+    Processor processor = new Processor();
+    processor.carry = false;
+    processor.processSec();
+    Assert.assertTrue(processor.isCarry());
   }
 
   @Test
