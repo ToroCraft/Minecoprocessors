@@ -4,14 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.processor.InstructionCode;
 import net.torocraft.minecoprocessors.processor.Register;
 
 public class InstructionUtil {
 
-  public static final String ERROR_DOUBLE_POINTER = "only one memory pointer allow";
+  public static final String ERROR_DOUBLE_REFERENCE = "only one memory reference allow";
+  public static final String ERROR_NON_REFERENCE_OFFSET = "offsets can only be used with labels and references";
 
   public static String compileFile(List<byte[]> instructions, List<Label> labels) {
     StringBuilder file = new StringBuilder();
@@ -252,7 +252,7 @@ public class InstructionUtil {
       case ROL:
       case SAL:
       case SAR:
-        instruction =  parseDoubleOperands(line, labels);
+        instruction = parseDoubleOperands(line, labels);
         break;
 
       case JMP:
@@ -320,7 +320,7 @@ public class InstructionUtil {
     instruction = parseVariableOperand(line, instruction, l.get(1), 1, labels);
 
     if (ByteUtil.getBit(instruction[3], 3) && ByteUtil.getBit(instruction[3], 7)) {
-      throw new ParseException(line, ERROR_DOUBLE_POINTER);
+      throw new ParseException(line, ERROR_DOUBLE_REFERENCE);
     }
 
     return instruction;
@@ -329,9 +329,18 @@ public class InstructionUtil {
   static byte[] parseVariableOperand(String line, byte[] instruction, String operand,
       int operandIndex, List<Label> labels) throws ParseException {
 
-    if(isMemoryPointer(operand)){
+    boolean isMemoryReference = isMemoryReference(operand);
+    boolean hasMemoryOffset = hasMemoryOffset(operand);
+
+    if (isMemoryReference) {
       instruction[3] = ByteUtil.setBit(instruction[3], true, (operandIndex * 4) + 3);
-      operand = stripMemoryPointerBrackets(operand);
+      operand = stripMemoryReferenceBrackets(operand);
+    }
+
+    if (hasMemoryOffset) {
+      int offset = getMemoryOffset(operand);
+      instruction = setMemoryOffset(instruction, offset, operandIndex);
+      operand = stripMemoryOffset(operand);
     }
 
     if (isLiteral(operand)) {
@@ -339,21 +348,63 @@ public class InstructionUtil {
       instruction[3] = ByteUtil.setBit(instruction[3], true, operandIndex * 4);
 
     } else if (isRegister(operand)) {
+      if (!isMemoryReference && hasMemoryOffset) {
+        throw new ParseException(line, ERROR_NON_REFERENCE_OFFSET);
+      }
       instruction[operandIndex + 1] = (byte) parseRegister(line, operand).ordinal();
 
     } else {
       instruction[operandIndex + 1] = parseLabel(line, operand.toLowerCase(), labels);
+      instruction[3] = ByteUtil.setBit(instruction[3], true, (operandIndex * 4) + 1);
 
     }
 
     return instruction;
   }
 
-  static boolean isMemoryPointer(String operand) {
+  static boolean hasMemoryOffset(String operand) {
+    return operand.matches("[^+^-]+[+-]\\s*[0-9]{1,2}]?");
+  }
+
+  /**
+   * check if the operand has a memory reference offset and if so:
+   * <Ul>
+   * <li>set the offset bit for the operand</li>
+   * <li>add the fifth byte to the instruction with the offset</li>
+   * </Ul>
+   */
+  static byte[] setMemoryOffset(byte[] instructionIn, int offset, int operandIndex) {
+    byte[] instruction = new byte[5];
+    System.arraycopy(instructionIn, 0, instruction, 0, instructionIn.length);
+    instruction[3] = ByteUtil.setBit(instruction[3], true, (operandIndex * 4) + 2);
+    instruction[4] = (byte) offset;
+    return instruction;
+  }
+
+  /**
+   * Only call this on valid memory offset instructions
+   */
+  static int getMemoryOffset(String operand) {
+    String sOffset = operand.replaceAll("[^+^-]*([+-])\\s*([0-9]{1,2})]?", "$1$2");
+    try {
+      return Integer.parseInt(sOffset);
+    } catch (NumberFormatException e) {
+      return 0;
+    }
+  }
+
+  /**
+   * Only call this on valid memory offset instructions
+   */
+  static String stripMemoryOffset(String operand) {
+    return operand.replaceAll("([^+^-^\\s]+)\\s*[+-]\\s*[0-9]{1,2}(]?)", "$1$2");
+  }
+
+  static boolean isMemoryReference(String operand) {
     return operand.matches("\\[[^]]+]");
   }
 
-  static String stripMemoryPointerBrackets(String operand) {
+  static String stripMemoryReferenceBrackets(String operand) {
     return operand.replaceAll("^\\[", "").replaceAll("]$", "");
   }
 
@@ -399,7 +450,7 @@ public class InstructionUtil {
     try {
       Register.valueOf(operand.toUpperCase());
       return true;
-    } catch (IllegalArgumentException ignore){
+    } catch (IllegalArgumentException ignore) {
       return false;
     }
   }

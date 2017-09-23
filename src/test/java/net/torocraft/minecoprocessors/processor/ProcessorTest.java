@@ -19,7 +19,7 @@ public class ProcessorTest {
    * <li><b>1:</b> Literal Value</li>
    * <li><b>2:</b> Label</li>
    * <li><b>bit 2</b> Has Offset</li>
-   * <li><b>bit 3:</b> Is Memory Pointer</li>
+   * <li><b>bit 3:</b> Is Memory Reference</li>
    * </ul>
    */
 
@@ -56,19 +56,19 @@ public class ProcessorTest {
   }
 
   @Test
-  public void isPointerOperand() {
+  public void isMemoryReferenceOperand() {
     Processor processor = new Processor();
     processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b10000000};
-    Assert.assertFalse(processor.isPointerOperand(0));
-    Assert.assertTrue(processor.isPointerOperand(1));
+    Assert.assertFalse(processor.isMemoryReferenceOperand(0));
+    Assert.assertTrue(processor.isMemoryReferenceOperand(1));
 
     processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b10010000};
-    Assert.assertFalse(processor.isPointerOperand(0));
-    Assert.assertTrue(processor.isPointerOperand(1));
+    Assert.assertFalse(processor.isMemoryReferenceOperand(0));
+    Assert.assertTrue(processor.isMemoryReferenceOperand(1));
 
     processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b00111100};
-    Assert.assertTrue(processor.isPointerOperand(0));
-    Assert.assertFalse(processor.isPointerOperand(1));
+    Assert.assertTrue(processor.isMemoryReferenceOperand(0));
+    Assert.assertFalse(processor.isMemoryReferenceOperand(1));
   }
 
   @Test
@@ -255,6 +255,23 @@ public class ProcessorTest {
     processor = setupTest(1, 0, 0, 0, "add a, 0xf0");
     processor.processAdd();
     assertRegisters(processor, 241, 0, 0, 0);
+    Assert.assertFalse(processor.overflow);
+    Assert.assertFalse(processor.zero);
+  }
+
+  @Test
+  public void testProcessAdd_fromMemory() throws ParseException {
+    Processor processor = setupTest(60, 0, 0, 0, "add a, [25]");
+    processor.stack[25] = 9;
+    processor.processAdd();
+    assertRegisters(processor, 69, 0, 0, 0);
+    Assert.assertFalse(processor.overflow);
+    Assert.assertFalse(processor.zero);
+
+    processor = setupTest(60, 0, 0, 0, "add a, [25]");
+    processor.stack[25] = 9;
+    processor.processAdd();
+    assertRegisters(processor, 69, 0, 0, 0);
     Assert.assertFalse(processor.overflow);
     Assert.assertFalse(processor.zero);
   }

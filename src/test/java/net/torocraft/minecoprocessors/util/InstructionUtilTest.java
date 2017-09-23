@@ -181,7 +181,7 @@ public class InstructionUtilTest {
     Assert.assertEquals((byte) InstructionCode.DJNZ.ordinal(), instruction[0]);
     Assert.assertEquals((byte) Register.D.ordinal(), instruction[1]);
     Assert.assertEquals((byte) (byte) 1, instruction[2]);
-    Assert.assertEquals((byte) 0b00000000, instruction[3]);
+    Assert.assertEquals((byte) 0b00100000, instruction[3]);
   }
 
   @Test
@@ -282,51 +282,127 @@ public class InstructionUtilTest {
   }
 
   @Test
-  public void isMemoryPointer() {
-    Assert.assertFalse(InstructionUtil.isMemoryPointer("0xff"));
-    Assert.assertFalse(InstructionUtil.isMemoryPointer("0x[f]f"));
-    Assert.assertTrue(InstructionUtil.isMemoryPointer("[0xff]"));
-    Assert.assertTrue(InstructionUtil.isMemoryPointer("[a]"));
-    Assert.assertTrue(InstructionUtil.isMemoryPointer("[label_name]"));
-    Assert.assertTrue(InstructionUtil.isMemoryPointer("[-234]"));
+  public void isMemoryReference() {
+    Assert.assertFalse(InstructionUtil.isMemoryReference("0xff"));
+    Assert.assertFalse(InstructionUtil.isMemoryReference("0x[f]f"));
+    Assert.assertTrue(InstructionUtil.isMemoryReference("[0xff]"));
+    Assert.assertTrue(InstructionUtil.isMemoryReference("[a]"));
+    Assert.assertTrue(InstructionUtil.isMemoryReference("[label_name]"));
+    Assert.assertTrue(InstructionUtil.isMemoryReference("[-234]"));
   }
 
   @Test
-  public void stripMemoryPointerBrackets() {
-    Assert.assertEquals("foo", InstructionUtil.stripMemoryPointerBrackets("foo"));
-    Assert.assertEquals("foo", InstructionUtil.stripMemoryPointerBrackets("[foo]"));
-    Assert.assertEquals("f[o]o", InstructionUtil.stripMemoryPointerBrackets("[f[o]o]"));
+  public void stripMemoryReferenceBrackets() {
+    Assert.assertEquals("foo", InstructionUtil.stripMemoryReferenceBrackets("foo"));
+    Assert.assertEquals("foo", InstructionUtil.stripMemoryReferenceBrackets("[foo]"));
+    Assert.assertEquals("f[o]o", InstructionUtil.stripMemoryReferenceBrackets("[f[o]o]"));
+    Assert.assertEquals("foo+5", InstructionUtil.stripMemoryReferenceBrackets("[foo+5]"));
+    Assert.assertEquals("d + 5", InstructionUtil.stripMemoryReferenceBrackets("[d + 5]"));
+  }
+
+  @Test
+  public void hasMemoryOffset() {
+    Assert.assertFalse(InstructionUtil.hasMemoryOffset(""));
+    Assert.assertFalse(InstructionUtil.hasMemoryOffset("[foo]"));
+    Assert.assertTrue(InstructionUtil.hasMemoryOffset("[foo+5]"));
+    Assert.assertTrue(InstructionUtil.hasMemoryOffset("foo-5"));
+    Assert.assertTrue(InstructionUtil.hasMemoryOffset("[0xfe-5]"));
+    Assert.assertTrue(InstructionUtil.hasMemoryOffset("[foo - 5]"));
+    Assert.assertTrue(InstructionUtil.hasMemoryOffset("foo +  5"));
+    Assert.assertFalse(InstructionUtil.hasMemoryOffset("foo +  5a"));
+  }
+
+  @Test
+  public void stripMemoryOffset() {
+    Assert.assertEquals("", InstructionUtil.stripMemoryOffset(""));
+    Assert.assertEquals("[foo]", InstructionUtil.stripMemoryOffset("[foo]"));
+    Assert.assertEquals("[foo]", InstructionUtil.stripMemoryOffset("[foo + 5]"));
+    Assert.assertEquals("foo", InstructionUtil.stripMemoryOffset("foo - 50"));
+  }
+
+  @Test
+  public void setMemoryOffset() {
+    byte[] expected, actual;
+    actual = InstructionUtil.setMemoryOffset(inst(0, 0, 0, 0), 15, 0);
+    expected = inst(0, 0, 0, 0b00000100, 15);
+    Assert.assertArrayEquals(expected, actual);
+
+    actual = InstructionUtil.setMemoryOffset(inst(0, 0, 0, 0b10011001), 30, 1);
+    expected = inst(0, 0, 0, 0b11011001, 30);
+    Assert.assertArrayEquals(expected, actual);
+  }
+
+  private static byte[] inst(int... a) {
+    byte[] inst = new byte[a.length];
+    for (int i = 0; i < a.length; i++) {
+      inst[i] = (byte) a[i];
+    }
+    return inst;
+  }
+
+  @Test
+  public void getMemoryOffset() {
+    Assert.assertEquals(0, InstructionUtil.getMemoryOffset(""));
+    Assert.assertEquals(0, InstructionUtil.getMemoryOffset("[foo]"));
+    Assert.assertEquals(5, InstructionUtil.getMemoryOffset("[foo + 5]"));
+    Assert.assertEquals(-50, InstructionUtil.getMemoryOffset("foo - 50"));
   }
 
   @Test
   public void parseVariableOperand() throws ParseException {
     List<Label> labels = new ArrayList<>();
+    labels.add(new Label((short) 90, "foo"));
+    labels.add(new Label((short) 35, "label_name"));
     byte[] instruction;
 
-    instruction = InstructionUtil.parseVariableOperand("", new byte[4], "0xfe", 0, labels);
-    Assert.assertEquals((byte) 0, instruction[0]);
-    Assert.assertEquals((byte) 0xfe, instruction[1]);
-    Assert.assertEquals((byte) 0, instruction[2]);
-    Assert.assertEquals((byte) 1, instruction[3]);
+    instruction = InstructionUtil.parseVariableOperand("", inst(0, 0, 0, 0), "0xfe", 0, labels);
+    Assert.assertArrayEquals(inst(0, 0xfe, 0, 1), instruction);
 
-    instruction = InstructionUtil.parseVariableOperand("", new byte[4], "b", 1, labels);
-    Assert.assertEquals((byte) 0, instruction[0]);
-    Assert.assertEquals((byte) 0, instruction[1]);
-    Assert.assertEquals((byte) 1, instruction[2]);
-    Assert.assertEquals((byte) 0, instruction[3]);
+    instruction = InstructionUtil.parseVariableOperand("", inst(0, 0, 0, 0), "b", 1, labels);
+    Assert.assertArrayEquals(inst(0, 0, 1, 0), instruction);
 
-    instruction = InstructionUtil.parseVariableOperand("", new byte[4], "011b", 1, labels);
-    Assert.assertEquals((byte) 0, instruction[0]);
-    Assert.assertEquals((byte) 0, instruction[1]);
-    Assert.assertEquals((byte) 3, instruction[2]);
-    Assert.assertEquals((byte) 0b00010000, instruction[3]);
+    instruction = InstructionUtil.parseVariableOperand("", inst(0, 0, 0, 0), "011b", 1, labels);
+    Assert.assertArrayEquals(inst(0, 0, 3, 0b00010000), instruction);
 
-    instruction = InstructionUtil.parseVariableOperand("", new byte[4], "[0xff]", 1, labels);
-    Assert.assertEquals(4, instruction.length);
-    Assert.assertEquals((byte) 0, instruction[0]);
-    Assert.assertEquals((byte) 0, instruction[1]);
-    Assert.assertEquals((byte) 0xff, instruction[2]);
-    Assert.assertEquals((byte) 0b10010000, instruction[3]);
+    instruction = InstructionUtil.parseVariableOperand("", inst(0, 0, 0, 0), "label_name+6", 1, labels);
+    Assert.assertArrayEquals(inst(0, 0, 1, 0b01100000, 6), instruction);
+
+    instruction = InstructionUtil.parseVariableOperand("", inst(0, 0, 0, 0), "[0xff]", 1, labels);
+    Assert.assertArrayEquals(inst(0, 0, 0xff, 0b10010000), instruction);
+
+    instruction = InstructionUtil.parseVariableOperand("", inst(0, 0, 0, 0), "[0xff -5]", 1, labels);
+    Assert.assertArrayEquals(inst(0, 0, 0xff, 0b11010000, -5), instruction);
+  }
+
+  @Test
+  public void parseVariableOperand_invalidLabel() throws ParseException {
+    List<Label> labels = new ArrayList<>();
+    labels.add(new Label((short) 90, "foo"));
+    labels.add(new Label((short) 35, "label_name"));
+    byte[] instruction;
+
+    ParseException e = null;
+    try {
+      InstructionUtil.parseVariableOperand("", inst(0, 0, 0, 0), "label_name_bogus", 1, labels);
+    } catch (ParseException ex) {
+      e = ex;
+    }
+    Assert.assertNotNull(e);
+  }
+
+  @Test
+  public void parseVariableOperand_noFreeAdd() {
+    List<Label> labels = new ArrayList<>();
+    byte[] instruction;
+
+    ParseException e = null;
+    try {
+      InstructionUtil.parseVariableOperand("", inst(0, 0, 0, 0), "b + 5", 1, labels);
+    } catch (ParseException ex) {
+      e = ex;
+    }
+    Assert.assertNotNull(e);
+    Assert.assertEquals(InstructionUtil.ERROR_NON_REFERENCE_OFFSET, e.message);
   }
 
   private static void printInstruction(byte[] instruction) {
@@ -359,7 +435,7 @@ public class InstructionUtilTest {
    * <li><b>1:</b> Literal Value</li>
    * <li><b>2:</b> Label</li>
    * <li><b>bit 2</b> Has Offset</li>
-   * <li><b>bit 3:</b> Is Memory Pointer</li>
+   * <li><b>bit 3:</b> Is Memory Reference</li>
    * </ul>
    */
   @Test
@@ -375,7 +451,7 @@ public class InstructionUtilTest {
   }
 
   @Test
-  public void parseDoubleOperands_doublePointer() throws ParseException {
+  public void parseDoubleOperands_doubleReference() throws ParseException {
     List<Label> labels = new ArrayList<>();
     ParseException e = null;
     try {
@@ -384,6 +460,6 @@ public class InstructionUtilTest {
       e = ex;
     }
     Assert.assertNotNull(e);
-    Assert.assertEquals(InstructionUtil.ERROR_DOUBLE_POINTER, e.message);
+    Assert.assertEquals(InstructionUtil.ERROR_DOUBLE_REFERENCE, e.message);
   }
 }

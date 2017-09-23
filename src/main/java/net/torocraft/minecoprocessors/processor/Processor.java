@@ -373,7 +373,7 @@ public class Processor implements IProcessor {
 
   void processMov() {
     byte source = getVariableOperand(1);
-    if (isPointerOperand(0)) {
+    if (isMemoryReferenceOperand(0)) {
       stack[getVariableOperandNoPointer(0)] = source;
     } else {
       registers[instruction[1]] = source;
@@ -690,7 +690,7 @@ public class Processor implements IProcessor {
 
   byte getVariableOperand(int operandIndex) {
     byte value = getVariableOperandNoPointer(operandIndex);
-    if (isPointerOperand(operandIndex)) {
+    if (isMemoryReferenceOperand(operandIndex)) {
       value = stack[value];
     }
     return value;
@@ -704,7 +704,7 @@ public class Processor implements IProcessor {
     return value;
   }
 
-  boolean isPointerOperand(int operandIndex) {
+  boolean isMemoryReferenceOperand(int operandIndex) {
     return ByteUtil.getBit(instruction[3], (operandIndex * 4) + 3);
   }
 
