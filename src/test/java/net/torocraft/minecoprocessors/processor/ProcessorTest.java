@@ -1,9 +1,8 @@
 package net.torocraft.minecoprocessors.processor;
 
-import com.typesafe.config.ConfigException.Parse;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import net.minecraft.nbt.NBTTagCompound;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
@@ -271,7 +270,7 @@ public class ProcessorTest {
     try {
       processor = setupTest(0, 30, 0, 0, "mov test_label, d");
       processor.processMov();
-    }catch(ParseException ex){
+    } catch (ParseException ex) {
       e = ex;
     }
     Assert.assertNotNull(e);
@@ -779,11 +778,11 @@ public class ProcessorTest {
     Processor p = new Processor();
 
     List<String> program = Arrays.asList(
-      "mov c, 10 ",
-      "start: ",
-      "sub c, 1 ",
-      "jnz start ",
-      "mov e, 100 "
+        "mov c, 10 ",
+        "start: ",
+        "sub c, 1 ",
+        "jnz start ",
+        "mov e, 100 "
     );
     p.load(program);
 
@@ -812,11 +811,11 @@ public class ProcessorTest {
     Processor p = new Processor();
 
     List<String> program = Arrays.asList(
-      "mov c, 10 ",
-      "start: ",
-      "sub c, 1 ",
-      "jnz start ",
-      "ret "
+        "mov c, 10 ",
+        "start: ",
+        "sub c, 1 ",
+        "jnz start ",
+        "ret "
     );
     p.load(program);
 

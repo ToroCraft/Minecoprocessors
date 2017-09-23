@@ -7,7 +7,6 @@ import mockit.Deencapsulation;
 import net.torocraft.minecoprocessors.gui.GuiMinecoprocessor;
 import net.torocraft.minecoprocessors.processor.InstructionCode;
 import net.torocraft.minecoprocessors.processor.Register;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -264,14 +263,14 @@ public class InstructionUtilTest {
   @Test
   public void testParseFile() throws ParseException {
     List<String> lines = Arrays.asList(
-      ";test program",
-      "cmp a, b",
-      "jmp end",
-      "test:mov a, b",
-      "test1: add a, 50",
-      "test2:  loop test",
-      "end:",
-      "jmp test"
+        ";test program",
+        "cmp a, b",
+        "jmp end",
+        "test:mov a, b",
+        "test1: add a, 50",
+        "test2:  loop test",
+        "end:",
+        "jmp test"
     );
     List<Label> labels = new ArrayList<>();
 
@@ -290,12 +289,12 @@ public class InstructionUtilTest {
 
     List<String> reCompiled = InstructionUtil.compileFile(instructions, labels);
     List<String> expected = Arrays.asList(
-      "cmp a, b",
-      "jmp end",
-      "test: mov a, b",
-      "test1: add a, 50",
-      "test2: loop test",
-      "end: jmp test"
+        "cmp a, b",
+        "jmp end",
+        "test: mov a, b",
+        "test1: add a, 50",
+        "test2: loop test",
+        "end: jmp test"
     );
 
     Assert.assertEquals(expected, reCompiled);

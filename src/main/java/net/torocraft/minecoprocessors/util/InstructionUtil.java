@@ -128,7 +128,7 @@ public class InstructionUtil {
 
       if (instruction[4] < 0) {
         return operand + Byte.toString(instruction[4]);
-      }else{
+      } else {
         return operand + "+" + Byte.toString(instruction[4]);
       }
 
