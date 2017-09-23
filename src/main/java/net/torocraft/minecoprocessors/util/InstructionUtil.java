@@ -13,15 +13,14 @@ public class InstructionUtil {
   public static final String ERROR_DOUBLE_REFERENCE = "only one memory reference allow";
   public static final String ERROR_NON_REFERENCE_OFFSET = "offsets can only be used with labels and references";
 
-  public static String compileFile(List<byte[]> instructions, List<Label> labels) {
-    StringBuilder file = new StringBuilder();
+  public static List<String> compileFile(List<byte[]> instructions, List<Label> labels) {
+    List<String> file = new ArrayList<>();
 
     for (short address = 0; address < instructions.size(); address++) {
-      file.append(compileLine(instructions.get(address), labels, address));
-      file.append("\n");
+      file.add(compileLine(instructions.get(address), labels, address));
     }
 
-    return file.toString().trim();
+    return file;
   }
 
   public static String compileLine(byte[] instruction, List<Label> labels, short lineAddress) {
@@ -34,7 +33,7 @@ public class InstructionUtil {
 
     for (Label label : labels) {
       if (label.address == lineAddress) {
-        line.append(label.name).append(":\n");
+        line.append(label.name).append(": ");
       }
     }
 
@@ -123,10 +122,8 @@ public class InstructionUtil {
     return e.toString().toLowerCase();
   }
 
-  public static List<byte[]> parseFile(String file, List<Label> labels) throws ParseException {
+  public static List<byte[]> parseFile(List<String> lines, List<Label> labels) throws ParseException {
     List<byte[]> instructions = new ArrayList<>();
-
-    String[] lines = file.split("\\n\\r?");
 
     for (String line : lines) {
       parseLineForLabels(line, labels, (short) instructions.size());

@@ -1,5 +1,7 @@
 package net.torocraft.minecoprocessors.processor;
 
+import java.util.List;
+
 import net.minecraft.nbt.NBTTagCompound;
 
 public interface IProcessor {
@@ -10,7 +12,7 @@ public interface IProcessor {
 
   void wake();
 
-  void load(String program);
+  void load(List<String> program);
 
   void readFromNBT(NBTTagCompound c);
 
