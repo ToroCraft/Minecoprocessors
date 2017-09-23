@@ -153,12 +153,12 @@ public class ProcessorTest {
     processor.testOverflow(-129);
     Assert.assertTrue(processor.overflow);
 
-    processor.testOverflow((long) 129);
+    processor.testOverflow(129L);
     Assert.assertTrue(processor.overflow);
   }
 
   @Test
-  public void testProcessWfe() throws ParseException {
+  public void testProcessWfe() {
     Processor processor = new Processor();
     Assert.assertFalse(processor.isWait());
     processor.processWfe();
@@ -166,7 +166,7 @@ public class ProcessorTest {
   }
 
   @Test
-  public void testProcessHlt() throws ParseException {
+  public void testProcessHlt() {
     Processor processor = new Processor();
     Assert.assertFalse(processor.isFault());
     processor.processHlt();
@@ -174,7 +174,7 @@ public class ProcessorTest {
   }
 
   @Test
-  public void testProcessClz() throws ParseException {
+  public void testProcessClz() {
     Processor processor = new Processor();
     processor.zero = true;
     processor.processClz();
@@ -182,7 +182,7 @@ public class ProcessorTest {
   }
 
   @Test
-  public void testProcessClc() throws ParseException {
+  public void testProcessClc() {
     Processor processor = new Processor();
     processor.carry = true;
     processor.processClc();
@@ -190,7 +190,7 @@ public class ProcessorTest {
   }
 
   @Test
-  public void testProcessSez() throws ParseException {
+  public void testProcessSez() {
     Processor processor = new Processor();
     processor.zero = false;
     processor.processSez();
@@ -198,7 +198,7 @@ public class ProcessorTest {
   }
 
   @Test
-  public void testProcessSec() throws ParseException {
+  public void testProcessSec() {
     Processor processor = new Processor();
     processor.carry = false;
     processor.processSec();
@@ -777,7 +777,7 @@ public class ProcessorTest {
     return processor;
   }
 
-  private void assertRegisters(Processor processor, int a, int b, int c, int d) {
+  private static void assertRegisters(Processor processor, int a, int b, int c, int d) {
     Assert.assertEquals((byte) a, processor.registers[Register.A.ordinal()]);
     Assert.assertEquals((byte) b, processor.registers[Register.B.ordinal()]);
     Assert.assertEquals((byte) c, processor.registers[Register.C.ordinal()]);
