@@ -2,6 +2,8 @@ package net.torocraft.minecoprocessors.blocks;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -316,6 +318,12 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     updatePlayers();
   }
 
+  private static void addLines(List<String> lines, String toAdd) {
+    for(String s : toAdd.split("\\n\\r?")) {
+      lines.add(s);
+    }
+  }
+
   private void loadBook(ItemStack stack) {
     if (world.isRemote) {
       return;
@@ -334,32 +342,30 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     boolean signed = stack.getTagCompound().hasKey("author");
     JsonParser parser = null;
 
-    StringBuilder code = new StringBuilder();
+    List<String> code;
     if(ItemBookCode.isBookCode(stack)) {
-      for(String s : ItemBookCode.Data.loadFromStack(stack).getProgram()) {
-        code.append(s).append("\n");
-      }
+      code = ItemBookCode.Data.loadFromStack(stack).getProgram();
     } else {
+      code = new ArrayList<>(pages.tagCount());
       for (int i = 0; i < pages.tagCount(); ++i) {
         if (signed) {
           if(parser == null){
             parser = new JsonParser();
           }
           JsonObject o = parser.parse(pages.getStringTagAt(i)).getAsJsonObject();
-          code.append(o.get("text").getAsString());
+          addLines(code, o.get("text").getAsString());
         } else {
-          code.append(pages.getStringTagAt(i));
+          addLines(code, pages.getStringTagAt(i));
         }
-        code.append("\n");
       }
     }
-    updateNameFromCode(code.toString());
-    processor.load(code.toString());
+    updateNameFromCode(code);
+    processor.load(code);
     loaded = false;
     updatePlayers();
   }
 
-  private void updateNameFromCode(String code) {
+  private void updateNameFromCode(List<String> code) {
     String name = readNameFromHeader(code);
     if ("".equals(name)) {
       setName(null);
@@ -368,10 +374,9 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     }
   }
 
-  public static String readNameFromHeader(String code) {
+  public static String readNameFromHeader(List<String> code) {
     try {
-      String firstLine = code.split("\\n")[0];
-      List<String> nameSearch = InstructionUtil.regex("^\\s*;\\s*(.*)", firstLine, Pattern.CASE_INSENSITIVE);
+      List<String> nameSearch = InstructionUtil.regex("^\\s*;\\s*(.*)", code.get(0), Pattern.CASE_INSENSITIVE);
       if (nameSearch.size() != 1) {
         return null;
       }

@@ -1,11 +1,13 @@
 package net.torocraft.minecoprocessors.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import mockit.Deencapsulation;
 import net.torocraft.minecoprocessors.gui.GuiMinecoprocessor;
 import net.torocraft.minecoprocessors.processor.InstructionCode;
 import net.torocraft.minecoprocessors.processor.Register;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -211,7 +213,7 @@ public class InstructionUtilTest {
     testParseCompile("mov A, 36 ; test mov", "mov a, 36");
     testParseCompile("push a ; test single op", "push a");
     testParseCompile("push 89 ; test single op", "push 89");
-    testParseCompile("push 89", "test:\npush 89", (short) 56);
+    testParseCompile("push 89", "test: push 89", (short) 56);
     testParseCompile("jmp test", "jmp test");
     testParseCompile("ret", "ret");
     testParseCompile("Jc   test", "jc test");
@@ -241,18 +243,19 @@ public class InstructionUtilTest {
 
   @Test
   public void testParseFile() throws ParseException {
-    String file = "";
-    file += ";test program\n";
-    file += "cmp a, b\n";
-    file += "jmp end\n";
-    file += "test:mov a, b\n";
-    file += "test1: add a, 50\n";
-    file += "test2:  loop test\n";
-    file += "end:\n";
-    file += "jmp test\n";
+    List<String> lines = Arrays.asList(
+      ";test program",
+      "cmp a, b",
+      "jmp end",
+      "test:mov a, b",
+      "test1: add a, 50",
+      "test2:  loop test",
+      "end:",
+      "jmp test"
+    );
     List<Label> labels = new ArrayList<>();
 
-    List<byte[]> instructions = InstructionUtil.parseFile(file, labels);
+    List<byte[]> instructions = InstructionUtil.parseFile(lines, labels);
 
     Assert.assertEquals(6, instructions.size());
     Assert.assertEquals(4, labels.size());
@@ -265,18 +268,15 @@ public class InstructionUtilTest {
     Assert.assertEquals(InstructionCode.CMP, InstructionCode.values()[instructions.get(0)[0]]);
     Assert.assertEquals(InstructionCode.LOOP, InstructionCode.values()[instructions.get(4)[0]]);
 
-    String reCompiled = InstructionUtil.compileFile(instructions, labels);
-    String expected = "";
-    expected += "cmp a, b\n";
-    expected += "jmp end\n";
-    expected += "test:\n";
-    expected += "mov a, b\n";
-    expected += "test1:\n";
-    expected += "add a, 50\n";
-    expected += "test2:\n";
-    expected += "loop test\n";
-    expected += "end:\n";
-    expected += "jmp test";
+    List<String> reCompiled = InstructionUtil.compileFile(instructions, labels);
+    List<String> expected = Arrays.asList(
+      "cmp a, b",
+      "jmp end",
+      "test: mov a, b",
+      "test1: add a, 50",
+      "test2: loop test",
+      "end: jmp test"
+    );
 
     Assert.assertEquals(expected, reCompiled);
   }
