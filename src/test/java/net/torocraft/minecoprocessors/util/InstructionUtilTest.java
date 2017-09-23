@@ -58,6 +58,14 @@ public class InstructionUtilTest {
   }
 
   @Test
+  public void splitDoubleOperandString_pointer() {
+    List<String> l = InstructionUtil.splitDoubleOperandString("test [a], [0xff]");
+    Assert.assertEquals(2, l.size());
+    Assert.assertEquals("[a]", l.get(0));
+    Assert.assertEquals("[0xff]", l.get(1));
+  }
+
+  @Test
   public void splitDoubleOperandString_label() {
     List<String> l = InstructionUtil.splitDoubleOperandString("test a, test_label-op");
     Assert.assertEquals(2, l.size());
@@ -199,8 +207,6 @@ public class InstructionUtilTest {
 
   @Test
   public void testCompileLine() throws ParseException {
-    List<Label> labels = new ArrayList<>();
-    labels.add(new Label((short) 56, "test"));
     testParseCompile("mov A, pr ; test mov", "mov a, pr");
     testParseCompile("mov A, 36 ; test mov", "mov a, 36");
     testParseCompile("push a ; test single op", "push a");
@@ -275,44 +281,52 @@ public class InstructionUtilTest {
     Assert.assertEquals(expected, reCompiled);
   }
 
-  /**
-   * Instruction Format:
-   *
-   * <ul>
-   *   <li><b>byte0:</b> instruction ID (ordinal of InstructionCode enum)</li>
-   *   <li><b>byte1:</b> first operand value</li>
-   *   <li><b>byte2:</b> second operand value</li>
-   *   <li><b>byte3_nibble0:</b> operand type</li>
-   *   <li><b>byte3_nibble1:</b> operand type</li>
-   * </ul>
-   *
-   * Operand Types:
-   *
-   * <ul>
-   *   <li><b>0:</b> Register ID (ordinal value of the Register enum)</li>
-   *   <li><b>1:</b> Literal Value</li>
-   *   <li><b>2:</b> Label</li>
-   *   <li><b>3:</b> Memory</li>
-   * </ul>
-   *
-   */
+  @Test
+  public void isMemoryPointer() {
+    Assert.assertFalse(InstructionUtil.isMemoryPointer("0xff"));
+    Assert.assertFalse(InstructionUtil.isMemoryPointer("0x[f]f"));
+    Assert.assertTrue(InstructionUtil.isMemoryPointer("[0xff]"));
+    Assert.assertTrue(InstructionUtil.isMemoryPointer("[a]"));
+    Assert.assertTrue(InstructionUtil.isMemoryPointer("[label_name]"));
+    Assert.assertTrue(InstructionUtil.isMemoryPointer("[-234]"));
+  }
+
+  @Test
+  public void stripMemoryPointerBrackets() {
+    Assert.assertEquals("foo", InstructionUtil.stripMemoryPointerBrackets("foo"));
+    Assert.assertEquals("foo", InstructionUtil.stripMemoryPointerBrackets("[foo]"));
+    Assert.assertEquals("f[o]o", InstructionUtil.stripMemoryPointerBrackets("[f[o]o]"));
+  }
+
   @Test
   public void parseVariableOperand() throws ParseException {
     List<Label> labels = new ArrayList<>();
-    byte[] instruction = new byte[4];
+    byte[] instruction;
 
-    instruction = InstructionUtil.parseVariableOperand("", instruction, "0xfe", 0, labels);
+    instruction = InstructionUtil.parseVariableOperand("", new byte[4], "0xfe", 0, labels);
     Assert.assertEquals((byte) 0, instruction[0]);
     Assert.assertEquals((byte) 0xfe, instruction[1]);
     Assert.assertEquals((byte) 0, instruction[2]);
     Assert.assertEquals((byte) 1, instruction[3]);
 
-    instruction = new byte[4];
-    instruction = InstructionUtil.parseVariableOperand("", instruction, "b", 1, labels);
+    instruction = InstructionUtil.parseVariableOperand("", new byte[4], "b", 1, labels);
     Assert.assertEquals((byte) 0, instruction[0]);
     Assert.assertEquals((byte) 0, instruction[1]);
     Assert.assertEquals((byte) 1, instruction[2]);
     Assert.assertEquals((byte) 0, instruction[3]);
+
+    instruction = InstructionUtil.parseVariableOperand("", new byte[4], "011b", 1, labels);
+    Assert.assertEquals((byte) 0, instruction[0]);
+    Assert.assertEquals((byte) 0, instruction[1]);
+    Assert.assertEquals((byte) 3, instruction[2]);
+    Assert.assertEquals((byte) 0b00010000, instruction[3]);
+
+    instruction = InstructionUtil.parseVariableOperand("", new byte[4], "[0xff]", 1, labels);
+    Assert.assertEquals(4, instruction.length);
+    Assert.assertEquals((byte) 0, instruction[0]);
+    Assert.assertEquals((byte) 0, instruction[1]);
+    Assert.assertEquals((byte) 0xff, instruction[2]);
+    Assert.assertEquals((byte) 0b10010000, instruction[3]);
   }
 
   private static void printInstruction(byte[] instruction) {
@@ -324,4 +338,52 @@ public class InstructionUtilTest {
     System.out.println();
   }
 
+  /**
+   * Instruction Format:
+   *
+   * INST | OP1 | OP2 | OP_TYPES | OFFSET
+   *
+   * <ul>
+   * <li><b>byte0:</b> instruction ID (ordinal of InstructionCode enum)</li>
+   * <li><b>byte1:</b> first operand value</li>
+   * <li><b>byte2:</b> second operand value</li>
+   * <li><b>byte3_nibble0:</b> operand type</li>
+   * <li><b>byte3_nibble1:</b> operand type</li>
+   * <li><b>byte4:</b> offset value</li>
+   * </ul>
+   *
+   * Operand Types:
+   *
+   * <ul>
+   * <li><b>0:</b> Register ID (ordinal value of the Register enum)</li>
+   * <li><b>1:</b> Literal Value</li>
+   * <li><b>2:</b> Label</li>
+   * <li><b>bit 2:</b> Is Memory Pointer</li>
+   * <li><b>bit 3</b> Has Offset</li>
+   * </ul>
+   */
+  @Test
+  public void parseDoubleOperands() throws ParseException {
+    List<Label> labels = new ArrayList<>();
+    byte[] instruction;
+    instruction = InstructionUtil.parseDoubleOperands("mov a, b", labels);
+    Assert.assertEquals(4, instruction.length);
+    Assert.assertEquals((byte) InstructionCode.MOV.ordinal(), instruction[0]);
+    Assert.assertEquals((byte) 0, instruction[1]);
+    Assert.assertEquals((byte) 1, instruction[2]);
+    Assert.assertEquals((byte) 0, instruction[3]);
+  }
+
+  @Test
+  public void parseDoubleOperands_doublePointer() throws ParseException {
+    List<Label> labels = new ArrayList<>();
+    ParseException e = null;
+    try {
+      InstructionUtil.parseDoubleOperands("mov [a], [b]", labels);
+    } catch (ParseException ex) {
+      e = ex;
+    }
+    Assert.assertNotNull(e);
+    Assert.assertEquals(InstructionUtil.ERROR_DOUBLE_POINTER, e.message);
+  }
 }

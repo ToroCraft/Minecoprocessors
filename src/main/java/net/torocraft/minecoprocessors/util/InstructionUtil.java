@@ -9,11 +9,9 @@ import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.processor.InstructionCode;
 import net.torocraft.minecoprocessors.processor.Register;
 
-//TODO support .'s in labels
-// which mean local? https://docs.oracle.com/cd/E19120-01/open.solaris/817-5477/esqaq/index.html
-
-
 public class InstructionUtil {
+
+  public static final String ERROR_DOUBLE_POINTER = "only one memory pointer allow";
 
   public static String compileFile(List<byte[]> instructions, List<Label> labels) {
     StringBuilder file = new StringBuilder();
@@ -307,10 +305,10 @@ public class InstructionUtil {
   }
 
   static List<String> splitDoubleOperandString(String line) {
-    return regex("^\\s*[A-Z]+\\s+([A-Z]+)\\s*,\\s*([A-Z0-9_-]+)\\s*$", line, Pattern.CASE_INSENSITIVE);
+    return regex("^\\s*[A-Z]+\\s+(\\[?[A-Z]+]?)\\s*,\\s*(\\[?[A-Z0-9_-]+]?)\\s*$", line, Pattern.CASE_INSENSITIVE);
   }
 
-  private static byte[] parseDoubleOperands(String line, List<Label> labels) throws ParseException {
+  static byte[] parseDoubleOperands(String line, List<Label> labels) throws ParseException {
     byte[] instruction = new byte[4];
     List<String> l = splitDoubleOperandString(line);
     if (l.size() != 2) {
@@ -318,11 +316,21 @@ public class InstructionUtil {
     }
     instruction = parseVariableOperand(line, instruction, l.get(0), 0, labels);
     instruction = parseVariableOperand(line, instruction, l.get(1), 1, labels);
+
+    if (ByteUtil.getBit(instruction[3], 3) && ByteUtil.getBit(instruction[3], 7)) {
+      throw new ParseException(line, ERROR_DOUBLE_POINTER);
+    }
+
     return instruction;
   }
 
   static byte[] parseVariableOperand(String line, byte[] instruction, String operand,
       int operandIndex, List<Label> labels) throws ParseException {
+
+    if(isMemoryPointer(operand)){
+      instruction[3] = ByteUtil.setBit(instruction[3], true, (operandIndex * 4) + 3);
+      operand = stripMemoryPointerBrackets(operand);
+    }
 
     if (isLiteral(operand)) {
       instruction[operandIndex + 1] = parseLiteral(line, operand);
@@ -335,7 +343,16 @@ public class InstructionUtil {
       instruction[operandIndex + 1] = parseLabel(line, operand.toLowerCase(), labels);
 
     }
+
     return instruction;
+  }
+
+  static boolean isMemoryPointer(String operand) {
+    return operand.matches("\\[[^]]+]");
+  }
+
+  static String stripMemoryPointerBrackets(String operand) {
+    return operand.replaceAll("^\\[", "").replaceAll("]$", "");
   }
 
   private static byte[] parseLabelOperand(String line, List<Label> labels)
