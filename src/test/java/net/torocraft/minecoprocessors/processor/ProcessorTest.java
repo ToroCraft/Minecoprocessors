@@ -11,6 +11,88 @@ import org.junit.Test;
 
 public class ProcessorTest {
 
+  /**
+   * Operand Types (4th Instruction Byte):
+   *
+   * <ul>
+   * <li><b>0:</b> Register ID (ordinal value of the Register enum)</li>
+   * <li><b>1:</b> Literal Value</li>
+   * <li><b>2:</b> Label</li>
+   * <li><b>bit 2</b> Has Offset</li>
+   * <li><b>bit 3:</b> Is Memory Pointer</li>
+   * </ul>
+   */
+
+  @Test
+  public void isLiteralOperand() {
+    Processor processor = new Processor();
+    processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b00000000};
+    Assert.assertFalse(processor.isLiteralOperand(0));
+    Assert.assertFalse(processor.isLiteralOperand(1));
+
+    processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b00010000};
+    Assert.assertFalse(processor.isLiteralOperand(0));
+    Assert.assertTrue(processor.isLiteralOperand(1));
+
+    processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b00110100};
+    Assert.assertFalse(processor.isLiteralOperand(0));
+    Assert.assertFalse(processor.isLiteralOperand(1));
+  }
+
+  @Test
+  public void isRegisterOperand() {
+    Processor processor = new Processor();
+    processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b00000000};
+    Assert.assertTrue(processor.isRegisterOperand(0));
+    Assert.assertTrue(processor.isRegisterOperand(1));
+
+    processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b00010000};
+    Assert.assertTrue(processor.isRegisterOperand(0));
+    Assert.assertFalse(processor.isRegisterOperand(1));
+
+    processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b00110100};
+    Assert.assertTrue(processor.isRegisterOperand(0));
+    Assert.assertFalse(processor.isRegisterOperand(1));
+  }
+
+  @Test
+  public void isPointerOperand() {
+    Processor processor = new Processor();
+    processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b10000000};
+    Assert.assertFalse(processor.isPointerOperand(0));
+    Assert.assertTrue(processor.isPointerOperand(1));
+
+    processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b10010000};
+    Assert.assertFalse(processor.isPointerOperand(0));
+    Assert.assertTrue(processor.isPointerOperand(1));
+
+    processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b00111100};
+    Assert.assertTrue(processor.isPointerOperand(0));
+    Assert.assertFalse(processor.isPointerOperand(1));
+  }
+
+  @Test
+  public void getVariableOperand() {
+    Processor processor = new Processor();
+    processor.registers[0] = 10;
+    processor.registers[1] = 11;
+    processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 1, (byte) 0b00000000};
+    Assert.assertEquals((byte) 10, processor.getVariableOperand(0));
+    Assert.assertEquals((byte) 11, processor.getVariableOperand(1));
+
+    processor.stack[10] = 100;
+    processor.stack[11] = 101;
+    processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 1, (byte) 0b10001000};
+    Assert.assertEquals((byte) 100, processor.getVariableOperand(0));
+    Assert.assertEquals((byte) 101, processor.getVariableOperand(1));
+
+    processor.stack[20] = 100;
+    processor.stack[21] = 101;
+    processor.instruction = new byte[]{(byte) 0, (byte) 20, (byte) 21, (byte) 0b10011001};
+    Assert.assertEquals((byte) 100, processor.getVariableOperand(0));
+    Assert.assertEquals((byte) 101, processor.getVariableOperand(1));
+  }
+
   @Test
   public void testNbt() {
     Processor processor = new Processor();
@@ -129,6 +211,19 @@ public class ProcessorTest {
     processor = setupTest(0, 30, 0, 0, "mov a, 51");
     processor.processMov();
     assertRegisters(processor, 51, 30, 0, 0);
+  }
+
+  @Test
+  public void testProcessMov_fromMemory() throws ParseException {
+    Processor processor = setupTest(0, 30, 0, 0, "mov a, [2]");
+    processor.stack[2] = (byte) 12;
+    processor.processMov();
+    assertRegisters(processor, 12, 30, 0, 0);
+
+    processor = setupTest(10, 30, 0, 0, "mov [a], 0x52");
+    processor.processMov();
+    assertRegisters(processor, 10, 30, 0, 0);
+    Assert.assertEquals((byte) 0x52, processor.stack[10]);
   }
 
   @Test
@@ -504,11 +599,8 @@ public class ProcessorTest {
   public void testPackFlags() {
     Processor processor = new Processor();
     processor.reset();
-    processor.temp = (byte) 0xff;
-    Assert.assertEquals(Long.parseUnsignedLong("000000ff00000000", 16), processor.packFlags());
 
     processor.fault = true;
-    processor.temp = 0;
     Assert.assertEquals(Long.parseUnsignedLong("0000000000000001", 16), processor.packFlags());
 
     processor.zero = true;
@@ -639,7 +731,15 @@ public class ProcessorTest {
       }
     }
 
-    System.out.println(p.pinchDump());
+    p.processDump();
+  }
+
+  @Ignore
+  @Test
+  public void processDump() {
+    Processor processor = new Processor();
+    processor.stack[2] = (byte) 0xee;
+    processor.processDump();
   }
 
   @Test

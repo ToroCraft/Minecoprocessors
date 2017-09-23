@@ -32,7 +32,7 @@ public class InstructionUtilTest {
     Assert.assertTrue(InstructionUtil.isLiteral("0xf0"));
     Assert.assertTrue(InstructionUtil.isLiteral("010b"));
     Assert.assertTrue(InstructionUtil.isLiteral("0o010"));
-    // TODO don't detect over sized operands
+    // TODO detect over sized operands
     // Assert.assertFalse(InstructionUtil.isLiteral("0xf00"));
     Assert.assertFalse(InstructionUtil.isLiteral("a"));
     Assert.assertFalse(InstructionUtil.isLiteral("015b"));
@@ -358,8 +358,8 @@ public class InstructionUtilTest {
    * <li><b>0:</b> Register ID (ordinal value of the Register enum)</li>
    * <li><b>1:</b> Literal Value</li>
    * <li><b>2:</b> Label</li>
-   * <li><b>bit 2:</b> Is Memory Pointer</li>
-   * <li><b>bit 3</b> Has Offset</li>
+   * <li><b>bit 2</b> Has Offset</li>
+   * <li><b>bit 3:</b> Is Memory Pointer</li>
    * </ul>
    */
   @Test

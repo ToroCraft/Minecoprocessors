@@ -7,6 +7,7 @@ import net.minecraft.nbt.NBTTagByteArray;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.torocraft.minecoprocessors.Minecoprocessors;
+import net.torocraft.minecoprocessors.gui.GuiMinecoprocessor;
 import net.torocraft.minecoprocessors.util.ByteUtil;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
@@ -33,7 +34,6 @@ public class Processor implements IProcessor {
   byte[] instruction;
   protected byte[] stack = new byte[64];
   byte[] registers = new byte[Register.values().length];
-  float temp;
 
   /*
    * pointers
@@ -124,7 +124,7 @@ public class Processor implements IProcessor {
     long flags = 0;
     flags = ByteUtil.setShort(flags, ip, 3);
     flags = ByteUtil.setByte(flags, sp, 5);
-    flags = ByteUtil.setByte(flags, getTemp(), 4);
+    // byte 4  not currently used
     flags = ByteUtil.setBit(flags, fault, 0);
     flags = ByteUtil.setBit(flags, zero, 1);
     flags = ByteUtil.setBit(flags, overflow, 2);
@@ -136,7 +136,7 @@ public class Processor implements IProcessor {
   void unPackFlags(long flags) {
     ip = ByteUtil.getShort(flags, 3);
     sp = ByteUtil.getByte(flags, 5);
-    temp = ByteUtil.getByte(flags, 4);
+    // byte 4 not currently used
     fault = ByteUtil.getBit(flags, 0);
     zero = ByteUtil.getBit(flags, 1);
     overflow = ByteUtil.getBit(flags, 2);
@@ -363,6 +363,8 @@ public class Processor implements IProcessor {
         break;
       case SEC:
         processSec();
+      case DUMP:
+        processDump();
         break;
       default:
         throw new RuntimeException("InstructionCode enum had unexpected value");
@@ -370,7 +372,12 @@ public class Processor implements IProcessor {
   }
 
   void processMov() {
-    registers[instruction[1]] = getVariableOperand(1);
+    byte source = getVariableOperand(1);
+    if (isPointerOperand(0)) {
+      stack[getVariableOperandNoPointer(0)] = source;
+    } else {
+      registers[instruction[1]] = source;
+    }
   }
 
   void processAdd() {
@@ -617,17 +624,98 @@ public class Processor implements IProcessor {
     registers[Register.A.ordinal()] = (byte) z;
   }
 
-  private byte getVariableOperand(int operandIndex) {
-    byte operand = instruction[operandIndex + 1];
-    if (isLiteral(operandIndex)) {
-      return operand;
-    } else {
-      return registers[operand];
-    }
+  void processDump() {
+    System.out.println(coreDump());
   }
 
-  private boolean isLiteral(int operandIndex) {
-    return ByteUtil.getBit(instruction[3], operandIndex * 4);
+  public String coreDump() {
+    StringBuilder s = new StringBuilder();
+
+    s.append("Redstone Processor:\n\n");
+
+    s.append(" a  b  c  d    pf pb pl pr\n");
+    s.append(" ");
+    dumpRegister(s, Register.A);
+    s.append(" ");
+    dumpRegister(s, Register.B);
+    s.append(" ");
+    dumpRegister(s, Register.C);
+    s.append(" ");
+    dumpRegister(s, Register.D);
+    s.append("   ");
+    dumpRegister(s, Register.PF);
+    s.append(" ");
+    dumpRegister(s, Register.PB);
+    s.append(" ");
+    dumpRegister(s, Register.PL);
+    s.append(" ");
+    dumpRegister(s, Register.PR);
+    s.append("\n\n");
+
+    s.append(" ports  adc    ZF CF F  S\n");
+    s.append(" ");
+    dumpRegister(s, Register.PORTS);
+    s.append("     ");
+    dumpRegister(s, Register.ADC);
+
+    s.append("     ");
+    dumpFlag(s, zero);
+    s.append(" ");
+    dumpFlag(s, carry);
+    s.append(" ");
+    dumpFlag(s, fault);
+    s.append(" ");
+    dumpFlag(s, wait);
+    s.append("\n\n");
+
+    s.append(" memory\n");
+    for (int i = 0; i < 8; i++){
+      for (int j = 0; j < 8; j++) {
+        s.append(" ");
+        s.append(GuiMinecoprocessor.toHex(stack[(i * 8) + j]));
+      }
+      s.append("\n");
+    }
+
+    return s.toString();
+  }
+
+  private void dumpRegister(StringBuilder s, Register reg) {
+    s.append(fix(pad(Integer.toUnsignedString(registers[reg.ordinal()], 16))));
+  }
+
+  private void dumpFlag(StringBuilder s, boolean flag) {
+    s.append(flag ? "1 " : "0 ");
+  }
+
+  byte getVariableOperand(int operandIndex) {
+    byte value = getVariableOperandNoPointer(operandIndex);
+    if (isPointerOperand(operandIndex)) {
+      value = stack[value];
+    }
+    return value;
+  }
+
+  byte getVariableOperandNoPointer(int operandIndex) {
+    byte value = instruction[operandIndex + 1];
+    if (isRegisterOperand(operandIndex)) {
+      value = registers[value];
+    }
+    return value;
+  }
+
+  boolean isPointerOperand(int operandIndex) {
+    return ByteUtil.getBit(instruction[3], (operandIndex * 4) + 3);
+  }
+
+  boolean isLiteralOperand(int operandIndex) {
+    int offset = operandIndex * 4;
+    return ByteUtil.getBit(instruction[3], offset) && !ByteUtil.getBit(instruction[3], offset + 1);
+  }
+
+  boolean isRegisterOperand(int operandIndex) {
+    int offset = operandIndex * 4;
+    return !ByteUtil.getBit(instruction[3], offset) && !ByteUtil.getBit(instruction[3], offset + 1);
   }
 
   public boolean isFault() {
@@ -648,59 +736,6 @@ public class Processor implements IProcessor {
     return s;
   }
 
-  private void dumpRegister(StringBuilder s, Register reg) {
-
-    // s.append(reg.toString().toLowerCase());
-    // s.append("[");
-    s.append(fix(pad(Integer.toUnsignedString(registers[reg.ordinal()], 16))));
-    // s.append("] ");
-  }
-
-  String pinchDump() {
-    StringBuilder s = new StringBuilder();
-
-    s.append("a|b|c|d[");
-    dumpRegister(s, Register.A);
-    s.append(" ");
-    dumpRegister(s, Register.B);
-    s.append(" ");
-    dumpRegister(s, Register.C);
-    s.append(" ");
-    dumpRegister(s, Register.D);
-    s.append("]  ");
-
-    s.append("f|b|l|r[");
-    dumpRegister(s, Register.PF);
-    s.append(" ");
-    dumpRegister(s, Register.PB);
-    s.append(" ");
-    dumpRegister(s, Register.PL);
-    s.append(" ");
-    dumpRegister(s, Register.PR);
-    s.append("]   ");
-
-    dumpRegister(s, Register.PORTS);
-
-    s.append(" ").append(temp).append("°F ");
-
-    s.append("  (").append(InstructionUtil.compileLine(instruction, labels, (short) -1)).append(") ");
-
-    if (fault) {
-      s.append("FAULT ");
-    }
-    if (zero) {
-      s.append("ZF ");
-    }
-    if (wait) {
-      s.append("WAIT ");
-    }
-    if (overflow) {
-      s.append("OF ");
-    }
-
-    return s.toString();
-  }
-
   @Override
   public byte[] getRegisters() {
     return registers;
@@ -708,10 +743,6 @@ public class Processor implements IProcessor {
 
   public List<byte[]> getProgram() {
     return program;
-  }
-
-  public byte getTemp() {
-    return (byte) Math.round(temp);
   }
 
   public short getIp() {
@@ -752,10 +783,6 @@ public class Processor implements IProcessor {
 
   public String getError() {
     return error;
-  }
-
-  public boolean isHot() {
-    return temp > 120;
   }
 
 }

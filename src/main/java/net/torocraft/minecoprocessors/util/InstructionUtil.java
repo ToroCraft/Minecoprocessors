@@ -111,6 +111,7 @@ public class InstructionUtil {
       case CLC:
       case SEZ:
       case SEC:
+      case DUMP:
         break;
       default:
         throw new RuntimeException("Command enum had unexpected value");
@@ -283,6 +284,7 @@ public class InstructionUtil {
       case CLC:
       case SEZ:
       case SEC:
+      case DUMP:
         instruction = new byte[1];
         break;
 

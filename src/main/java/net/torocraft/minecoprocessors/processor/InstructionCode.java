@@ -37,5 +37,6 @@ public enum InstructionCode {
   CLZ,
   CLC,
   SEZ,
-  SEC
+  SEC,
+  DUMP
 }

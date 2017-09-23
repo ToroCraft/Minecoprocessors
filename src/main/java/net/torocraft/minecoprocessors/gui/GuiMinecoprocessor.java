@@ -233,7 +233,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     return s;
   }
 
-  private static String toHex(Byte b) {
+  public static String toHex(Byte b) {
     if (b == null) {
       return null;
     }
