@@ -6,12 +6,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.processor.InstructionCode;
+import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
 
 public class InstructionUtil {
 
   public static final String ERROR_DOUBLE_REFERENCE = "only one memory reference allow";
   public static final String ERROR_NON_REFERENCE_OFFSET = "offsets can only be used with labels and references";
+  public static final String ERROR_LABEL_IN_FIRST_OPERAND = "labels can not be the first of two operands";
 
   public static List<String> compileFile(List<byte[]> instructions, List<Label> labels) {
     List<String> file = new ArrayList<>();
@@ -57,13 +59,9 @@ public class InstructionUtil {
       case SAL:
       case SAR:
         line.append(" ");
-        line.append(lower(Register.values()[instruction[1]]));
+        line.append(compileVariableOperand(instruction, 0, labels));
         line.append(", ");
-        if (ByteUtil.getBit(instruction[3], 4)) {
-          line.append(Integer.toString(instruction[2], 10));
-        } else {
-          line.append(lower(Register.values()[instruction[2]]));
-        }
+        line.append(compileVariableOperand(instruction, 1, labels));
         break;
       case DJNZ:
         line.append(" ");
@@ -116,6 +114,50 @@ public class InstructionUtil {
         throw new RuntimeException("Command enum had unexpected value");
     }
     return line.toString();
+  }
+
+  static String compileMemoryReference(String operand, byte[] instruction, int operandIndex) {
+    if (Processor.isMemoryReferenceOperand(instruction, operandIndex)) {
+      return "[" + operand + "]";
+    }
+    return operand;
+  }
+
+  static String compileOffset(String operand, byte[] instruction, int operandIndex) {
+    if (Processor.isOffsetOperand(instruction, operandIndex)) {
+
+      if (instruction[4] < 0) {
+        return operand + Byte.toString(instruction[4]);
+      } else {
+        return operand + "+" + Byte.toString(instruction[4]);
+      }
+
+
+    }
+    return operand;
+  }
+
+  static String compileVariableOperand(byte[] instruction, int operandIndex, List<Label> labels) {
+    byte value = instruction[operandIndex + 1];
+    String operand = "";
+
+    if (Processor.isLiteralOperand(instruction, operandIndex)) {
+      operand = Integer.toString(value, 10);
+
+    } else if (Processor.isRegisterOperand(instruction, operandIndex)) {
+      operand = lower(Register.values()[value]);
+
+    } else if (Processor.isLabelOperand(instruction, operandIndex)) {
+      if (value < labels.size()) {
+        Label label = labels.get(value);
+        if (label != null) {
+          operand = label.name.toLowerCase();
+        }
+      }
+    }
+
+    operand = compileOffset(operand, instruction, operandIndex);
+    return compileMemoryReference(operand, instruction, operandIndex);
   }
 
   private static String lower(Enum<?> e) {
@@ -304,7 +346,7 @@ public class InstructionUtil {
   }
 
   static List<String> splitDoubleOperandString(String line) {
-    return regex("^\\s*[A-Z]+\\s+(\\[?[A-Z]+]?)\\s*,\\s*(\\[?[A-Z0-9_-]+]?)\\s*$", line, Pattern.CASE_INSENSITIVE);
+    return regex("^\\s*[A-Z]+\\s+([^,]+)\\s*,\\s*(.+?)\\s*$", line, Pattern.CASE_INSENSITIVE);
   }
 
   static byte[] parseDoubleOperands(String line, List<Label> labels) throws ParseException {
@@ -360,7 +402,7 @@ public class InstructionUtil {
   }
 
   static boolean hasMemoryOffset(String operand) {
-    return operand.matches("[^+^-]+[+-]\\s*[0-9]{1,2}]?");
+    return operand.matches("[^+^-]+[+-]\\s*[0-9]{1,3}]?");
   }
 
   /**
@@ -394,7 +436,7 @@ public class InstructionUtil {
    * Only call this on valid memory offset instructions
    */
   static String stripMemoryOffset(String operand) {
-    return operand.replaceAll("([^+^-^\\s]+)\\s*[+-]\\s*[0-9]{1,2}(]?)", "$1$2");
+    return operand.replaceAll("([^+-^\\s]+)\\s*[+-]\\s*[0-9]{1,3}(]?)", "$1$2");
   }
 
   static boolean isMemoryReference(String operand) {
@@ -432,7 +474,7 @@ public class InstructionUtil {
   }
 
   private static Register parseRegister(String line, String s) throws ParseException {
-    s = s.trim().toUpperCase();
+    s = stripMemoryOffset(s).trim().toUpperCase();
     try {
       return Register.valueOf(s);
     } catch (IllegalArgumentException e) {
@@ -444,6 +486,7 @@ public class InstructionUtil {
     if (operand == null) {
       return false;
     }
+    operand = stripMemoryOffset(operand);
     try {
       Register.valueOf(operand.toUpperCase());
       return true;
