@@ -371,9 +371,17 @@ public class Processor implements IProcessor {
     if (isLabelOperand(instruction, 0)) {
       throw new ParseException(InstructionUtil.compileLine(instruction, labels, (short) 0), InstructionUtil.ERROR_LABEL_IN_FIRST_OPERAND);
     } else if (isMemoryReferenceOperand(instruction, 0)) {
-      stack[getVariableOperandNoReference(0) + getMemoryOffset(0)] = source;
+      writeToMemory(source);
     } else {
       registers[instruction[1]] = source;
+    }
+  }
+
+  private void writeToMemory(byte source) {
+    try {
+      stack[getVariableOperandNoReference(0) + getMemoryOffset(0)] = source;
+    }catch (ArrayIndexOutOfBoundsException e){
+      fault = true;
     }
   }
 
