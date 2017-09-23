@@ -6,12 +6,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.processor.InstructionCode;
+import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
 
 public class InstructionUtil {
 
   public static final String ERROR_DOUBLE_REFERENCE = "only one memory reference allow";
   public static final String ERROR_NON_REFERENCE_OFFSET = "offsets can only be used with labels and references";
+  public static final String ERROR_LABEL_IN_FIRST_OPERAND = "labels can not be the first of two operands";
 
   public static String compileFile(List<byte[]> instructions, List<Label> labels) {
     StringBuilder file = new StringBuilder();
@@ -57,14 +59,25 @@ public class InstructionUtil {
       case ROL:
       case SAL:
       case SAR:
+        /*
         line.append(" ");
         line.append(lower(Register.values()[instruction[1]]));
         line.append(", ");
+
+        Processor.isLabelOperand(instruction, 0);
         if (ByteUtil.getBit(instruction[3], 4)) {
           line.append(Integer.toString(instruction[2], 10));
         } else {
           line.append(lower(Register.values()[instruction[2]]));
         }
+        */
+
+        line.append(" ");
+        line.append(compileVariableOperand(instruction, 0, labels));
+        line.append(", ");
+        line.append(compileVariableOperand(instruction, 1, labels));
+
+
         break;
       case DJNZ:
         line.append(" ");
@@ -117,6 +130,31 @@ public class InstructionUtil {
         throw new RuntimeException("Command enum had unexpected value");
     }
     return line.toString();
+  }
+
+  static String compileVariableOperand(byte[] instruction, int operandIndex, List<Label> labels) {
+    byte value = instruction[operandIndex + 1];
+
+    if (Processor.isLabelOperand(instruction, operandIndex)){
+      if (value >= labels.size()) {
+        return "";
+      }
+      Label label = labels.get(value);
+      if (label != null) {
+        return label.name.toLowerCase();
+      }
+      return "";
+    }
+
+    if (Processor.isLiteralOperand(instruction, operandIndex)) {
+      return Integer.toString(value, 10);
+    }
+
+    if (Processor.isRegisterOperand(instruction, operandIndex)) {
+      return lower(Register.values()[value]);
+    }
+
+    return "";
   }
 
   private static String lower(Enum<?> e) {
@@ -307,7 +345,7 @@ public class InstructionUtil {
   }
 
   static List<String> splitDoubleOperandString(String line) {
-    return regex("^\\s*[A-Z]+\\s+(\\[?[A-Z]+]?)\\s*,\\s*(\\[?[A-Z0-9_-]+]?)\\s*$", line, Pattern.CASE_INSENSITIVE);
+    return regex("^\\s*[A-Z]+\\s+([^,]+)\\s*,\\s*(.+?)\\s*$", line, Pattern.CASE_INSENSITIVE);
   }
 
   static byte[] parseDoubleOperands(String line, List<Label> labels) throws ParseException {
@@ -397,7 +435,7 @@ public class InstructionUtil {
    * Only call this on valid memory offset instructions
    */
   static String stripMemoryOffset(String operand) {
-    return operand.replaceAll("([^+^-^\\s]+)\\s*[+-]\\s*[0-9]{1,2}(]?)", "$1$2");
+    return operand.replaceAll("([^+-^\\s]+)\\s*[+-]\\s*[0-9]{1,2}(]?)", "$1$2");
   }
 
   static boolean isMemoryReference(String operand) {

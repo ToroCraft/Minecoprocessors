@@ -1,6 +1,8 @@
 package net.torocraft.minecoprocessors.processor;
 
+import com.typesafe.config.ConfigException.Parse;
 import java.util.ArrayList;
+import java.util.Collections;
 import net.minecraft.nbt.NBTTagCompound;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
@@ -10,6 +12,9 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 public class ProcessorTest {
+
+  private static final short TEST_LABEL_ADDRESS = 111;
+  private static final short TEST_LABEL_ADDRESS_2 = 53;
 
   /**
    * Operand Types (4th Instruction Byte):
@@ -27,48 +32,76 @@ public class ProcessorTest {
   public void isLiteralOperand() {
     Processor processor = new Processor();
     processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b00000000};
-    Assert.assertFalse(processor.isLiteralOperand(0));
-    Assert.assertFalse(processor.isLiteralOperand(1));
+    Assert.assertFalse(Processor.isLiteralOperand(processor.instruction, 0));
+    Assert.assertFalse(Processor.isLiteralOperand(processor.instruction, 1));
 
     processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b00010000};
-    Assert.assertFalse(processor.isLiteralOperand(0));
-    Assert.assertTrue(processor.isLiteralOperand(1));
+    Assert.assertFalse(Processor.isLiteralOperand(processor.instruction, 0));
+    Assert.assertTrue(Processor.isLiteralOperand(processor.instruction, 1));
 
     processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b00110100};
-    Assert.assertFalse(processor.isLiteralOperand(0));
-    Assert.assertFalse(processor.isLiteralOperand(1));
+    Assert.assertFalse(Processor.isLiteralOperand(processor.instruction, 0));
+    Assert.assertFalse(Processor.isLiteralOperand(processor.instruction, 1));
   }
 
   @Test
   public void isRegisterOperand() {
     Processor processor = new Processor();
     processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b00000000};
-    Assert.assertTrue(processor.isRegisterOperand(0));
-    Assert.assertTrue(processor.isRegisterOperand(1));
+    Assert.assertTrue(Processor.isRegisterOperand(processor.instruction, 0));
+    Assert.assertTrue(Processor.isRegisterOperand(processor.instruction, 1));
 
     processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b00010000};
-    Assert.assertTrue(processor.isRegisterOperand(0));
-    Assert.assertFalse(processor.isRegisterOperand(1));
+    Assert.assertTrue(Processor.isRegisterOperand(processor.instruction, 0));
+    Assert.assertFalse(Processor.isRegisterOperand(processor.instruction, 1));
 
     processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b00110100};
-    Assert.assertTrue(processor.isRegisterOperand(0));
-    Assert.assertFalse(processor.isRegisterOperand(1));
+    Assert.assertTrue(Processor.isRegisterOperand(processor.instruction, 0));
+    Assert.assertFalse(Processor.isRegisterOperand(processor.instruction, 1));
   }
 
   @Test
   public void isMemoryReferenceOperand() {
     Processor processor = new Processor();
-    processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b10000000};
+    processor.instruction = inst(0, 0, 0, 0b10000000);
     Assert.assertFalse(processor.isMemoryReferenceOperand(0));
     Assert.assertTrue(processor.isMemoryReferenceOperand(1));
 
-    processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b10010000};
+    processor.instruction = inst(0, 0, 0, 0b10010000);
     Assert.assertFalse(processor.isMemoryReferenceOperand(0));
     Assert.assertTrue(processor.isMemoryReferenceOperand(1));
 
-    processor.instruction = new byte[]{(byte) 0, (byte) 0, (byte) 0, (byte) 0b00111100};
+    processor.instruction = inst(0, 0, 0, 0b00111100);
     Assert.assertTrue(processor.isMemoryReferenceOperand(0));
     Assert.assertFalse(processor.isMemoryReferenceOperand(1));
+  }
+
+  @Test
+  public void getMemoryOffset() {
+    Processor processor = new Processor();
+    processor.instruction = inst(0, 0, 0, 0b10000000);
+    Assert.assertEquals(0, processor.getMemoryOffset(0));
+
+    processor.instruction = inst(0, 0, 0, 0b10000000, 23);
+    Assert.assertEquals(0, processor.getMemoryOffset(0));
+
+    processor.instruction = inst(0, 0, 0, 0b11000000, 15);
+    Assert.assertEquals(15, processor.getMemoryOffset(1));
+
+    processor.instruction = inst(0, 0, 0, 0b10000100, 32);
+    Assert.assertEquals(32, processor.getMemoryOffset(0));
+  }
+
+  @Test
+  public void isMemoryOffsetOperand() {
+    Processor processor = new Processor();
+    processor.instruction = inst(0, 0, 0, 0b01000000);
+    Assert.assertFalse(processor.isOffsetOperand(0));
+    Assert.assertTrue(processor.isOffsetOperand(1));
+
+    processor.instruction = inst(0, 0, 0, 0b00000100);
+    Assert.assertFalse(processor.isOffsetOperand(1));
+    Assert.assertTrue(processor.isOffsetOperand(0));
   }
 
   @Test
@@ -214,6 +247,36 @@ public class ProcessorTest {
   }
 
   @Test
+  public void testProcessMov_fromProgram() throws ParseException {
+    Processor processor;
+    processor = setupTest(0, 30, 0, 0, "mov d, test_label_2");
+    processor.program = new ArrayList<>(Collections.nCopies(TEST_LABEL_ADDRESS_2 + 1, inst()));
+    processor.program.set(TEST_LABEL_ADDRESS_2, inst(0, 43));
+    processor.processMov();
+    assertRegisters(processor, 0, 30, 0, 43);
+
+    processor = setupTest(0, 30, 0, 0, "mov d, test_label - 2");
+    processor.program = new ArrayList<>(Collections.nCopies(TEST_LABEL_ADDRESS + 1, inst()));
+    processor.program.set(TEST_LABEL_ADDRESS - 2, inst(0, 44));
+    processor.processMov();
+    assertRegisters(processor, 0, 30, 0, 44);
+  }
+
+  @Test
+  public void testProcessMov_toProgram() throws ParseException {
+    Processor processor;
+    ParseException e = null;
+    try {
+      processor = setupTest(0, 30, 0, 0, "mov test_label, d");
+      processor.processMov();
+    }catch(ParseException ex){
+      e = ex;
+    }
+    Assert.assertNotNull(e);
+    Assert.assertEquals(InstructionUtil.ERROR_LABEL_IN_FIRST_OPERAND, e.message);
+  }
+
+  @Test
   public void testProcessMov_fromMemory() throws ParseException {
     Processor processor = setupTest(0, 30, 0, 0, "mov a, [2]");
     processor.stack[2] = (byte) 12;
@@ -224,6 +287,11 @@ public class ProcessorTest {
     processor.processMov();
     assertRegisters(processor, 10, 30, 0, 0);
     Assert.assertEquals((byte) 0x52, processor.stack[10]);
+
+    processor = setupTest(10, 30, 0, 0, "mov [a+10], 0x52");
+    processor.processMov();
+    assertRegisters(processor, 10, 30, 0, 0);
+    Assert.assertEquals((byte) 0x52, processor.stack[20]);
   }
 
   @Test
@@ -375,7 +443,7 @@ public class ProcessorTest {
     Processor processor = setupTest(0, 0, 0, 0, "jmp test_label");
     processor.processJmp();
     assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals((short) 111, processor.ip);
+    Assert.assertEquals(TEST_LABEL_ADDRESS, processor.ip);
   }
 
   @Test
@@ -384,7 +452,7 @@ public class ProcessorTest {
     processor.zero = true;
     processor.processJz();
     assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals((short) 111, processor.ip);
+    Assert.assertEquals(TEST_LABEL_ADDRESS, processor.ip);
 
     processor = setupTest(0, 0, 0, 0, "jz test_label");
     processor.zero = false;
@@ -400,7 +468,7 @@ public class ProcessorTest {
     processor.zero = false;
     processor.processJnz();
     assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals((short) 111, processor.ip);
+    Assert.assertEquals(TEST_LABEL_ADDRESS, processor.ip);
 
     processor = setupTest(0, 0, 0, 0, "jnz test_label");
     processor.zero = true;
@@ -415,7 +483,7 @@ public class ProcessorTest {
     processor.carry = true;
     processor.processJc();
     assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals((short) 111, processor.ip);
+    Assert.assertEquals(TEST_LABEL_ADDRESS, processor.ip);
 
     processor = setupTest(0, 0, 0, 0, "jc test_label");
     processor.carry = false;
@@ -430,7 +498,7 @@ public class ProcessorTest {
     processor.carry = false;
     processor.processJnc();
     assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals((short) 111, processor.ip);
+    Assert.assertEquals(TEST_LABEL_ADDRESS, processor.ip);
 
     processor = setupTest(0, 0, 0, 0, "jnc test_label");
     processor.carry = true;
@@ -447,13 +515,13 @@ public class ProcessorTest {
     processor.processDjnz();
     assertRegisters(processor, 0, 2, 0, 0);
     Assert.assertFalse(processor.zero);
-    Assert.assertEquals((short) 111, processor.ip);
+    Assert.assertEquals(TEST_LABEL_ADDRESS, processor.ip);
 
     processor = setupTest(0, 2, 0, 0, "djnz b, test_label");
     processor.processDjnz();
     assertRegisters(processor, 0, 1, 0, 0);
     Assert.assertFalse(processor.zero);
-    Assert.assertEquals((short) 111, processor.ip);
+    Assert.assertEquals(TEST_LABEL_ADDRESS, processor.ip);
 
     processor = setupTest(0, 1, 0, 0, "djnz b, test_label");
     processor.processDjnz();
@@ -637,7 +705,7 @@ public class ProcessorTest {
     Assert.assertEquals((byte) 0xcd, processor.stack[0]);
     Assert.assertEquals((byte) 0xab, processor.stack[1]);
 
-    Assert.assertEquals((short) 111, processor.ip);
+    Assert.assertEquals(TEST_LABEL_ADDRESS, processor.ip);
     Assert.assertEquals((short) 2, processor.sp);
 
     processor.processRet();
@@ -763,7 +831,8 @@ public class ProcessorTest {
     Processor processor = new Processor();
     processor.reset();
     processor.labels = new ArrayList<>();
-    processor.labels.add(new Label((short) 111, "test_label"));
+    processor.labels.add(new Label(TEST_LABEL_ADDRESS, "test_label"));
+    processor.labels.add(new Label(TEST_LABEL_ADDRESS_2, "test_label_2"));
     processor.registers[Register.A.ordinal()] = (byte) ax;
     processor.registers[Register.B.ordinal()] = (byte) bx;
     processor.registers[Register.C.ordinal()] = (byte) cx;
@@ -777,5 +846,13 @@ public class ProcessorTest {
     Assert.assertEquals((byte) b, processor.registers[Register.B.ordinal()]);
     Assert.assertEquals((byte) c, processor.registers[Register.C.ordinal()]);
     Assert.assertEquals((byte) d, processor.registers[Register.D.ordinal()]);
+  }
+
+  private static byte[] inst(int... a) {
+    byte[] inst = new byte[a.length];
+    for (int i = 0; i < a.length; i++) {
+      inst[i] = (byte) a[i];
+    }
+    return inst;
   }
 }

@@ -47,6 +47,11 @@ public class InstructionUtilTest {
     Assert.assertEquals(2, l.size());
     Assert.assertEquals("a", l.get(0));
     Assert.assertEquals("b", l.get(1));
+
+    l = InstructionUtil.splitDoubleOperandString("mov [a], 0x52");
+    Assert.assertEquals(2, l.size());
+    Assert.assertEquals("[a]", l.get(0));
+    Assert.assertEquals("0x52", l.get(1));
   }
 
   @Test
@@ -71,6 +76,11 @@ public class InstructionUtilTest {
     Assert.assertEquals(2, l.size());
     Assert.assertEquals("a", l.get(0));
     Assert.assertEquals("test_label-op", l.get(1));
+
+    l = InstructionUtil.splitDoubleOperandString("test a, test_label-op + 5");
+    Assert.assertEquals(2, l.size());
+    Assert.assertEquals("a", l.get(0));
+    Assert.assertEquals("test_label-op + 5", l.get(1));
   }
 
   @Test
@@ -226,6 +236,9 @@ public class InstructionUtilTest {
     testParseCompile("CLC ", "clc");
     testParseCompile("SEZ ", "sez");
     testParseCompile("SEC ", "sec");
+    testParseCompile("mov a,[b]", "mov a, [b]");
+    testParseCompile("mov [a],[b]", "mov [a], [b]");
+    testParseCompile("mov [a], label", "mov [a], label ");
   }
 
   private void testParseCompile(String in, String out) throws ParseException {

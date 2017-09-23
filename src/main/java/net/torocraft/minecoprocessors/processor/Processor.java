@@ -1,6 +1,8 @@
 package net.torocraft.minecoprocessors.processor;
 
+import java.time.chrono.IsoChronology;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagByteArray;
@@ -219,6 +221,7 @@ public class Processor implements IProcessor {
 
     try {
       process();
+      // TODO handle parse exception (actually make a new exception type to use in a running processor)
     } catch (Exception e) {
       Minecoprocessors.proxy.handleUnexpectedException(e);
       error = getInstructionString();
@@ -236,7 +239,7 @@ public class Processor implements IProcessor {
     }
   }
 
-  private void process() {
+  private void process() throws ParseException {
 
     if (ip >= program.size()) {
       fault = true;
@@ -363,10 +366,12 @@ public class Processor implements IProcessor {
     }
   }
 
-  void processMov() {
+  void processMov() throws ParseException {
     byte source = getVariableOperand(1);
-    if (isMemoryReferenceOperand(0)) {
-      stack[getVariableOperandNoPointer(0)] = source;
+    if (isLabelOperand(instruction, 0)) {
+      throw new ParseException(InstructionUtil.compileLine(instruction, labels, (short) 0), InstructionUtil.ERROR_LABEL_IN_FIRST_OPERAND);
+    } else if (isMemoryReferenceOperand(0)) {
+      stack[getVariableOperandNoReference(0) + getMemoryOffset(0)] = source;
     } else {
       registers[instruction[1]] = source;
     }
@@ -657,7 +662,7 @@ public class Processor implements IProcessor {
     s.append("\n\n");
 
     s.append(" memory\n");
-    for (int i = 0; i < 8; i++){
+    for (int i = 0; i < 8; i++) {
       for (int j = 0; j < 8; j++) {
         s.append(" ");
         s.append(GuiMinecoprocessor.toHex(stack[(i * 8) + j]));
@@ -677,16 +682,36 @@ public class Processor implements IProcessor {
   }
 
   byte getVariableOperand(int operandIndex) {
-    byte value = getVariableOperandNoPointer(operandIndex);
+    if (isLabelOperand(instruction, operandIndex)) {
+      return getProgramValueFromLabelOperand(operandIndex);
+    }
+
+    byte value = getVariableOperandNoReference(operandIndex);
     if (isMemoryReferenceOperand(operandIndex)) {
       value = stack[value];
     }
     return value;
   }
 
-  byte getVariableOperandNoPointer(int operandIndex) {
+  private byte getProgramValueFromLabelOperand(int operandIndex) {
     byte value = instruction[operandIndex + 1];
-    if (isRegisterOperand(operandIndex)) {
+    short address = labels.get(value).address;
+    if (isOffsetOperand(operandIndex)) {
+      address += instruction[4];
+    }
+    return program.get(address)[1];
+  }
+
+  int getMemoryOffset(int operandIndex) {
+    if (isOffsetOperand(operandIndex)) {
+      return instruction[4];
+    }
+    return 0;
+  }
+
+  byte getVariableOperandNoReference(int operandIndex) {
+    byte value = instruction[operandIndex + 1];
+    if (isRegisterOperand(instruction, operandIndex)) {
       value = registers[value];
     }
     return value;
@@ -696,14 +721,23 @@ public class Processor implements IProcessor {
     return ByteUtil.getBit(instruction[3], (operandIndex * 4) + 3);
   }
 
-  boolean isLiteralOperand(int operandIndex) {
+  boolean isOffsetOperand(int operandIndex) {
+    return ByteUtil.getBit(instruction[3], (operandIndex * 4) + 2);
+  }
+
+  public static boolean isLiteralOperand(byte[] instruction, int operandIndex) {
     int offset = operandIndex * 4;
     return ByteUtil.getBit(instruction[3], offset) && !ByteUtil.getBit(instruction[3], offset + 1);
   }
 
-  boolean isRegisterOperand(int operandIndex) {
+  public static boolean isRegisterOperand(byte[] instruction, int operandIndex) {
     int offset = operandIndex * 4;
     return !ByteUtil.getBit(instruction[3], offset) && !ByteUtil.getBit(instruction[3], offset + 1);
+  }
+
+  public static boolean isLabelOperand(byte[] instruction, int operandIndex) {
+    int offset = operandIndex * 4;
+    return !ByteUtil.getBit(instruction[3], offset) && ByteUtil.getBit(instruction[3], offset + 1);
   }
 
   public boolean isFault() {
