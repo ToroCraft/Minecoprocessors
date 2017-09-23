@@ -3,6 +3,8 @@ package net.torocraft.minecoprocessors.processor;
 import com.typesafe.config.ConfigException.Parse;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Arrays;
+import java.util.List;
 import net.minecraft.nbt.NBTTagCompound;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
@@ -776,12 +778,13 @@ public class ProcessorTest {
   public void runProcessor() {
     Processor p = new Processor();
 
-    String program = "";
-    program += "mov c, 10 \n";
-    program += "start: \n";
-    program += "sub c, 1 \n";
-    program += "jnz start \n";
-    program += "mov e, 100 \n";
+    List<String> program = Arrays.asList(
+      "mov c, 10 ",
+      "start: ",
+      "sub c, 1 ",
+      "jnz start ",
+      "mov e, 100 "
+    );
     p.load(program);
 
     for (int i = 0; i < 100; i++) {
@@ -808,12 +811,13 @@ public class ProcessorTest {
   public void runFaultRet() {
     Processor p = new Processor();
 
-    String program = "";
-    program += "mov c, 10 \n";
-    program += "start: \n";
-    program += "sub c, 1 \n";
-    program += "jnz start \n";
-    program += "ret \n";
+    List<String> program = Arrays.asList(
+      "mov c, 10 ",
+      "start: ",
+      "sub c, 1 ",
+      "jnz start ",
+      "ret "
+    );
     p.load(program);
 
     for (int i = 0; i < 100; i++) {

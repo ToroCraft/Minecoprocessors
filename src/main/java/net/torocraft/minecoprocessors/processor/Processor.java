@@ -107,7 +107,7 @@ public class Processor implements IProcessor {
   }
 
   @Override
-  public void load(String file) {
+  public void load(List<String> file) {
     try {
       flush();
       if (file != null) {
