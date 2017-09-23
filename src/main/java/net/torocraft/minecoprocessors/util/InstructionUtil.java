@@ -377,7 +377,7 @@ public class InstructionUtil {
     }
 
     if (hasMemoryOffset) {
-      int offset = getMemoryOffset(operand);
+      int offset = getMemoryOffset(line, operand);
       instruction = setMemoryOffset(instruction, offset, operandIndex);
       operand = stripMemoryOffset(operand);
     }
@@ -423,12 +423,12 @@ public class InstructionUtil {
   /**
    * Only call this on valid memory offset instructions
    */
-  static int getMemoryOffset(String operand) {
+  static int getMemoryOffset(String line, String operand) throws ParseException {
     String sOffset = operand.replaceAll("[^+^-]*([+-])\\s*([0-9]{1,2})]?", "$1$2");
     try {
       return Integer.parseInt(sOffset);
     } catch (NumberFormatException e) {
-      return 0;
+      throw new ParseException(line, "Invalid memory offset", e);
     }
   }
 
@@ -490,7 +490,7 @@ public class InstructionUtil {
     try {
       Register.valueOf(operand.toUpperCase());
       return true;
-    } catch (IllegalArgumentException ignore) {
+    } catch (@SuppressWarnings("unused") IllegalArgumentException ignore) {
       return false;
     }
   }

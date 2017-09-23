@@ -194,7 +194,7 @@ public class InstructionUtilTest {
     instruction = InstructionUtil.parseLine("DJNZ d, TEST_LABEL2", labels, (short) 0);
     Assert.assertEquals((byte) InstructionCode.DJNZ.ordinal(), instruction[0]);
     Assert.assertEquals((byte) Register.D.ordinal(), instruction[1]);
-    Assert.assertEquals((byte) (byte) 1, instruction[2]);
+    Assert.assertEquals((byte) 1, instruction[2]);
     Assert.assertEquals((byte) 0b00100000, instruction[3]);
   }
 
@@ -249,11 +249,11 @@ public class InstructionUtilTest {
     testParseCompile("mov a, test + 15", "mov a, test+15");
   }
 
-  private void testParseCompile(String in, String out) throws ParseException {
+  private static void testParseCompile(String in, String out) throws ParseException {
     testParseCompile(in, out, (short) 0);
   }
 
-  private void testParseCompile(String in, String out, short address) throws ParseException {
+  private static void testParseCompile(String in, String out, short address) throws ParseException {
     List<Label> labels = new ArrayList<>();
     labels.add(new Label((short) 56, "test"));
     byte[] instruction = InstructionUtil.parseLine(in, labels, (short) 0);
@@ -360,12 +360,16 @@ public class InstructionUtilTest {
     return inst;
   }
 
+  private static int getMemoryOffsetHelper(String operand) throws ParseException {
+    return InstructionUtil.hasMemoryOffset(operand) ? InstructionUtil.getMemoryOffset("dummy", operand) : 0;
+  }
+
   @Test
-  public void getMemoryOffset() {
-    Assert.assertEquals(0, InstructionUtil.getMemoryOffset(""));
-    Assert.assertEquals(0, InstructionUtil.getMemoryOffset("[foo]"));
-    Assert.assertEquals(5, InstructionUtil.getMemoryOffset("[foo + 5]"));
-    Assert.assertEquals(-50, InstructionUtil.getMemoryOffset("foo - 50"));
+  public void getMemoryOffset() throws ParseException {
+    Assert.assertEquals(0, getMemoryOffsetHelper(""));
+    Assert.assertEquals(0, getMemoryOffsetHelper("[foo]"));
+    Assert.assertEquals(5, getMemoryOffsetHelper("[foo + 5]"));
+    Assert.assertEquals(-50, getMemoryOffsetHelper("foo - 50"));
   }
 
   @Test
@@ -395,11 +399,10 @@ public class InstructionUtilTest {
   }
 
   @Test
-  public void parseVariableOperand_invalidLabel() throws ParseException {
+  public void parseVariableOperand_invalidLabel() {
     List<Label> labels = new ArrayList<>();
     labels.add(new Label((short) 90, "foo"));
     labels.add(new Label((short) 35, "label_name"));
-    byte[] instruction;
 
     ParseException e = null;
     try {
@@ -413,7 +416,6 @@ public class InstructionUtilTest {
   @Test
   public void parseVariableOperand_noFreeAdd() {
     List<Label> labels = new ArrayList<>();
-    byte[] instruction;
 
     ParseException e = null;
     try {
@@ -471,7 +473,7 @@ public class InstructionUtilTest {
   }
 
   @Test
-  public void parseDoubleOperands_doubleReference() throws ParseException {
+  public void parseDoubleOperands_doubleReference() {
     List<Label> labels = new ArrayList<>();
     ParseException e = null;
     try {

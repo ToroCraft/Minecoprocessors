@@ -356,6 +356,7 @@ public class Processor implements IProcessor {
         break;
       case SEC:
         processSec();
+        break;
       case DUMP:
         processDump();
         break;
@@ -675,7 +676,7 @@ public class Processor implements IProcessor {
     s.append(fix(pad(Integer.toUnsignedString(registers[reg.ordinal()], 16))));
   }
 
-  private void dumpFlag(StringBuilder s, boolean flag) {
+  private static void dumpFlag(StringBuilder s, boolean flag) {
     s.append(flag ? "1 " : "0 ");
   }
 
