@@ -150,10 +150,7 @@ public class Processor implements IProcessor {
     }
 
     byte[] registersNew = new byte[Register.values().length];
-    // FIXME replace with System.arraycopy() ?
-    for (int i = 0; i < registersNew.length && i < registersIn.length; i++) {
-      registersNew[i] = registersIn[i];
-    }
+    System.arraycopy(registersIn, 0, registersNew, 0, registersIn.length);
     return registersNew;
   }
 
@@ -271,6 +268,7 @@ public class Processor implements IProcessor {
         processDiv();
         return;
       case JMP:
+      case LOOP:
         processJmp();
         return;
       case JNZ:
@@ -279,14 +277,14 @@ public class Processor implements IProcessor {
       case JZ:
         processJz();
         return;
-      case LOOP:
-        processJmp();
-        return;
       case MOV:
         processMov();
         return;
       case MUL:
         processMul();
+        return;
+      case NOP:
+      case INT:
         return;
       case NOT:
         processNot();
@@ -303,8 +301,7 @@ public class Processor implements IProcessor {
       case RET:
         processRet();
         return;
-      case NOP:
-        return;
+      case SAL:
       case SHL:
         processShl();
         return;
@@ -320,8 +317,6 @@ public class Processor implements IProcessor {
       case WFE:
         processWfe();
         return;
-      case INT:
-        return;
       case INC:
         processInc();
         return;
@@ -336,9 +331,6 @@ public class Processor implements IProcessor {
         break;
       case JNC:
         processJnc();
-        break;
-      case SAL:
-        processSal();
         break;
       case ROR:
         processRor();
@@ -450,10 +442,6 @@ public class Processor implements IProcessor {
     byte z = (byte) (a >>> b);
     zero = z == 0;
     registers[instruction[1]] = z;
-  }
-
-  void processSal() {
-    processShl();
   }
 
   void processSar() {

@@ -391,29 +391,6 @@ public class ProcessorTest {
   }
 
   @Test
-  public void testProcessSal() throws ParseException {
-    Processor processor = setupTest(0b01, 4, 0, 0, "sal a, b");
-    processor.processSal();
-    assertRegisters(processor, 0b010000, 4, 0, 0);
-    Assert.assertFalse(processor.zero);
-
-    processor = setupTest(0b01, 20, 0, 0, "sal a, b");
-    processor.processSal();
-    assertRegisters(processor, 0, 20, 0, 0);
-    Assert.assertTrue(processor.zero);
-
-    processor = setupTest(0, 2, 0, 0, "sal a, b");
-    processor.processSal();
-    assertRegisters(processor, 0, 2, 0, 0);
-    Assert.assertTrue(processor.zero);
-
-    processor = setupTest(0b01, 20, 0, 0, "sal a, 1");
-    processor.processSal();
-    assertRegisters(processor, 0b010, 20, 0, 0);
-    Assert.assertFalse(processor.zero);
-  }
-
-  @Test
   public void testProcessSar() throws ParseException {
     Processor processor = setupTest(0b10000000, 1, 0, 0, "sar a, b");
     processor.processSar();
