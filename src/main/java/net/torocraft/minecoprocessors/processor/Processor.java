@@ -15,6 +15,7 @@ import net.torocraft.minecoprocessors.util.ParseException;
 
 public class Processor implements IProcessor {
 
+  private static final int MEMORY_SIZE = 64;
   private static final String NBT_STACK = "stack";
   private static final String NBT_REGISTERS = "registers";
   private static final String NBT_PROGRAM = "program";
@@ -32,7 +33,7 @@ public class Processor implements IProcessor {
    * state
    */
   byte[] instruction;
-  protected byte[] stack = new byte[64];
+  protected byte[] stack = new byte[MEMORY_SIZE];
   byte[] registers = new byte[Register.values().length];
 
   /*
@@ -58,7 +59,7 @@ public class Processor implements IProcessor {
 
   void flush() {
     reset();
-    stack = new byte[Register.values().length];
+    stack = new byte[MEMORY_SIZE];
 
     labels.clear();
     program.clear();

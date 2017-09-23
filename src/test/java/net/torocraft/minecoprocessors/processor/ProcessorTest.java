@@ -134,6 +134,7 @@ public class ProcessorTest {
     processor.labels.add(new Label((short) 189, "foobar"));
     processor.program.add(new byte[]{0x00, 0x01, 0x02, 0x03});
     processor.stack[0] = (byte) 0x99;
+    processor.stack[63] = (byte) 0x12;
     processor.registers[0] = (byte) 0xee;
     processor.registers[4] = (byte) 0xcc;
     processor.zero = true;
@@ -149,6 +150,9 @@ public class ProcessorTest {
     processor.readFromNBT(c);
 
     Assert.assertTrue(processor.zero);
+    Assert.assertEquals(64, processor.stack.length);
+    Assert.assertEquals((byte) 0x99, processor.stack[0]);
+    Assert.assertEquals((byte) 0x12, processor.stack[63]);
     Assert.assertEquals(1, processor.labels.size());
     Assert.assertEquals((short) 189, processor.labels.get(0).address);
     Assert.assertEquals("foobar", processor.labels.get(0).name);
