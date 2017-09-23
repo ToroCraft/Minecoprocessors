@@ -370,7 +370,7 @@ public class Processor implements IProcessor {
     byte source = getVariableOperand(1);
     if (isLabelOperand(instruction, 0)) {
       throw new ParseException(InstructionUtil.compileLine(instruction, labels, (short) 0), InstructionUtil.ERROR_LABEL_IN_FIRST_OPERAND);
-    } else if (isMemoryReferenceOperand(0)) {
+    } else if (isMemoryReferenceOperand(instruction, 0)) {
       stack[getVariableOperandNoReference(0) + getMemoryOffset(0)] = source;
     } else {
       registers[instruction[1]] = source;
@@ -687,7 +687,7 @@ public class Processor implements IProcessor {
     }
 
     byte value = getVariableOperandNoReference(operandIndex);
-    if (isMemoryReferenceOperand(operandIndex)) {
+    if (isMemoryReferenceOperand(instruction, operandIndex)) {
       value = stack[value];
     }
     return value;
@@ -696,14 +696,14 @@ public class Processor implements IProcessor {
   private byte getProgramValueFromLabelOperand(int operandIndex) {
     byte value = instruction[operandIndex + 1];
     short address = labels.get(value).address;
-    if (isOffsetOperand(operandIndex)) {
+    if (isOffsetOperand(instruction, operandIndex)) {
       address += instruction[4];
     }
     return program.get(address)[1];
   }
 
   int getMemoryOffset(int operandIndex) {
-    if (isOffsetOperand(operandIndex)) {
+    if (isOffsetOperand(instruction, operandIndex)) {
       return instruction[4];
     }
     return 0;
@@ -717,11 +717,11 @@ public class Processor implements IProcessor {
     return value;
   }
 
-  boolean isMemoryReferenceOperand(int operandIndex) {
+  public static boolean isMemoryReferenceOperand(byte[] instruction, int operandIndex) {
     return ByteUtil.getBit(instruction[3], (operandIndex * 4) + 3);
   }
 
-  boolean isOffsetOperand(int operandIndex) {
+  public static boolean isOffsetOperand(byte[] instruction, int operandIndex) {
     return ByteUtil.getBit(instruction[3], (operandIndex * 4) + 2);
   }
 

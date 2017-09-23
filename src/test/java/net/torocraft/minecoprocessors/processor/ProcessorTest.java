@@ -66,16 +66,16 @@ public class ProcessorTest {
   public void isMemoryReferenceOperand() {
     Processor processor = new Processor();
     processor.instruction = inst(0, 0, 0, 0b10000000);
-    Assert.assertFalse(processor.isMemoryReferenceOperand(0));
-    Assert.assertTrue(processor.isMemoryReferenceOperand(1));
+    Assert.assertFalse(Processor.isMemoryReferenceOperand(processor.instruction, 0));
+    Assert.assertTrue(Processor.isMemoryReferenceOperand(processor.instruction, 1));
 
     processor.instruction = inst(0, 0, 0, 0b10010000);
-    Assert.assertFalse(processor.isMemoryReferenceOperand(0));
-    Assert.assertTrue(processor.isMemoryReferenceOperand(1));
+    Assert.assertFalse(Processor.isMemoryReferenceOperand(processor.instruction, 0));
+    Assert.assertTrue(Processor.isMemoryReferenceOperand(processor.instruction, 1));
 
     processor.instruction = inst(0, 0, 0, 0b00111100);
-    Assert.assertTrue(processor.isMemoryReferenceOperand(0));
-    Assert.assertFalse(processor.isMemoryReferenceOperand(1));
+    Assert.assertTrue(Processor.isMemoryReferenceOperand(processor.instruction, 0));
+    Assert.assertFalse(Processor.isMemoryReferenceOperand(processor.instruction, 1));
   }
 
   @Test
@@ -98,12 +98,12 @@ public class ProcessorTest {
   public void isMemoryOffsetOperand() {
     Processor processor = new Processor();
     processor.instruction = inst(0, 0, 0, 0b01000000);
-    Assert.assertFalse(processor.isOffsetOperand(0));
-    Assert.assertTrue(processor.isOffsetOperand(1));
+    Assert.assertFalse(Processor.isOffsetOperand(processor.instruction, 0));
+    Assert.assertTrue(Processor.isOffsetOperand(processor.instruction, 1));
 
     processor.instruction = inst(0, 0, 0, 0b00000100);
-    Assert.assertFalse(processor.isOffsetOperand(1));
-    Assert.assertTrue(processor.isOffsetOperand(0));
+    Assert.assertFalse(Processor.isOffsetOperand(processor.instruction, 1));
+    Assert.assertTrue(Processor.isOffsetOperand(processor.instruction, 0));
   }
 
   @Test

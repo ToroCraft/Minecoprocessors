@@ -24,6 +24,9 @@ public class InstructionUtilTest {
     Assert.assertFalse(InstructionUtil.isRegister("0xf0"));
     Assert.assertFalse(InstructionUtil.isRegister("010b"));
     Assert.assertFalse(InstructionUtil.isRegister("0o010"));
+    Assert.assertTrue(InstructionUtil.isRegister("a - 10"));
+    Assert.assertTrue(InstructionUtil.isRegister("a+10"));
+    Assert.assertTrue(InstructionUtil.isRegister("a+ 110"));
     Assert.assertFalse(InstructionUtil.isRegister(null));
   }
 
@@ -239,8 +242,12 @@ public class InstructionUtilTest {
     testParseCompile("SEZ ", "sez");
     testParseCompile("SEC ", "sec");
     testParseCompile("mov a,[b]", "mov a, [b]");
-    testParseCompile("mov [a],[b]", "mov [a], [b]");
-    testParseCompile("mov [a], label", "mov [a], label ");
+    testParseCompile("mov a,[b]", "mov a, [b]");
+    testParseCompile("mov a, test   ", "mov a, test");
+    testParseCompile("mov a, [b + 1]", "mov a, [b+1]");
+    testParseCompile("mov a, [b + 0]", "mov a, [b+0]");
+    testParseCompile("mov a, [b - 110]", "mov a, [b-110]");
+    testParseCompile("mov a, test + 15", "mov a, test+15");
   }
 
   private void testParseCompile(String in, String out) throws ParseException {
@@ -318,6 +325,7 @@ public class InstructionUtilTest {
     Assert.assertFalse(InstructionUtil.hasMemoryOffset(""));
     Assert.assertFalse(InstructionUtil.hasMemoryOffset("[foo]"));
     Assert.assertTrue(InstructionUtil.hasMemoryOffset("[foo+5]"));
+    Assert.assertTrue(InstructionUtil.hasMemoryOffset("[foo+110]"));
     Assert.assertTrue(InstructionUtil.hasMemoryOffset("foo-5"));
     Assert.assertTrue(InstructionUtil.hasMemoryOffset("[0xfe-5]"));
     Assert.assertTrue(InstructionUtil.hasMemoryOffset("[foo - 5]"));

@@ -58,25 +58,10 @@ public class InstructionUtil {
       case ROL:
       case SAL:
       case SAR:
-        /*
-        line.append(" ");
-        line.append(lower(Register.values()[instruction[1]]));
-        line.append(", ");
-
-        Processor.isLabelOperand(instruction, 0);
-        if (ByteUtil.getBit(instruction[3], 4)) {
-          line.append(Integer.toString(instruction[2], 10));
-        } else {
-          line.append(lower(Register.values()[instruction[2]]));
-        }
-        */
-
         line.append(" ");
         line.append(compileVariableOperand(instruction, 0, labels));
         line.append(", ");
         line.append(compileVariableOperand(instruction, 1, labels));
-
-
         break;
       case DJNZ:
         line.append(" ");
@@ -131,29 +116,48 @@ public class InstructionUtil {
     return line.toString();
   }
 
+  static String compileMemoryReference(String operand, byte[] instruction, int operandIndex) {
+    if (Processor.isMemoryReferenceOperand(instruction, operandIndex)) {
+      return "[" + operand + "]";
+    }
+    return operand;
+  }
+
+  static String compileOffset(String operand, byte[] instruction, int operandIndex) {
+    if (Processor.isOffsetOperand(instruction, operandIndex)) {
+
+      if (instruction[4] < 0) {
+        return operand + Byte.toString(instruction[4]);
+      }else{
+        return operand + "+" + Byte.toString(instruction[4]);
+      }
+
+
+    }
+    return operand;
+  }
+
   static String compileVariableOperand(byte[] instruction, int operandIndex, List<Label> labels) {
     byte value = instruction[operandIndex + 1];
-
-    if (Processor.isLabelOperand(instruction, operandIndex)){
-      if (value >= labels.size()) {
-        return "";
-      }
-      Label label = labels.get(value);
-      if (label != null) {
-        return label.name.toLowerCase();
-      }
-      return "";
-    }
+    String operand = "";
 
     if (Processor.isLiteralOperand(instruction, operandIndex)) {
-      return Integer.toString(value, 10);
+      operand = Integer.toString(value, 10);
+
+    } else if (Processor.isRegisterOperand(instruction, operandIndex)) {
+      operand = lower(Register.values()[value]);
+
+    } else if (Processor.isLabelOperand(instruction, operandIndex)) {
+      if (value < labels.size()) {
+        Label label = labels.get(value);
+        if (label != null) {
+          operand = label.name.toLowerCase();
+        }
+      }
     }
 
-    if (Processor.isRegisterOperand(instruction, operandIndex)) {
-      return lower(Register.values()[value]);
-    }
-
-    return "";
+    operand = compileOffset(operand, instruction, operandIndex);
+    return compileMemoryReference(operand, instruction, operandIndex);
   }
 
   private static String lower(Enum<?> e) {
@@ -398,7 +402,7 @@ public class InstructionUtil {
   }
 
   static boolean hasMemoryOffset(String operand) {
-    return operand.matches("[^+^-]+[+-]\\s*[0-9]{1,2}]?");
+    return operand.matches("[^+^-]+[+-]\\s*[0-9]{1,3}]?");
   }
 
   /**
@@ -432,7 +436,7 @@ public class InstructionUtil {
    * Only call this on valid memory offset instructions
    */
   static String stripMemoryOffset(String operand) {
-    return operand.replaceAll("([^+-^\\s]+)\\s*[+-]\\s*[0-9]{1,2}(]?)", "$1$2");
+    return operand.replaceAll("([^+-^\\s]+)\\s*[+-]\\s*[0-9]{1,3}(]?)", "$1$2");
   }
 
   static boolean isMemoryReference(String operand) {
@@ -470,7 +474,7 @@ public class InstructionUtil {
   }
 
   private static Register parseRegister(String line, String s) throws ParseException {
-    s = s.trim().toUpperCase();
+    s = stripMemoryOffset(s).trim().toUpperCase();
     try {
       return Register.valueOf(s);
     } catch (IllegalArgumentException e) {
@@ -482,6 +486,7 @@ public class InstructionUtil {
     if (operand == null) {
       return false;
     }
+    operand = stripMemoryOffset(operand);
     try {
       Register.valueOf(operand.toUpperCase());
       return true;
