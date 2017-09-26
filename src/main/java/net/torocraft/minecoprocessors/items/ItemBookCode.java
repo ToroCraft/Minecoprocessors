@@ -138,7 +138,7 @@ public final class ItemBookCode extends ItemBook {
      * Wrapper for list of pages stored in the code book.
      */
     public static class Data {
-        public static final String CONTINUATION_MACRO = "#BWTM";
+        //public static final String CONTINUATION_MACRO = "#BWTM";
         private static final String TAG_PAGES = "pages";
         private static final String TAG_SELECTED = "selected";
 
@@ -189,7 +189,9 @@ public final class ItemBookCode extends ItemBook {
          * Add a new, blank page to the book.
          */
         public void addPage() {
-            addOrSelectProgram(Collections.singletonList(""));
+            //addOrSelectProgram(Collections.singletonList(""));
+            pages.addAll(new ArrayList<>());
+            setSelectedPage(pages.size() - 1);
         }
 
         /**
@@ -205,48 +207,48 @@ public final class ItemBookCode extends ItemBook {
          *
          * @param code the code to add or select.
          */
-        public void addOrSelectProgram(final List<String> code) {
-            if (code.isEmpty()) {
-                return;
-            }
-
-            final List<List<String>> newPages = new ArrayList<>();
-
-            final List<String> page = new ArrayList<>();
-            for (int i = 0; i < code.size(); i++) {
-                final String line = code.get(i);
-                page.add(line);
-
-                if (Objects.equals(line, CONTINUATION_MACRO)) {
-                    newPages.add(new ArrayList<>(page));
-                    page.clear();
-                } else if (page.size() == MAX_LINES_PER_PAGE) {
-                    final boolean isLastPage = i + 1 == code.size();
-                    if (!isLastPage && !isPartialProgram(page)) {
-                        page.set(page.size() - 1, CONTINUATION_MACRO);
-                        newPages.add(new ArrayList<>(page));
-                        page.clear();
-                        page.add(line);
-                    } else {
-                        newPages.add(new ArrayList<>(page));
-                        page.clear();
-                    }
-                }
-            }
-            if (page.size() > 0) {
-                newPages.add(page);
-            }
-
-            for (int startPage = 0; startPage < pages.size(); startPage++) {
-                if (areAllPagesEqual(newPages, startPage)) {
-                    setSelectedPage(startPage);
-                    return;
-                }
-            }
-
-            pages.addAll(newPages);
-            setSelectedPage(pages.size() - newPages.size());
-        }
+//        public void addOrSelectProgram(final List<String> code) {
+//            if (code.isEmpty()) {
+//                return;
+//            }
+//
+//            final List<List<String>> newPages = new ArrayList<>();
+//
+//            final List<String> page = new ArrayList<>();
+//            for (int i = 0; i < code.size(); i++) {
+//                final String line = code.get(i);
+//                page.add(line);
+//
+//                if (Objects.equals(line, CONTINUATION_MACRO)) {
+//                    newPages.add(new ArrayList<>(page));
+//                    page.clear();
+//                } else if (page.size() == MAX_LINES_PER_PAGE) {
+//                    final boolean isLastPage = i + 1 == code.size();
+//                    if (!isLastPage && !isPartialProgram(page)) {
+//                        page.set(page.size() - 1, CONTINUATION_MACRO);
+//                        newPages.add(new ArrayList<>(page));
+//                        page.clear();
+//                        page.add(line);
+//                    } else {
+//                        newPages.add(new ArrayList<>(page));
+//                        page.clear();
+//                    }
+//                }
+//            }
+//            if (page.size() > 0) {
+//                newPages.add(page);
+//            }
+//
+//            for (int startPage = 0; startPage < pages.size(); startPage++) {
+//                if (areAllPagesEqual(newPages, startPage)) {
+//                    setSelectedPage(startPage);
+//                    return;
+//                }
+//            }
+//
+//            pages.addAll(newPages);
+//            setSelectedPage(pages.size() - newPages.size());
+//        }
 
         /**
          * Overwrite a page at the specified index.
@@ -274,13 +276,15 @@ public final class ItemBookCode extends ItemBook {
          *
          * @return the full program starting on the current page.
          */
-        public List<String> getProgram() {
-            final List<String> program = new ArrayList<>(getPage(getSelectedPage()));
-            final List<String> leadingCode = new ArrayList<>();
-            final List<String> trailingCode = new ArrayList<>();
-            getExtendedProgram(getSelectedPage(), program, leadingCode, trailingCode);
-            program.addAll(0, leadingCode);
-            program.addAll(trailingCode);
+        public List<List<String>> getProgram() {
+            return Collections.unmodifiableList(pages);
+        }
+
+        public List<String> getContinuousProgram() {
+            final List<String> program = new ArrayList<>();
+            for (int i = 0; i < pages.size(); i++) {
+                program.addAll(getPage(i));
+            }
             return program;
         }
 
@@ -296,25 +300,25 @@ public final class ItemBookCode extends ItemBook {
          * @param leadingCode  the list to place code from previous pages into.
          * @param trailingCode the list to place code from next pages into.
          */
-        public void getExtendedProgram(final int page, final List<String> program, final List<String> leadingCode, final List<String> trailingCode) {
-            for (int leadingPage = page - 1; leadingPage >= 0; leadingPage--) {
-                final List<String> pageCode = getPage(leadingPage);
-                if (isPartialProgram(pageCode)) {
-                    leadingCode.addAll(0, pageCode);
-                } else {
-                    break;
-                }
-            }
-            if (isPartialProgram(program)) {
-                for (int trailingPage = page + 1; trailingPage < getPageCount(); trailingPage++) {
-                    final List<String> pageCode = getPage(trailingPage);
-                    trailingCode.addAll(pageCode);
-                    if (!isPartialProgram(pageCode)) {
-                        break;
-                    }
-                }
-            }
-        }
+//        public void getExtendedProgram(final int page, final List<String> program, final List<String> leadingCode, final List<String> trailingCode) {
+//            for (int leadingPage = page - 1; leadingPage >= 0; leadingPage--) {
+//                final List<String> pageCode = getPage(leadingPage);
+//                if (isPartialProgram(pageCode)) {
+//                    leadingCode.addAll(0, pageCode);
+//                } else {
+//                    break;
+//                }
+//            }
+//            if (isPartialProgram(program)) {
+//                for (int trailingPage = page + 1; trailingPage < getPageCount(); trailingPage++) {
+//                    final List<String> pageCode = getPage(trailingPage);
+//                    trailingCode.addAll(pageCode);
+//                    if (!isPartialProgram(pageCode)) {
+//                        break;
+//                    }
+//                }
+//            }
+//        }
 
         /**
          * Check if this program continues on the next page, i.e. if the last
@@ -323,16 +327,16 @@ public final class ItemBookCode extends ItemBook {
          * @param program the program to check for.
          * @return <code>true</code> if the program continues; <code>false</code> otherwise.
          */
-        public static boolean isPartialProgram(final List<String> program) {
-            boolean continues = false;
-            for (final String line : program) {
-                if (line.trim().isEmpty()) {
-                    continue;
-                }
-                continues = Objects.equals(line.trim().toUpperCase(Locale.US), CONTINUATION_MACRO);
-            }
-            return continues;
-        }
+//        public static boolean isPartialProgram(final List<String> program) {
+//            boolean continues = false;
+//            for (final String line : program) {
+//                if (line.trim().isEmpty()) {
+//                    continue;
+//                }
+//                continues = Objects.equals(line.trim().toUpperCase(Locale.US), CONTINUATION_MACRO);
+//            }
+//            return continues;
+//        }
 
         /**
          * Load data from the specified NBT tag.

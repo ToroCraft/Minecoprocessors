@@ -344,7 +344,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
     List<String> code;
     if(ItemBookCode.isBookCode(stack)) {
-      code = ItemBookCode.Data.loadFromStack(stack).getProgram();
+      code = ItemBookCode.Data.loadFromStack(stack).getContinuousProgram();
     } else {
       code = new ArrayList<>(pages.tagCount());
       for (int i = 0; i < pages.tagCount(); ++i) {

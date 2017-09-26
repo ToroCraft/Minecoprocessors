@@ -455,37 +455,33 @@ public final class GuiBookCode extends GuiScreen {
     private void recompile() {
         compileError.clear();
 
-        final List<String> program = lines.stream().map(StringBuilder::toString).collect(Collectors.toList());
-
-        final List<String> leadingCode = new ArrayList<>();
-        final List<String> trailingCode = new ArrayList<>();
-        data.getExtendedProgram(data.getSelectedPage(), program, leadingCode, trailingCode);
-        program.addAll(0, leadingCode);
-        program.addAll(trailingCode);
-
+        final List<List<String>> program = data.getProgram();
         List<Label> labels = new ArrayList<>();
+        List<String> page;
 
-        for (String line : program) {
-            try {
-                InstructionUtil.parseLineForLabels(line, labels, (short) 0);
-            }catch(ParseException ignore){
+        for (int pageNumber = 0; pageNumber < program.size(); pageNumber++) {
+            page = program.get(pageNumber);
+            for (int lineNumber = 0; lineNumber < page.size(); lineNumber++) {
+                try {
+                    InstructionUtil.parseLineForLabels(page.get(lineNumber), labels, (short) 0);
+                }catch(ParseException ignore){
 
+                }
             }
         }
 
-        int lineNumber = 0;
-
-        for (String line : program) {
-            if (Data.CONTINUATION_MACRO.equals(line)) {
-                continue;
+        for (int pageNumber = 0; pageNumber < program.size(); pageNumber++) {
+            page = program.get(pageNumber);
+            for (int lineNumber = 0; lineNumber < page.size(); lineNumber++) {
+                try {
+                    InstructionUtil.parseLine(page.get(lineNumber), labels, (short) 0);
+                } catch (final ParseException e) {
+                    e.lineNumber = lineNumber;
+                    e.pageNumber = pageNumber;
+                    compileError.add(e);
+                }
+                lineNumber++;
             }
-            try {
-                InstructionUtil.parseLine(line, labels, (short) 0);
-            } catch (final ParseException e) {
-                e.lineNumber = lineNumber;
-                compileError.add(e);
-            }
-            lineNumber++;
         }
 
     }
@@ -616,9 +612,17 @@ public final class GuiBookCode extends GuiScreen {
 
     private void drawError(ParseException exception, final int mouseX, final int mouseY) {
         //final ParseException exception = compileError.get();
+
+        if (exception.pageNumber != data.getSelectedPage()) {
+            return;
+        }
+
         final int localLineNumber, startX, rawEndX;
         final boolean isErrorOnPreviousPage = exception.lineNumber < 0;
         final boolean isErrorOnNextPage = exception.lineNumber >= lines.size();
+
+       /// System.out.println("page: " + data.getSelectedPage() + "   LINES: " + lines.size() + "   lineNUmber: " + exception.lineNumber);
+
         if (isErrorOnPreviousPage) {
             localLineNumber = 0;
             startX = columnToX(localLineNumber, 0);
