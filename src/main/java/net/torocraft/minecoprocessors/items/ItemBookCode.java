@@ -138,7 +138,7 @@ public final class ItemBookCode extends ItemBook {
      * Wrapper for list of pages stored in the code book.
      */
     public static class Data {
-        private static final String CONTINUATION_MACRO = "#BWTM";
+        public static final String CONTINUATION_MACRO = "#BWTM";
         private static final String TAG_PAGES = "pages";
         private static final String TAG_SELECTED = "selected";
 
