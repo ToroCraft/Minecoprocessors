@@ -6,6 +6,8 @@ public class ParseException extends Exception {
 
   public String line;
   public String message;
+  public int lineNumber;
+  public int pageNumber;
 
   public ParseException(String line, String message) {
     super(genMessage(line, message));
@@ -22,4 +24,5 @@ public class ParseException extends Exception {
   private static String genMessage(String line, String message) {
     return line;
   }
+
 }

@@ -138,7 +138,7 @@ public final class ItemBookCode extends ItemBook {
      * Wrapper for list of pages stored in the code book.
      */
     public static class Data {
-        private static final String CONTINUATION_MACRO = "#BWTM";
+        //public static final String CONTINUATION_MACRO = "#BWTM";
         private static final String TAG_PAGES = "pages";
         private static final String TAG_SELECTED = "selected";
 
@@ -189,63 +189,8 @@ public final class ItemBookCode extends ItemBook {
          * Add a new, blank page to the book.
          */
         public void addPage() {
-            addOrSelectProgram(Collections.singletonList(""));
-        }
-
-        /**
-         * Add a new program to the book.
-         * <p>
-         * Depending on the size of the program, this will generate multiple pages
-         * and automatically insert <code>#BWTM</code> preprocessor macros as
-         * necessary (when they're not already there).
-         * <p>
-         * If the provided program is already present in the code book letter by
-         * letter, then instead of adding the provided code, the already present
-         * program will be selected instead.
-         *
-         * @param code the code to add or select.
-         */
-        public void addOrSelectProgram(final List<String> code) {
-            if (code.isEmpty()) {
-                return;
-            }
-
-            final List<List<String>> newPages = new ArrayList<>();
-
-            final List<String> page = new ArrayList<>();
-            for (int i = 0; i < code.size(); i++) {
-                final String line = code.get(i);
-                page.add(line);
-
-                if (Objects.equals(line, CONTINUATION_MACRO)) {
-                    newPages.add(new ArrayList<>(page));
-                    page.clear();
-                } else if (page.size() == MAX_LINES_PER_PAGE) {
-                    final boolean isLastPage = i + 1 == code.size();
-                    if (!isLastPage && !isPartialProgram(page)) {
-                        page.set(page.size() - 1, CONTINUATION_MACRO);
-                        newPages.add(new ArrayList<>(page));
-                        page.clear();
-                        page.add(line);
-                    } else {
-                        newPages.add(new ArrayList<>(page));
-                        page.clear();
-                    }
-                }
-            }
-            if (page.size() > 0) {
-                newPages.add(page);
-            }
-
-            for (int startPage = 0; startPage < pages.size(); startPage++) {
-                if (areAllPagesEqual(newPages, startPage)) {
-                    setSelectedPage(startPage);
-                    return;
-                }
-            }
-
-            pages.addAll(newPages);
-            setSelectedPage(pages.size() - newPages.size());
+            pages.add(Collections.singletonList(""));
+            setSelectedPage(pages.size() - 1);
         }
 
         /**
@@ -274,64 +219,16 @@ public final class ItemBookCode extends ItemBook {
          *
          * @return the full program starting on the current page.
          */
-        public List<String> getProgram() {
-            final List<String> program = new ArrayList<>(getPage(getSelectedPage()));
-            final List<String> leadingCode = new ArrayList<>();
-            final List<String> trailingCode = new ArrayList<>();
-            getExtendedProgram(getSelectedPage(), program, leadingCode, trailingCode);
-            program.addAll(0, leadingCode);
-            program.addAll(trailingCode);
+        public List<List<String>> getProgram() {
+            return Collections.unmodifiableList(pages);
+        }
+
+        public List<String> getContinuousProgram() {
+            final List<String> program = new ArrayList<>();
+            for (int i = 0; i < pages.size(); i++) {
+                program.addAll(getPage(i));
+            }
             return program;
-        }
-
-        /**
-         * Get the leading and trailing code lines of a program spanning the specified
-         * page, taking into account the <code>#BWTM</code> preprocessor marco. This
-         * assumes <em>that the specified page does have the <code>#BWTM</code>
-         * preprocessor macro</em>. I.e. the next page will <em>always</em> be added to
-         * the <code>trailingPages</code>.
-         *
-         * @param page         the page to extend from.
-         * @param program      the code on the page to extend from.
-         * @param leadingCode  the list to place code from previous pages into.
-         * @param trailingCode the list to place code from next pages into.
-         */
-        public void getExtendedProgram(final int page, final List<String> program, final List<String> leadingCode, final List<String> trailingCode) {
-            for (int leadingPage = page - 1; leadingPage >= 0; leadingPage--) {
-                final List<String> pageCode = getPage(leadingPage);
-                if (isPartialProgram(pageCode)) {
-                    leadingCode.addAll(0, pageCode);
-                } else {
-                    break;
-                }
-            }
-            if (isPartialProgram(program)) {
-                for (int trailingPage = page + 1; trailingPage < getPageCount(); trailingPage++) {
-                    final List<String> pageCode = getPage(trailingPage);
-                    trailingCode.addAll(pageCode);
-                    if (!isPartialProgram(pageCode)) {
-                        break;
-                    }
-                }
-            }
-        }
-
-        /**
-         * Check if this program continues on the next page, i.e. if the last
-         * non-whitespace line has the <code>#BWTM</code> preprocessor macro.
-         *
-         * @param program the program to check for.
-         * @return <code>true</code> if the program continues; <code>false</code> otherwise.
-         */
-        public static boolean isPartialProgram(final List<String> program) {
-            boolean continues = false;
-            for (final String line : program) {
-                if (line.trim().isEmpty()) {
-                    continue;
-                }
-                continues = Objects.equals(line.trim().toUpperCase(Locale.US), CONTINUATION_MACRO);
-            }
-            return continues;
         }
 
         /**

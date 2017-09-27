@@ -11,6 +11,7 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumHand;
@@ -21,6 +22,8 @@ import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.Settings;
 import net.torocraft.minecoprocessors.items.ItemBookCode;
 import net.torocraft.minecoprocessors.network.MessageBookCodeData;
+import net.torocraft.minecoprocessors.util.InstructionUtil;
+import net.torocraft.minecoprocessors.util.Label;
 import net.torocraft.minecoprocessors.util.ParseException;
 
 import org.lwjgl.input.Keyboard;
@@ -29,7 +32,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -71,7 +73,7 @@ public final class GuiBookCode extends GuiScreen {
     private int guiY = 0;
     private int selectionStart = 0;
     private int selectionEnd = 0;
-    private Optional<ParseException> compileError = Optional.empty();
+    private List<ParseException> compileError = new ArrayList<>();
 
     public static final ResourceLocation LOCATION_BOOK_CODE_BACKGROUND = new ResourceLocation(Minecoprocessors.MODID, "textures/gui/book_code.png");
 
@@ -449,23 +451,37 @@ public final class GuiBookCode extends GuiScreen {
     }
 
     private void recompile() {
-        compileError = Optional.empty();
+        saveProgram();
+        compileError.clear();
 
-        final List<String> program = lines.stream().map(StringBuilder::toString).collect(Collectors.toList());
+        final List<List<String>> program = data.getProgram();
+        List<Label> labels = new ArrayList<>();
+        List<String> page;
 
-        final List<String> leadingCode = new ArrayList<>();
-        final List<String> trailingCode = new ArrayList<>();
-        data.getExtendedProgram(data.getSelectedPage(), program, leadingCode, trailingCode);
-        program.addAll(0, leadingCode);
-        program.addAll(trailingCode);
+        for (int pageNumber = 0; pageNumber < program.size(); pageNumber++) {
+            page = program.get(pageNumber);
+            for (int lineNumber = 0; lineNumber < page.size(); lineNumber++) {
+                try {
+                    InstructionUtil.parseLineForLabels(page.get(lineNumber), labels, (short) 0);
+                }catch(ParseException ignore){
 
-        /*try {
-            Compiler.compile(program, new MachineState());
-        } catch (final ParseException e) {
-            // Adjust line number for current page.
-            final int lineNumber = e.getLineNumber() - leadingCode.size();
-            compileError = Optional.of(new ParseException(e.getMessage(), lineNumber, e.getStart(), e.getEnd()));
-        }*/ // TODO convert this from TIS-3D to make errors show up in red
+                }
+            }
+        }
+
+        for (int pageNumber = 0; pageNumber < program.size(); pageNumber++) {
+            page = program.get(pageNumber);
+            for (int lineNumber = 0; lineNumber < page.size(); lineNumber++) {
+                try {
+                    InstructionUtil.parseLine(page.get(lineNumber), labels, (short) 0);
+                } catch (final ParseException e) {
+                    e.lineNumber = lineNumber;
+                    e.pageNumber = pageNumber;
+                    compileError.add(e);
+                }
+            }
+        }
+
     }
 
     private boolean deleteSelection() {
@@ -513,7 +529,6 @@ public final class GuiBookCode extends GuiScreen {
                 return false; // Invalid paste, a line is too long.
             }
         }
-
 
         return true;
     }
@@ -583,49 +598,37 @@ public final class GuiBookCode extends GuiScreen {
         }
 
         // Part one of error handling, draw red underline, *behind* the blinking cursor.
-        /*if (compileError.isPresent()) {
-            final ParseException exception = compileError.get();
-            final int localLineNumber, startX, rawEndX;
-            final boolean isErrorOnPreviousPage = exception.getLineNumber() < 0;
-            final boolean isErrorOnNextPage = exception.getLineNumber() >= lines.size();
-            if (isErrorOnPreviousPage) {
-                localLineNumber = 0;
-                startX = columnToX(localLineNumber, 0);
-                rawEndX = columnToX(localLineNumber, Settings.maxColumnsPerLine);
-            } else if (isErrorOnNextPage) {
-                localLineNumber = lines.size() - 1;
-                startX = columnToX(localLineNumber, 0);
-                rawEndX = columnToX(localLineNumber, Settings.maxColumnsPerLine);
-            } else {
-                localLineNumber = exception.getLineNumber();
-                startX = columnToX(localLineNumber, exception.getStart());
-                rawEndX = columnToX(localLineNumber, exception.getEnd());
+        if (compileError.size() > 0) {
+            for (ParseException exception : compileError) {
+                drawError(exception, mouseX, mouseY);
             }
-            final int startY = guiY + CODE_POS_Y + localLineNumber * getFontRenderer().FONT_HEIGHT - 1;
-            final int endX = Math.max(rawEndX, startX + getFontRenderer().getCharWidth(' '));
+        }
+        // Draw selection position in text.
+        drawTextCursor();
 
-            drawRect(startX - 1, startY + getFontRenderer().FONT_HEIGHT - 1, endX, startY + getFontRenderer().FONT_HEIGHT, 0xFFFF3333);
+    }
 
-            // Draw selection position in text.
-            drawTextCursor();
+    private void drawError(ParseException exception, final int mouseX, final int mouseY) {
+        if (exception.pageNumber != data.getSelectedPage()) {
+           return;
+        }
 
-            // Part two of error handling, draw tooltip, *on top* of blinking cursor.
-            if (mouseX >= startX && mouseX <= endX && mouseY >= startY && mouseY <= startY + getFontRenderer().FONT_HEIGHT) {
-                final List<String> tooltip = new ArrayList<>();
-                if (isErrorOnPreviousPage) {
-                    tooltip.add(I18n.format(Constants.MESSAGE_ERROR_ON_PREVIOUS_PAGE));
-                } else if (isErrorOnNextPage) {
-                    tooltip.add(I18n.format(Constants.MESSAGE_ERROR_ON_NEXT_PAGE));
-                }
-                tooltip.addAll(Arrays.asList(ItemBookCode.PATTERN_LINES.split(I18n.format(exception.getMessage()))));
-                drawHoveringText(tooltip, mouseX, mouseY);
-                GlStateManager.disableLighting();
-            }
-        } else*/ { // TODO convert the above block from TIS-3D to make errors show up in red
-            // Draw selection position in text.
-            drawTextCursor();
+        final int localLineNumber = exception.lineNumber;
+        final int startX = columnToX(localLineNumber, 0);
+        final int rawEndX = columnToX(localLineNumber, Settings.maxColumnsPerLine);
+        final int startY = guiY + CODE_POS_Y + localLineNumber * getFontRenderer().FONT_HEIGHT - 1;
+        final int endX = Math.max(rawEndX, startX + getFontRenderer().getCharWidth(' '));
+
+        drawRect(startX - 1, startY + getFontRenderer().FONT_HEIGHT - 1, endX, startY + getFontRenderer().FONT_HEIGHT, 0xFFFF3333);
+
+        // Part two of error handling, draw tooltip, *on top* of blinking cursor.
+        if (mouseX >= startX && mouseX <= endX && mouseY >= startY && mouseY <= startY + getFontRenderer().FONT_HEIGHT) {
+            final List<String> tooltip = new ArrayList<>();
+            drawHoveringText(exception.message, mouseX, mouseY);
+            GlStateManager.disableLighting();
         }
     }
+
 
     private void drawTextCursor() {
         if (System.currentTimeMillis() % 800 <= 400) {
