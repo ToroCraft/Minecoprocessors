@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -35,7 +34,7 @@ public class BookCreator {
     String line;
     int lineNumber = 1;
     StringBuilder page = newPage();
-    try(BufferedReader reader = openBookReader(name)) {
+    try (BufferedReader reader = openBookReader(name)) {
       while ((line = reader.readLine()) != null) {
         if (lineNumber == 1) {
           book.setTagInfo("title", new NBTTagString(line));

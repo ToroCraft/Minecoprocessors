@@ -1,7 +1,6 @@
 package net.torocraft.minecoprocessors.processor;
 
 import java.util.List;
-
 import net.minecraft.nbt.NBTTagCompound;
 
 public interface IProcessor {

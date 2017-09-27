@@ -55,7 +55,7 @@ public class MessageProcessorUpdate implements IMessage {
       if (message.processorData == null || message.processorData == null) {
         return null;
       }
-      
+
       IThreadListener mainThread = Minecraft.getMinecraft();
 
       mainThread.addScheduledTask(new Runnable() {

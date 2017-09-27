@@ -380,7 +380,7 @@ public class Processor implements IProcessor {
   private void writeToMemory(byte source) {
     try {
       stack[getVariableOperandNoReference(0) + getMemoryOffset(0)] = source;
-    }catch (ArrayIndexOutOfBoundsException e){
+    } catch (ArrayIndexOutOfBoundsException e) {
       fault = true;
     }
   }

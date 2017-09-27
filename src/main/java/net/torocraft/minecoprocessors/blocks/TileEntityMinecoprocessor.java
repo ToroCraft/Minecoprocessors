@@ -2,12 +2,10 @@ package net.torocraft.minecoprocessors.blocks;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import java.util.regex.Pattern;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
@@ -197,7 +195,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   public static boolean isInResetMode(byte ports, int portIndex) {
     return ByteUtil.getBit(ports, portIndex) && ByteUtil.getBit(ports, portIndex + 4);
   }
-  
+
   /**
    * return true for positive edge changes
    */
@@ -209,7 +207,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
 
     if (isADCMode(adc, portIndex)) {
       value = RedstoneUtil.powerToPort(powerValue);
-    } else if(powerValue == 0) {
+    } else if (powerValue == 0) {
       value = 0;
     } else {
       value = (byte) 0xff;
@@ -319,7 +317,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   }
 
   private static void addLines(List<String> lines, String toAdd) {
-    for(String s : toAdd.split("\\n\\r?")) {
+    for (String s : toAdd.split("\\n\\r?")) {
       lines.add(s);
     }
   }
@@ -343,13 +341,13 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
     JsonParser parser = null;
 
     List<String> code;
-    if(ItemBookCode.isBookCode(stack)) {
+    if (ItemBookCode.isBookCode(stack)) {
       code = ItemBookCode.Data.loadFromStack(stack).getContinuousProgram();
     } else {
       code = new ArrayList<>(pages.tagCount());
       for (int i = 0; i < pages.tagCount(); ++i) {
         if (signed) {
-          if(parser == null){
+          if (parser == null) {
             parser = new JsonParser();
           }
           JsonObject o = parser.parse(pages.getStringTagAt(i)).getAsJsonObject();
@@ -384,7 +382,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
       if (name != null && !name.isEmpty()) {
         return name;
       }
-    } catch (Exception e){
+    } catch (Exception e) {
       Minecoprocessors.proxy.handleUnexpectedException(e);
     }
     return null;
@@ -401,10 +399,12 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickable, 
   }
 
   @Override
-  public void openInventory(EntityPlayer player) {}
+  public void openInventory(EntityPlayer player) {
+  }
 
   @Override
-  public void closeInventory(EntityPlayer player) {}
+  public void closeInventory(EntityPlayer player) {
+  }
 
   public static boolean isBook(Item item) {
     return item == ItemBookCode.INSTANCE || item == Items.WRITABLE_BOOK || item == Items.WRITTEN_BOOK;

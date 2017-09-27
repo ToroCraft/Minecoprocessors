@@ -7,6 +7,7 @@
 package net.torocraft.minecoprocessors.network;
 
 import io.netty.buffer.ByteBuf;
+import java.io.IOException;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -18,58 +19,58 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.items.ItemBookCode;
 
-import java.io.IOException;
-
 public final class MessageBookCodeData implements IMessage {
-    private NBTTagCompound nbt;
 
-    public static void init(int packetId) {
-        Minecoprocessors.NETWORK.registerMessage(MessageBookCodeData.Handler.class, MessageBookCodeData.class, packetId, Side.SERVER);
+  private NBTTagCompound nbt;
+
+  public static void init(int packetId) {
+    Minecoprocessors.NETWORK.registerMessage(MessageBookCodeData.Handler.class, MessageBookCodeData.class, packetId, Side.SERVER);
+  }
+
+  public MessageBookCodeData(final NBTTagCompound nbt) {
+    this.nbt = nbt;
+  }
+
+  public MessageBookCodeData() {
+  }
+
+  // --------------------------------------------------------------------- //
+
+  public NBTTagCompound getNbt() {
+    return nbt;
+  }
+
+  // --------------------------------------------------------------------- //
+  // IMessage
+
+  @Override
+  public void fromBytes(final ByteBuf buf) {
+    final PacketBuffer buffer = new PacketBuffer(buf);
+    try {
+      nbt = buffer.readCompoundTag();
+    } catch (final IOException e) {
+      Minecoprocessors.proxy.logger.warn("Invalid packet received.", e);
     }
+  }
 
-    public MessageBookCodeData(final NBTTagCompound nbt) {
-        this.nbt = nbt;
-    }
+  @Override
+  public void toBytes(final ByteBuf buf) {
+    final PacketBuffer buffer = new PacketBuffer(buf);
+    buffer.writeCompoundTag(nbt);
+  }
 
-    public MessageBookCodeData() {
-    }
-
-    // --------------------------------------------------------------------- //
-
-    public NBTTagCompound getNbt() {
-        return nbt;
-    }
-
-    // --------------------------------------------------------------------- //
-    // IMessage
+  public static final class Handler extends AbstractMessageHandler<MessageBookCodeData> {
 
     @Override
-    public void fromBytes(final ByteBuf buf) {
-        final PacketBuffer buffer = new PacketBuffer(buf);
-        try {
-            nbt = buffer.readCompoundTag();
-        } catch (final IOException e) {
-            Minecoprocessors.proxy.logger.warn("Invalid packet received.", e);
+    protected void onMessageSynchronized(final MessageBookCodeData message, final MessageContext context) {
+      final EntityPlayer player = context.getServerHandler().player;
+      if (player != null) {
+        final ItemStack stack = player.getHeldItem(EnumHand.MAIN_HAND);
+        if (ItemBookCode.isBookCode(stack)) {
+          final ItemBookCode.Data data = ItemBookCode.Data.loadFromNBT(message.getNbt());
+          ItemBookCode.Data.saveToStack(stack, data);
         }
+      }
     }
-
-    @Override
-    public void toBytes(final ByteBuf buf) {
-        final PacketBuffer buffer = new PacketBuffer(buf);
-        buffer.writeCompoundTag(nbt);
-    }
-
-    public static final class Handler extends AbstractMessageHandler<MessageBookCodeData> {
-        @Override
-        protected void onMessageSynchronized(final MessageBookCodeData message, final MessageContext context) {
-            final EntityPlayer player = context.getServerHandler().player;
-            if (player != null) {
-                final ItemStack stack = player.getHeldItem(EnumHand.MAIN_HAND);
-                if (ItemBookCode.isBookCode(stack)) {
-                    final ItemBookCode.Data data = ItemBookCode.Data.loadFromNBT(message.getNbt());
-                    ItemBookCode.Data.saveToStack(stack, data);
-                }
-            }
-        }
-    }
+  }
 }

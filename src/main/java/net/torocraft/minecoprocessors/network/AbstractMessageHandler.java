@@ -6,6 +6,7 @@
 
 package net.torocraft.minecoprocessors.network;
 
+import javax.annotation.Nullable;
 import net.minecraft.util.IThreadListener;
 import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
@@ -17,53 +18,52 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import javax.annotation.Nullable;
-
 public abstract class AbstractMessageHandler<T extends IMessage> implements IMessageHandler<T, IMessage> {
-    @Override
-    @Nullable
-    public IMessage onMessage(final T message, final MessageContext context) {
-        final IThreadListener thread = FMLCommonHandler.instance().getWorldThread(context.netHandler);
-        if (thread.isCallingFromMinecraftThread()) {
-            onMessageSynchronized(message, context);
-        } else {
-            thread.addScheduledTask(() -> onMessageSynchronized(message, context));
-        }
-        return null;
+
+  @Override
+  @Nullable
+  public IMessage onMessage(final T message, final MessageContext context) {
+    final IThreadListener thread = FMLCommonHandler.instance().getWorldThread(context.netHandler);
+    if (thread.isCallingFromMinecraftThread()) {
+      onMessageSynchronized(message, context);
+    } else {
+      thread.addScheduledTask(() -> onMessageSynchronized(message, context));
     }
+    return null;
+  }
 
-    // --------------------------------------------------------------------- //
+  // --------------------------------------------------------------------- //
 
-    protected abstract void onMessageSynchronized(final T message, final MessageContext context);
+  protected abstract void onMessageSynchronized(final T message, final MessageContext context);
 
-    // --------------------------------------------------------------------- //
+  // --------------------------------------------------------------------- //
 
-    @Nullable
-    protected static World getWorld(final int dimension, final MessageContext context) {
-        switch (context.side) {
-            case CLIENT:
-                return getWorldClient(dimension);
-            case SERVER:
-                return getWorldServer(dimension);
-        }
-        return null;
+  @Nullable
+  protected static World getWorld(final int dimension, final MessageContext context) {
+    switch (context.side) {
+      case CLIENT:
+        return getWorldClient(dimension);
+      case SERVER:
+        return getWorldServer(dimension);
     }
+    return null;
+  }
 
-    @SideOnly(Side.CLIENT)
-    @Nullable
-    private static World getWorldClient(final int dimension) {
-        final World world = FMLClientHandler.instance().getClient().world;
-        if (world == null) {
-            return null;
-        }
-        if (world.provider.getDimension() != dimension) {
-            return null;
-        }
-        return world;
+  @SideOnly(Side.CLIENT)
+  @Nullable
+  private static World getWorldClient(final int dimension) {
+    final World world = FMLClientHandler.instance().getClient().world;
+    if (world == null) {
+      return null;
     }
+    if (world.provider.getDimension() != dimension) {
+      return null;
+    }
+    return world;
+  }
 
-    @Nullable
-    private static World getWorldServer(final int dimension) {
-        return DimensionManager.getWorld(dimension);
-    }
+  @Nullable
+  private static World getWorldServer(final int dimension) {
+    return DimensionManager.getWorld(dimension);
+  }
 }

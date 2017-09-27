@@ -406,11 +406,8 @@ public class InstructionUtil {
   }
 
   /**
-   * check if the operand has a memory reference offset and if so:
-   * <Ul>
-   * <li>set the offset bit for the operand</li>
-   * <li>add the fifth byte to the instruction with the offset</li>
-   * </Ul>
+   * check if the operand has a memory reference offset and if so: <Ul> <li>set the offset bit for the operand</li> <li>add the fifth byte to the instruction
+   * with the offset</li> </Ul>
    */
   static byte[] setMemoryOffset(byte[] instructionIn, int offset, int operandIndex) {
     byte[] instruction = new byte[5];

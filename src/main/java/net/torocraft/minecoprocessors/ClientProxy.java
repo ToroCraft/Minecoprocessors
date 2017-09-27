@@ -19,7 +19,7 @@ public class ClientProxy extends CommonProxy {
   @Override
   public void handleUnexpectedException(Exception e) {
     super.handleUnexpectedException(e);
-    if(!toldPlayerAboutException) {
+    if (!toldPlayerAboutException) {
       toldPlayerAboutException = true;
       Minecraft.getMinecraft().ingameGUI.getChatGUI().printChatMessage(new TextComponentTranslation("minecoprocessors.error_chat"));
     }

@@ -40,12 +40,7 @@ public enum Register {
    *
    * <b>1</b>: input mode (high Z) <BR>
    *
-   * <ul>
-   * <li><b>bit 0:</b> front port</li>
-   * <li><b>bit 1:</b> back port</li>
-   * <li><b>bit 2:</b> left port</li>
-   * <li><b>bit 3:</b> right port</li>
-   * </ul>
+   * <ul> <li><b>bit 0:</b> front port</li> <li><b>bit 1:</b> back port</li> <li><b>bit 2:</b> left port</li> <li><b>bit 3:</b> right port</li> </ul>
    */
   PORTS,
   /**
@@ -55,12 +50,7 @@ public enum Register {
    *
    * <b>1</b>: ADC/DAC <BR>
    *
-   * <ul>
-   * <li><b>bit 0:</b> front port</li>
-   * <li><b>bit 1:</b> back port</li>
-   * <li><b>bit 2:</b> left port</li>
-   * <li><b>bit 3:</b> right port</li>
-   * </ul>
+   * <ul> <li><b>bit 0:</b> front port</li> <li><b>bit 1:</b> back port</li> <li><b>bit 2:</b> left port</li> <li><b>bit 3:</b> right port</li> </ul>
    */
   ADC
 }
