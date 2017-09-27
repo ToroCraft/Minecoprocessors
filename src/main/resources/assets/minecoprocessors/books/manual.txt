@@ -20,6 +20,12 @@ https://github.com/ToroCraft/Minecoprocessors/wiki
 §lPUSH a§r Push to Stack
 §lPOP a§r Pop from Stack
 §lNOP§r No Operation
+§lHLT§r Halt Processor
+§lCLC§r Clear Carry
+§lSEC§r Set Carry
+§lCLZ§r Clear Zero
+§lSEZ§r Set Zero
+§lHLT§r Halt Processor
 §lWFE§r Sleep (experimental)
 ~~~
 §1Arithmetic Instructions§r
@@ -37,14 +43,24 @@ https://github.com/ToroCraft/Minecoprocessors/wiki
 §lOR a, b§r Bitwise OR
 §lXOR a, b§r Bitwise XOR
 §lNOT a§r Bitwise NOT
+~~~
+§1Shift Instructions§r
+
 §lSHL a§r Shift Left
 §lSHR a§r Shift Right
+§lSAR a§r Arithmetic Right
+§lSAL a§r Arithmetic Left
+§lROR a§r Rotate Right
+§lROL a§r Rotate Right
 ~~~
 §1Loop Instructions§r
 
 §lJMP label§r Jump
 §lJZ label§r Jump if Zero
 §lJNZ label§r not Zero
+§lJC label§r if Carry
+§lJNC label§r if no Carry
+§lDJNZ a, label§r Dec and Jump if not zero
 §lCALL label§r Call
 §lRET§r Return
 §lCMP a, b§r Compare

@@ -11,7 +11,7 @@ import net.torocraft.minecoprocessors.processor.Register;
 
 public class InstructionUtil {
 
-  public static final String ERROR_DOUBLE_REFERENCE = "only one memory reference allow";
+  public static final String ERROR_DOUBLE_REFERENCE = "only one memory reference allowed";
   public static final String ERROR_NON_REFERENCE_OFFSET = "offsets can only be used with labels and references";
   public static final String ERROR_LABEL_IN_FIRST_OPERAND = "labels can not be the first of two operands";
 
