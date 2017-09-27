@@ -21,7 +21,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import net.torocraft.minecoprocessors.Minecoprocessors;
 import net.torocraft.minecoprocessors.Settings;
 import net.torocraft.minecoprocessors.items.ItemBookCode;
-import net.torocraft.minecoprocessors.items.ItemBookCode.Data;
 import net.torocraft.minecoprocessors.network.MessageBookCodeData;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
@@ -33,7 +32,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -453,6 +451,7 @@ public final class GuiBookCode extends GuiScreen {
     }
 
     private void recompile() {
+        saveProgram();
         compileError.clear();
 
         final List<List<String>> program = data.getProgram();
@@ -480,7 +479,6 @@ public final class GuiBookCode extends GuiScreen {
                     e.pageNumber = pageNumber;
                     compileError.add(e);
                 }
-                lineNumber++;
             }
         }
 
@@ -604,57 +602,28 @@ public final class GuiBookCode extends GuiScreen {
             for (ParseException exception : compileError) {
                 drawError(exception, mouseX, mouseY);
             }
-        } else {
-            // Draw selection position in text.
-            drawTextCursor();
         }
+        // Draw selection position in text.
+        drawTextCursor();
+
     }
 
     private void drawError(ParseException exception, final int mouseX, final int mouseY) {
-        //final ParseException exception = compileError.get();
-
         if (exception.pageNumber != data.getSelectedPage()) {
-            return;
+           return;
         }
 
-        final int localLineNumber, startX, rawEndX;
-        final boolean isErrorOnPreviousPage = exception.lineNumber < 0;
-        final boolean isErrorOnNextPage = exception.lineNumber >= lines.size();
-
-       /// System.out.println("page: " + data.getSelectedPage() + "   LINES: " + lines.size() + "   lineNUmber: " + exception.lineNumber);
-
-        if (isErrorOnPreviousPage) {
-            localLineNumber = 0;
-            startX = columnToX(localLineNumber, 0);
-            rawEndX = columnToX(localLineNumber, Settings.maxColumnsPerLine);
-        } else if (isErrorOnNextPage) {
-            localLineNumber = lines.size() - 1;
-            startX = columnToX(localLineNumber, 0);
-            rawEndX = columnToX(localLineNumber, Settings.maxColumnsPerLine);
-        } else {
-            localLineNumber = exception.lineNumber;
-            //startX = columnToX(localLineNumber, exception.getStart());
-            //rawEndX = columnToX(localLineNumber, exception.getEnd());
-            startX = columnToX(localLineNumber, 0);
-            rawEndX = columnToX(localLineNumber, Settings.maxColumnsPerLine);
-        }
+        final int localLineNumber = exception.lineNumber;
+        final int startX = columnToX(localLineNumber, 0);
+        final int rawEndX = columnToX(localLineNumber, Settings.maxColumnsPerLine);
         final int startY = guiY + CODE_POS_Y + localLineNumber * getFontRenderer().FONT_HEIGHT - 1;
         final int endX = Math.max(rawEndX, startX + getFontRenderer().getCharWidth(' '));
 
         drawRect(startX - 1, startY + getFontRenderer().FONT_HEIGHT - 1, endX, startY + getFontRenderer().FONT_HEIGHT, 0xFFFF3333);
 
-        // Draw selection position in text.
-        drawTextCursor();
-
         // Part two of error handling, draw tooltip, *on top* of blinking cursor.
         if (mouseX >= startX && mouseX <= endX && mouseY >= startY && mouseY <= startY + getFontRenderer().FONT_HEIGHT) {
             final List<String> tooltip = new ArrayList<>();
-            if (isErrorOnPreviousPage) {
-                tooltip.add(I18n.format("Constants.MESSAGE_ERROR_ON_PREVIOUS_PAGE"));
-            } else if (isErrorOnNextPage) {
-                tooltip.add(I18n.format("Constants.MESSAGE_ERROR_ON_NEXT_PAGE"));
-            }
-            //tooltip.addAll(Arrays.asList(ItemBookCode.PATTERN_LINES.split(I18n.format(exception.getMessage()))));
             drawHoveringText(exception.message, mouseX, mouseY);
             GlStateManager.disableLighting();
         }

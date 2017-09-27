@@ -189,66 +189,9 @@ public final class ItemBookCode extends ItemBook {
          * Add a new, blank page to the book.
          */
         public void addPage() {
-            //addOrSelectProgram(Collections.singletonList(""));
-            pages.addAll(new ArrayList<>());
+            pages.add(Collections.singletonList(""));
             setSelectedPage(pages.size() - 1);
         }
-
-        /**
-         * Add a new program to the book.
-         * <p>
-         * Depending on the size of the program, this will generate multiple pages
-         * and automatically insert <code>#BWTM</code> preprocessor macros as
-         * necessary (when they're not already there).
-         * <p>
-         * If the provided program is already present in the code book letter by
-         * letter, then instead of adding the provided code, the already present
-         * program will be selected instead.
-         *
-         * @param code the code to add or select.
-         */
-//        public void addOrSelectProgram(final List<String> code) {
-//            if (code.isEmpty()) {
-//                return;
-//            }
-//
-//            final List<List<String>> newPages = new ArrayList<>();
-//
-//            final List<String> page = new ArrayList<>();
-//            for (int i = 0; i < code.size(); i++) {
-//                final String line = code.get(i);
-//                page.add(line);
-//
-//                if (Objects.equals(line, CONTINUATION_MACRO)) {
-//                    newPages.add(new ArrayList<>(page));
-//                    page.clear();
-//                } else if (page.size() == MAX_LINES_PER_PAGE) {
-//                    final boolean isLastPage = i + 1 == code.size();
-//                    if (!isLastPage && !isPartialProgram(page)) {
-//                        page.set(page.size() - 1, CONTINUATION_MACRO);
-//                        newPages.add(new ArrayList<>(page));
-//                        page.clear();
-//                        page.add(line);
-//                    } else {
-//                        newPages.add(new ArrayList<>(page));
-//                        page.clear();
-//                    }
-//                }
-//            }
-//            if (page.size() > 0) {
-//                newPages.add(page);
-//            }
-//
-//            for (int startPage = 0; startPage < pages.size(); startPage++) {
-//                if (areAllPagesEqual(newPages, startPage)) {
-//                    setSelectedPage(startPage);
-//                    return;
-//                }
-//            }
-//
-//            pages.addAll(newPages);
-//            setSelectedPage(pages.size() - newPages.size());
-//        }
 
         /**
          * Overwrite a page at the specified index.
@@ -287,56 +230,6 @@ public final class ItemBookCode extends ItemBook {
             }
             return program;
         }
-
-        /**
-         * Get the leading and trailing code lines of a program spanning the specified
-         * page, taking into account the <code>#BWTM</code> preprocessor marco. This
-         * assumes <em>that the specified page does have the <code>#BWTM</code>
-         * preprocessor macro</em>. I.e. the next page will <em>always</em> be added to
-         * the <code>trailingPages</code>.
-         *
-         * @param page         the page to extend from.
-         * @param program      the code on the page to extend from.
-         * @param leadingCode  the list to place code from previous pages into.
-         * @param trailingCode the list to place code from next pages into.
-         */
-//        public void getExtendedProgram(final int page, final List<String> program, final List<String> leadingCode, final List<String> trailingCode) {
-//            for (int leadingPage = page - 1; leadingPage >= 0; leadingPage--) {
-//                final List<String> pageCode = getPage(leadingPage);
-//                if (isPartialProgram(pageCode)) {
-//                    leadingCode.addAll(0, pageCode);
-//                } else {
-//                    break;
-//                }
-//            }
-//            if (isPartialProgram(program)) {
-//                for (int trailingPage = page + 1; trailingPage < getPageCount(); trailingPage++) {
-//                    final List<String> pageCode = getPage(trailingPage);
-//                    trailingCode.addAll(pageCode);
-//                    if (!isPartialProgram(pageCode)) {
-//                        break;
-//                    }
-//                }
-//            }
-//        }
-
-        /**
-         * Check if this program continues on the next page, i.e. if the last
-         * non-whitespace line has the <code>#BWTM</code> preprocessor macro.
-         *
-         * @param program the program to check for.
-         * @return <code>true</code> if the program continues; <code>false</code> otherwise.
-         */
-//        public static boolean isPartialProgram(final List<String> program) {
-//            boolean continues = false;
-//            for (final String line : program) {
-//                if (line.trim().isEmpty()) {
-//                    continue;
-//                }
-//                continues = Objects.equals(line.trim().toUpperCase(Locale.US), CONTINUATION_MACRO);
-//            }
-//            return continues;
-//        }
 
         /**
          * Load data from the specified NBT tag.
