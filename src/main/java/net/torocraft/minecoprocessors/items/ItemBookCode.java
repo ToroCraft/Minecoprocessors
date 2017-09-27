@@ -7,6 +7,7 @@
 package net.torocraft.minecoprocessors.items;
 
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
+import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
@@ -130,6 +131,11 @@ public final class ItemBookCode extends ItemBook {
     @Override
     public int getItemEnchantability() {
         return 0;
+    }
+
+    @Override
+    public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn) {
+        tooltip.add(Minecoprocessors.proxy.i18nFormat("item.book_code.tooltip"));
     }
 
     // --------------------------------------------------------------------- //

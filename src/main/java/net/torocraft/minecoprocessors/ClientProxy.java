@@ -1,6 +1,7 @@
 package net.torocraft.minecoprocessors;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -9,6 +10,11 @@ import net.torocraft.minecoprocessors.blocks.BlockMinecoprocessor;
 public class ClientProxy extends CommonProxy {
 
   private boolean toldPlayerAboutException = false;
+
+  @Override
+  public String i18nFormat(String key, Object... parameters) {
+    return I18n.format(key, parameters);
+  }
 
   @Override
   public void handleUnexpectedException(Exception e) {
