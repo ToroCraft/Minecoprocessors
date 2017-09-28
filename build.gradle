@@ -9,7 +9,7 @@ buildscript {
 }
 apply plugin: 'net.minecraftforge.gradle.forge'
 
-version = "1.12.1-3"
+version = "1.12.1-4"
 group = "net.torocraft.minecoprocessors"
 archivesBaseName = "minecoprocessors"
 
