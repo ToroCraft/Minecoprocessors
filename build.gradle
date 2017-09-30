@@ -9,7 +9,7 @@ buildscript {
 }
 apply plugin: 'net.minecraftforge.gradle.forge'
 
-version = "1.12.1-4"
+version = "1.12.2-4"
 group = "net.torocraft.minecoprocessors"
 archivesBaseName = "minecoprocessors"
 
@@ -19,7 +19,7 @@ compileJava {
 }
 
 minecraft {
-    version = "1.12.1-14.22.1.2479"
+    version = "1.12.2-14.23.0.2491"
     runDir = "run"
     mappings = "snapshot_20170624"
 }
