@@ -4,10 +4,16 @@
 
 Increase your redstone possibilities and learn assembly programming at the same time with the Minecoprocessors Minecraft Mod! The Minecoprocessors Mod adds a redstone processor block that can be programed similar to a real microprocessor.  The redstone processor block is styled to look and operate like the other redstone blocks in the game.
 
-## Recipe
+## Recipes
 
+### Redstone Processor
 ![Redstone Processor Recipe](https://i.imgur.com/8E3tP0S.png)
 
+### Overclocked Processor
+![Redstone Processor Recipe](https://i.imgur.com/8M4x3XS.png)
+
+### Code Book
+![Redstone Processor Recipe](https://i.imgur.com/6lDRVmS.png)
 
 ### [Getting Started](https://github.com/ToroCraft/Minecoprocessors/wiki/Getting-Started)
 
