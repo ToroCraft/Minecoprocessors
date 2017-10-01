@@ -6,7 +6,7 @@ Increase your redstone possibilities and learn assembly programming at the same 
 
 ## Recipe
 
-![Redstone Processor Recipe](http://i.imgur.com/KUacMFg.png)
+![Redstone Processor Recipe](https://i.imgur.com/8E3tP0S.png)
 
 
 ### [Getting Started](https://github.com/ToroCraft/Minecoprocessors/wiki/Getting-Started)
