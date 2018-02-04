@@ -2,6 +2,8 @@
 
 # Minecoprocessors
 
+[![Build Status](https://travis-ci.org/ToroCraft/Minecoprocessors.svg?branch=master)](https://travis-ci.org/ToroCraft/Minecoprocessors)
+
 Increase your redstone possibilities and learn assembly programming at the same time with the Minecoprocessors Minecraft Mod! The Minecoprocessors Mod adds a redstone processor block that can be programed similar to a real microprocessor.  The redstone processor block is styled to look and operate like the other redstone blocks in the game.
 
 ### [Getting Started](https://github.com/ToroCraft/Minecoprocessors/wiki/Getting-Started)
