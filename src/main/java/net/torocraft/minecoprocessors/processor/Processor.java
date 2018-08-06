@@ -332,11 +332,17 @@ public class Processor implements IProcessor {
       case OR:
         processOr();
         return;
+      case POPA:
+        processPopAll();
+        return;
       case POP:
         processPop();
         return;
       case PUSH:
         processPush();
+        return;
+      case PUSHA:
+        processPushAll();
         return;
       case RET:
         processRet();
@@ -627,6 +633,18 @@ public class Processor implements IProcessor {
     instruction[1] = tmp;
   }
 
+  void processPushAll() {
+    for(int i = 0; i < 4; i++) {
+      if (sp >= stack.length) {
+        faultCode = FaultCode.FAULT_STACK_OVERFLOW;
+        fault = true;
+        return;
+      }
+
+      stack[sp++] = registers[i];
+    }
+  }
+
   void processPush() {
     if (sp >= stack.length) {
       faultCode = FaultCode.FAULT_STACK_OVERFLOW;
@@ -644,6 +662,18 @@ public class Processor implements IProcessor {
       return;
     }
     registers[instruction[1]] = stack[--sp];
+  }
+
+  void processPopAll() {
+    for(int i = 3; i >= 0; i--) {
+      if (sp <= 0) {
+        faultCode = FaultCode.FAULT_STACK_UNDERFLOW;
+        fault = true;
+        return;
+      }
+      
+      registers[i] = stack[--sp];
+    }
   }
 
   void processCall() {

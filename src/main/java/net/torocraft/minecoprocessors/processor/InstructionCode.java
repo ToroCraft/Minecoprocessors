@@ -23,6 +23,8 @@ public enum InstructionCode {
   CMP,
   SHL,
   SHR,
+  PUSHA,
+  POPA,
   PUSH,
   POP,
   RET,

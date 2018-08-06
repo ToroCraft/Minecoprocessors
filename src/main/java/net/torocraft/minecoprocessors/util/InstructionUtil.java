@@ -106,6 +106,8 @@ public class InstructionUtil {
           line.append(lower(Register.values()[instruction[1]]));
         }
         break;
+      case POPA:
+      case PUSHA:
       case RET:
       case NOP:
       case WFE:
@@ -336,6 +338,8 @@ public class InstructionUtil {
       case SEZ:
       case SEC:
       case DUMP:
+      case POPA:
+      case PUSHA:
         instruction = new byte[1];
         break;
 
