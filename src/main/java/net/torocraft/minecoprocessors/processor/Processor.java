@@ -274,10 +274,24 @@ public class Processor implements IProcessor {
         processJmp();
         return;
       case JNZ:
+      case JNE:
         processJnz();
         return;
       case JZ:
+      case JE:
         processJz();
+        return;
+      case JG:
+        processJg();
+        return;
+      case JGE:
+        processJge();
+        return;
+      case JL:
+        processJl();
+        return;
+      case JLE:
+        processJle();
         return;
       case MOV:
         processMov();
@@ -439,7 +453,22 @@ public class Processor implements IProcessor {
     int b = getVariableOperand(1);
     int z = a - b;
     testOverflow(z);
-    zero = z == 0;
+
+    if(a>b)
+    {
+      zero = false;
+      carry = false;
+    }
+    else if(a<b)
+    {
+      zero = false;
+      carry = true;
+    }
+    else if(a==b)
+    {
+      zero = true;
+      carry = false;
+    }
   }
 
   void processShl() {
@@ -536,6 +565,30 @@ public class Processor implements IProcessor {
 
   void processJnc() {
     if (!carry) {
+      processJmp();
+    }
+  }
+
+  void processJg() {
+    if(!carry && !zero) {
+      processJmp();
+    }
+  }
+
+  void processJge() {
+    if((!carry && !zero) || (!carry && zero)) {
+      processJmp();
+    }
+  }
+
+  void processJl() {
+    if(carry && !zero) {
+      processJmp();
+    }
+  }
+
+  void processJle() {
+    if((carry && zero) || (!carry && zero)) {
       processJmp();
     }
   }

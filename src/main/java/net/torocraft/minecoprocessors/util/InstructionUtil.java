@@ -75,6 +75,12 @@ public class InstructionUtil {
       case JMP:
       case JNZ:
       case JZ:
+      case JE:
+      case JNE:
+      case JG:
+      case JGE:
+      case JL:
+      case JLE:
       case JC:
       case JNC:
       case LOOP:
@@ -296,6 +302,12 @@ public class InstructionUtil {
 
       case JMP:
       case JNZ:
+      case JL:
+      case JLE:
+      case JG:
+      case JGE:
+      case JE:
+      case JNE:
       case JZ:
       case JC:
       case JNC:
