@@ -17,6 +17,7 @@ import net.torocraft.minecoprocessors.blocks.TileEntityMinecoprocessor;
 import net.torocraft.minecoprocessors.network.MessageEnableGuiUpdates;
 import net.torocraft.minecoprocessors.network.MessageProcessorAction;
 import net.torocraft.minecoprocessors.network.MessageProcessorAction.Action;
+import net.torocraft.minecoprocessors.processor.FaultCode;
 import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
 import net.torocraft.minecoprocessors.util.BookCreator;
@@ -36,6 +37,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
   private GuiButton buttonHelp;
   private Processor processor;
   private byte[] registers = new byte[Register.values().length];
+  private byte faultCode = FaultCode.FAULT_STATE_NOMINAL;
 
   public BlockPos getPos() {
     return minecoprocessor.getPos();
@@ -58,6 +60,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
     processor.readFromNBT(processorData);
     minecoprocessor.setName(I18n.format(name));
     registers = processor.getRegisters();
+    faultCode = processor.getFaultCode();
   }
 
   @Override
@@ -290,6 +293,7 @@ public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiCo
           break;
         case "F":
           hoveredFeature.add("Fault Indicator");
+          hoveredFeature.add("STATUS 0x" + toHex(faultCode).toUpperCase());
           break;
         case "S":
           hoveredFeature.add("Sleep Indicator");

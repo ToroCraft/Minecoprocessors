@@ -21,6 +21,7 @@ public class Processor implements IProcessor {
   private static final String NBT_PROGRAM = "program";
   private static final String NBT_LABELS = "labels";
   private static final String NBT_FLAGS = "flags";
+  private static final String NBT_FAULTCODE = "faultCode";
   private static final String NBT_ERROR = "error";
 
   /*
@@ -35,6 +36,25 @@ public class Processor implements IProcessor {
   byte[] instruction;
   protected byte[] stack = new byte[MEMORY_SIZE];
   byte[] registers = new byte[Register.values().length];
+
+  /**
+    * Fault Code status
+    * Contains the fault code for various processor fault states like stack underflow, div by zero, and so on.
+    *
+    * Inaccessible by user code.
+    *
+    * <ul><li>
+    *     <b>0x00:</b> Division by zero.
+    *     <b>0x01:</b> Stack underflow.
+    *     <b>0x02:</b> Stack overflow.
+    *     <b>0x03:</b> Undefined IP.
+    *     <b>0x04:</b> Code error.
+    *     <b>0x05:</b> Out of bounds error.
+    *     <b>0xFE:</b> Stopped by HLT instruction.
+    *     <b>0xFF:</b> Normal operation.
+    * </li></ul>
+    */
+  byte faultCode = FaultCode.FAULT_STATE_NOMINAL; // initial state
 
   /*
    * pointers
@@ -98,6 +118,7 @@ public class Processor implements IProcessor {
     sp = 0;
     registers = new byte[Register.values().length];
     registers[Register.PORTS.ordinal()] = (byte) 0xb1110;
+    faultCode = FaultCode.FAULT_STATE_NOMINAL;
   }
 
   @Override
@@ -117,6 +138,7 @@ public class Processor implements IProcessor {
       }
     } catch (ParseException e) {
       error = e.getMessage();
+      faultCode = FaultCode.FAULT_UNKNOWN_OPCODE;
       fault = true;
     }
   }
@@ -159,7 +181,7 @@ public class Processor implements IProcessor {
   public void readFromNBT(NBTTagCompound c) {
     stack = c.getByteArray(NBT_STACK);
     registers = addRegistersIfMissing(c.getByteArray(NBT_REGISTERS));
-
+    faultCode = c.getByte(NBT_FAULTCODE);
     unPackFlags(c.getLong(NBT_FLAGS));
 
     error = c.getString(NBT_ERROR);
@@ -189,6 +211,7 @@ public class Processor implements IProcessor {
     NBTTagCompound c = new NBTTagCompound();
     c.setByteArray(NBT_STACK, stack);
     c.setByteArray(NBT_REGISTERS, registers);
+    c.setByte(NBT_FAULTCODE, faultCode);
     c.setLong(NBT_FLAGS, packFlags());
     if (error != null) {
       c.setString(NBT_ERROR, error);
@@ -241,6 +264,7 @@ public class Processor implements IProcessor {
   private void process() throws ParseException {
 
     if (ip >= program.size()) {
+      faultCode = FaultCode.FAULT_UNDEFINED_IP;
       fault = true;
       return;
     }
@@ -395,6 +419,7 @@ public class Processor implements IProcessor {
     try {
       stack[getVariableOperandNoReference(0) + getMemoryOffset(0)] = source;
     } catch (ArrayIndexOutOfBoundsException e) {
+      faultCode = FaultCode.FAULT_OUT_OF_BOUNDS;
       fault = true;
     }
   }
@@ -522,6 +547,7 @@ public class Processor implements IProcessor {
   }
 
   void processHlt() {
+    faultCode = FaultCode.FAULT_HLT_INSTRUCTION;
     fault = true;
   }
 
@@ -603,6 +629,7 @@ public class Processor implements IProcessor {
 
   void processPush() {
     if (sp >= stack.length) {
+      faultCode = FaultCode.FAULT_STACK_OVERFLOW;
       fault = true;
       return;
     }
@@ -612,6 +639,7 @@ public class Processor implements IProcessor {
 
   void processPop() {
     if (sp <= 0) {
+      faultCode = FaultCode.FAULT_STACK_UNDERFLOW;
       fault = true;
       return;
     }
@@ -620,6 +648,7 @@ public class Processor implements IProcessor {
 
   void processCall() {
     if (sp >= stack.length - 1) {
+      faultCode = FaultCode.FAULT_STACK_OVERFLOW;
       fault = true;
       return;
     }
@@ -630,6 +659,7 @@ public class Processor implements IProcessor {
 
   void processRet() {
     if (sp <= 1) {
+      faultCode = FaultCode.FAULT_STACK_UNDERFLOW;
       fault = true;
       error = "ret";
       return;
@@ -669,6 +699,7 @@ public class Processor implements IProcessor {
     int a = registers[Register.A.ordinal()];
     int b = getVariableOperand(0);
     if (b == 0) {
+      faultCode = FaultCode.FAULT_DIVISION_BY_ZERO;
       fault = true;
       return;
     }
@@ -720,6 +751,11 @@ public class Processor implements IProcessor {
     dumpFlag(s, fault);
     s.append(" ");
     dumpFlag(s, wait);
+    s.append("\n\n");
+
+    s.append(" fault code: ");
+    s.append(" ");
+    s.append(faultCode);
     s.append("\n\n");
 
     s.append(" memory\n");
@@ -868,4 +904,5 @@ public class Processor implements IProcessor {
     return error;
   }
 
+  public byte getFaultCode() { return faultCode; }
 }
