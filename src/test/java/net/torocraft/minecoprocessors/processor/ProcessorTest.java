@@ -508,6 +508,51 @@ public class ProcessorTest {
   }
 
   @Test
+  public void testProcessJg() throws ParseException {
+    Processor processor = setupTest(0, 0, 0, 0, "jg test_label");
+    processor.carry = false;
+    processor.zero = false;
+    processor.processJg();
+    assertRegisters(processor, 0, 0, 0, 0);
+    Assert.assertEquals(TEST_LABEL_ADDRESS, processor.ip);
+
+    processor = setupTest(0, 0, 0, 0, "jg test_label");
+    processor.carry = true;
+    processor.zero = false;
+    processor.processJg();
+    assertRegisters(processor, 0, 0, 0, 0);
+    Assert.assertEquals((short) 0, processor.ip);
+
+    processor = setupTest(0, 0, 0, 0, "jg test_label");
+    processor.carry = false;
+    processor.zero = true;
+    processor.processJg();
+    assertRegisters(processor, 0, 0, 0, 0);
+    Assert.assertEquals((short) 0, processor.ip);
+  }
+
+  @Test
+  public void testProcessJl() throws ParseException {
+
+  }
+
+  @Test
+  public void testProcessJle() throws ParseException {
+
+  }
+
+  @Test
+  public void testProcessJe() throws ParseException {
+
+  }
+
+  @Test
+  public void testProcessJne() throws ParseException {
+
+  }
+
+
+  @Test
   public void testProcessDjnz() throws ParseException {
     //TODO there is nothing that enforces the second argument to be label
 
