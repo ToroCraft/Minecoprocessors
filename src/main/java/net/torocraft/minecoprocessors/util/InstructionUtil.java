@@ -75,6 +75,12 @@ public class InstructionUtil {
       case JMP:
       case JNZ:
       case JZ:
+      case JE:
+      case JNE:
+      case JG:
+      case JGE:
+      case JL:
+      case JLE:
       case JC:
       case JNC:
       case LOOP:
@@ -100,6 +106,8 @@ public class InstructionUtil {
           line.append(lower(Register.values()[instruction[1]]));
         }
         break;
+      case POPA:
+      case PUSHA:
       case RET:
       case NOP:
       case WFE:
@@ -296,6 +304,12 @@ public class InstructionUtil {
 
       case JMP:
       case JNZ:
+      case JL:
+      case JLE:
+      case JG:
+      case JGE:
+      case JE:
+      case JNE:
       case JZ:
       case JC:
       case JNC:
@@ -324,6 +338,8 @@ public class InstructionUtil {
       case SEZ:
       case SEC:
       case DUMP:
+      case POPA:
+      case PUSHA:
         instruction = new byte[1];
         break;
 
