@@ -441,13 +441,13 @@ public class InstructionUtilTest {
    *
    * INST | OP1 | OP2 | OP_TYPES | OFFSET
    *
-   * <ul> <li><b>byte0:</b> instruction ID (ordinal of InstructionCode enum)</li> <li><b>byte1:</b> first operand value</li> <li><b>byte2:</b> second operand
-   * value</li> <li><b>byte3_nibble0:</b> operand type</li> <li><b>byte3_nibble1:</b> operand type</li> <li><b>byte4:</b> offset value</li> </ul>
+   * <ul> <li><b>byte0:</b> instruction ID (ordinal of InstructionCode enum)</li> <li><b>byte1:</b> first operand value</li> <li><b>byte2:</b> second operand value</li> <li><b>byte3_nibble0:</b>
+   * operand type</li> <li><b>byte3_nibble1:</b> operand type</li> <li><b>byte4:</b> offset value</li> </ul>
    *
    * Operand Types:
    *
-   * <ul> <li><b>0:</b> Register ID (ordinal value of the Register enum)</li> <li><b>1:</b> Literal Value</li> <li><b>2:</b> Label</li> <li><b>bit 2</b> Has
-   * Offset</li> <li><b>bit 3:</b> Is Memory Reference</li> </ul>
+   * <ul> <li><b>0:</b> Register ID (ordinal value of the Register enum)</li> <li><b>1:</b> Literal Value</li> <li><b>2:</b> Label</li> <li><b>bit 2</b> Has Offset</li> <li><b>bit 3:</b> Is Memory
+   * Reference</li> </ul>
    */
   @Test
   public void parseDoubleOperands() throws ParseException {

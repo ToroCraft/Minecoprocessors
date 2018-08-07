@@ -20,8 +20,8 @@ public class ProcessorTest {
   /**
    * Operand Types (4th Instruction Byte):
    *
-   * <ul> <li><b>0:</b> Register ID (ordinal value of the Register enum)</li> <li><b>1:</b> Literal Value</li> <li><b>2:</b> Label</li> <li><b>bit 2</b> Has
-   * Offset</li> <li><b>bit 3:</b> Is Memory Reference</li> </ul>
+   * <ul> <li><b>0:</b> Register ID (ordinal value of the Register enum)</li> <li><b>1:</b> Literal Value</li> <li><b>2:</b> Label</li> <li><b>bit 2</b> Has Offset</li> <li><b>bit 3:</b> Is Memory
+   * Reference</li> </ul>
    */
 
   @Test

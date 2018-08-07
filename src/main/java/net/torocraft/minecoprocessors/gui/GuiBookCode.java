@@ -323,18 +323,16 @@ public final class GuiBookCode extends GuiScreen {
 
         recompile();
       }
-    } else if(keyCode == Keyboard.KEY_TAB) {
-        deleteSelection();
+    } else if (keyCode == Keyboard.KEY_TAB) {
+      deleteSelection();
 
-        if(lines.get(line).length() < Settings.maxColumnsPerLine - 1) {
-          lines.get(line).insert(column, "  ");
-          selectionStart = selectionEnd = selectionEnd + 2;
-        }
+      if (lines.get(line).length() < Settings.maxColumnsPerLine - 1) {
+        lines.get(line).insert(column, "  ");
+        selectionStart = selectionEnd = selectionEnd + 2;
+      }
 
-        recompile();
-    }
-
-    else if (!Character.isISOControl(typedChar)) {
+      recompile();
+    } else if (!Character.isISOControl(typedChar)) {
       deleteSelection();
 
       if (lines.get(line).length() < Settings.maxColumnsPerLine) {

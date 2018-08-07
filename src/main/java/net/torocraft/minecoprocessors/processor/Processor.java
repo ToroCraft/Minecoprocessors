@@ -485,18 +485,13 @@ public class Processor implements IProcessor {
     int z = a - b;
     testOverflow(z);
 
-    if(a>b)
-    {
+    if (a > b) {
       zero = false;
       carry = false;
-    }
-    else if(a<b)
-    {
+    } else if (a < b) {
       zero = false;
       carry = true;
-    }
-    else if(a==b)
-    {
+    } else if (a == b) {
       zero = true;
       carry = false;
     }
@@ -602,25 +597,25 @@ public class Processor implements IProcessor {
   }
 
   void processJg() {
-    if(!carry && !zero) {
+    if (!carry && !zero) {
       processJmp();
     }
   }
 
   void processJge() {
-    if((!carry && !zero) || (!carry && zero)) {
+    if ((!carry && !zero) || (!carry && zero)) {
       processJmp();
     }
   }
 
   void processJl() {
-    if(carry && !zero) {
+    if (carry && !zero) {
       processJmp();
     }
   }
 
   void processJle() {
-    if((carry && zero) || (!carry && zero)) {
+    if ((carry && zero) || (!carry && zero)) {
       processJmp();
     }
   }
@@ -634,7 +629,7 @@ public class Processor implements IProcessor {
   }
 
   void processPushAll() {
-    for(int i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) {
       if (sp >= stack.length) {
         faultCode = FaultCode.FAULT_STACK_OVERFLOW;
         fault = true;
@@ -665,13 +660,13 @@ public class Processor implements IProcessor {
   }
 
   void processPopAll() {
-    for(int i = 3; i >= 0; i--) {
+    for (int i = 3; i >= 0; i--) {
       if (sp <= 0) {
         faultCode = FaultCode.FAULT_STACK_UNDERFLOW;
         fault = true;
         return;
       }
-      
+
       registers[i] = stack[--sp];
     }
   }
@@ -934,5 +929,7 @@ public class Processor implements IProcessor {
     return error;
   }
 
-  public byte getFaultCode() { return faultCode; }
+  public byte getFaultCode() {
+    return faultCode;
+  }
 }
