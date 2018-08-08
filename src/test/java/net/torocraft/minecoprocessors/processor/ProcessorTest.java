@@ -479,78 +479,43 @@ public class ProcessorTest {
 
   @Test
   public void testProcessJc() throws ParseException {
-    Processor processor = setupTest(0, 0, 0, 0, "jc test_label");
-    processor.carry = true;
-    processor.processJc();
-    assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals(TEST_LABEL_ADDRESS, processor.ip);
-
-    processor = setupTest(0, 0, 0, 0, "jc test_label");
-    processor.carry = false;
-    processor.processJc();
-    assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals((short) 0, processor.ip);
+    Assert.assertFalse(willJump(Processor::processJc, false, true));
+    Assert.assertFalse(willJump(Processor::processJc, false, false));
+    Assert.assertTrue(willJump(Processor::processJc, true, false));
+    Assert.assertTrue(willJump(Processor::processJc, true, true));
   }
 
   @Test
   public void testProcessJnc() throws ParseException {
-    Processor processor = setupTest(0, 0, 0, 0, "jnc test_label");
-    processor.carry = false;
-    processor.processJnc();
-    assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals(TEST_LABEL_ADDRESS, processor.ip);
-
-    processor = setupTest(0, 0, 0, 0, "jnc test_label");
-    processor.carry = true;
-    processor.processJnc();
-    assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals((short) 0, processor.ip);
+    Assert.assertTrue(willJump(Processor::processJnc, false, false));
+    Assert.assertTrue(willJump(Processor::processJnc, false, true));
+    Assert.assertFalse(willJump(Processor::processJnc, true, false));
+    Assert.assertFalse(willJump(Processor::processJnc, true, true));
   }
 
   @Test
   public void testProcessJg() throws ParseException {
-    Processor processor = setupTest(0, 0, 0, 0, "jg test_label");
-    processor.carry = false;
-    processor.zero = false;
-    processor.processJg();
-    assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals(TEST_LABEL_ADDRESS, processor.ip);
-
-    processor = setupTest(0, 0, 0, 0, "jg test_label");
-    processor.carry = true;
-    processor.zero = false;
-    processor.processJg();
-    assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals((short) 0, processor.ip);
-
-    processor = setupTest(0, 0, 0, 0, "jg test_label");
-    processor.carry = false;
-    processor.zero = true;
-    processor.processJg();
-    assertRegisters(processor, 0, 0, 0, 0);
-    Assert.assertEquals((short) 0, processor.ip);
+    Assert.assertTrue(willJump(Processor::processJg, false, false));
+    Assert.assertFalse(willJump(Processor::processJg, true, true));
+    Assert.assertFalse(willJump(Processor::processJg, true, true));
+    Assert.assertFalse(willJump(Processor::processJg, false, true));
   }
 
   @Test
   public void testProcessJl() throws ParseException {
-
+    Assert.assertTrue(willJump(Processor::processJl, true, false));
+    Assert.assertFalse(willJump(Processor::processJl, true, true));
+    Assert.assertFalse(willJump(Processor::processJl, false, false));
+    Assert.assertFalse(willJump(Processor::processJl, false, true));
   }
 
   @Test
   public void testProcessJle() throws ParseException {
-
+    Assert.assertTrue(willJump(Processor::processJle, true, true));
+    Assert.assertFalse(willJump(Processor::processJle, true, false));
+    Assert.assertTrue(willJump(Processor::processJle, false, true));
+    Assert.assertFalse(willJump(Processor::processJle, false, false));
   }
-
-  @Test
-  public void testProcessJe() throws ParseException {
-
-  }
-
-  @Test
-  public void testProcessJne() throws ParseException {
-
-  }
-
 
   @Test
   public void testProcessDjnz() throws ParseException {
@@ -893,6 +858,20 @@ public class ProcessorTest {
     Assert.assertEquals((byte) b, processor.registers[Register.B.ordinal()]);
     Assert.assertEquals((byte) c, processor.registers[Register.C.ordinal()]);
     Assert.assertEquals((byte) d, processor.registers[Register.D.ordinal()]);
+  }
+
+  @FunctionalInterface
+  private interface ProcessorFunction {
+    void run(Processor processor);
+  }
+
+  private boolean willJump(ProcessorFunction func, boolean carry, boolean zero) throws ParseException {
+    Processor processor = setupTest(0, 0, 0, 0, "jmp test_label");
+    processor.carry = carry;
+    processor.zero = zero;
+    func.run(processor);
+    assertRegisters(processor, 0, 0, 0, 0);
+    return TEST_LABEL_ADDRESS == processor.ip;
   }
 
   private static byte[] inst(int... a) {
