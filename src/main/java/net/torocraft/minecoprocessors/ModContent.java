@@ -53,7 +53,7 @@ public class ModContent
   //--------------------------------------------------------------------------------------------------------------------
 
   public static final ItemBookCode CODE_BOOK = (ItemBookCode)(new ItemBookCode(
-    (new Item.Properties()).group(ModMinecoprocessors.ITEMGROUP)
+    (new Item.Properties()).group(ModMinecoprocessors.ITEMGROUP).setNoRepair().maxStackSize(1)
   ).setRegistryName(ModMinecoprocessors.MODID, "code_book"));
 
   private static final Item MOD_ITEMS[] = {

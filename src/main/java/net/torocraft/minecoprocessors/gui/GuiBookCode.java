@@ -40,6 +40,7 @@ public final class GuiBookCode {}
 //@SideOnly(Side.CLIENT)
 //public final class GuiBookCode extends GuiScreen {
 //
+// public static final int MAX_LINES_PER_PAGE = 20;
 //  private static final int GUI_WIDTH = 148;
 //  private static final int GUI_HEIGHT = 230;
 //  private static final int BUTTON_PAGE_CHANGE_PREV_X = 8;
