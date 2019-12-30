@@ -57,6 +57,10 @@ minecraft {
   }
 }
 
+dependencies {
+  minecraft "net.minecraftforge:forge:${version_forge_minecraft}"
+}
+
 processResources {
   outputs.upToDateWhen { false }
   doLast { file("${sourceSets.main.output.resourcesDir}/.gitversion").text = 'git log "-1" "--format=%h"'.execute().in.text.trim() }
