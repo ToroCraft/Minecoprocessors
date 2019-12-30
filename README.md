@@ -19,15 +19,8 @@ Increase your redstone possibilities and learn assembly programming at the same 
 ```
 git clone git@github.com:ToroCraft/Minecoprocessors.git
 cd Minecoprocessors
-gradle setupDecompWorkspace
+gradlew eclipse
 ```
 
-To setup an Intellij environment:
-```
-gradle idea
-```
-
-To setup an Eclipse environment:
-```
-gradle eclipse
-```
+- For Eclipse open the project in the `Minecoprocessors` directory.
+- For IntelliJ import the `build.gradle` file as project in your IDE.
