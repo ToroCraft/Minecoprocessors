@@ -2,27 +2,22 @@ package net.torocraft.minecoprocessors.processor;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagByteArray;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.torocraft.minecoprocessors.Minecoprocessors;
+
+import net.minecraft.nbt.ByteArrayNBT;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.INBT;
+import net.minecraft.nbt.ListNBT;
+import net.torocraft.minecoprocessors.ModMinecoprocessors;
 import net.torocraft.minecoprocessors.gui.GuiMinecoprocessor;
 import net.torocraft.minecoprocessors.util.ByteUtil;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
 import net.torocraft.minecoprocessors.util.ParseException;
 
-public class Processor implements IProcessor {
 
+public class Processor implements IProcessor
+{
   private static final int MEMORY_SIZE = 64;
-  private static final String NBT_STACK = "stack";
-  private static final String NBT_REGISTERS = "registers";
-  private static final String NBT_PROGRAM = "program";
-  private static final String NBT_LABELS = "labels";
-  private static final String NBT_FLAGS = "flags";
-  private static final String NBT_FAULTCODE = "faultCode";
-  private static final String NBT_ERROR = "error";
 
   /*
    * program
@@ -113,7 +108,7 @@ public class Processor implements IProcessor {
     carry = false;
     wait = false;
     step = false;
-    error = null;
+    error = "";
     ip = 0;
     sp = 0;
     registers = new byte[Register.values().length];
@@ -178,57 +173,45 @@ public class Processor implements IProcessor {
   }
 
   @Override
-  public void readFromNBT(NBTTagCompound c) {
-    stack = c.getByteArray(NBT_STACK);
-    registers = addRegistersIfMissing(c.getByteArray(NBT_REGISTERS));
-    faultCode = c.getByte(NBT_FAULTCODE);
-    unPackFlags(c.getLong(NBT_FLAGS));
-
-    error = c.getString(NBT_ERROR);
-    if (error != null && error.isEmpty()) {
-      error = null;
-    }
-
+  public void setNBT(CompoundNBT nbt)
+  {
+    stack = nbt.getByteArray("stack");
+    registers = addRegistersIfMissing(nbt.getByteArray("registers"));
+    faultCode = nbt.getByte("faultCode");
+    unPackFlags(nbt.getLong("flags"));
+    error = nbt.getString("error");
     program = new ArrayList<>();
-    NBTTagList programTag = (NBTTagList) c.getTag(NBT_PROGRAM);
-    if (programTag != null) {
-      for (NBTBase tag : programTag) {
-        program.add(((NBTTagByteArray) tag).getByteArray());
+    ListNBT programTag = (ListNBT) nbt.get("program");
+    if(programTag != null) {
+      for(INBT tag: programTag) {
+        program.add(((ByteArrayNBT)tag).getByteArray());
       }
     }
-
     labels = new ArrayList<>();
-    NBTTagList labelTag = (NBTTagList) c.getTag(NBT_LABELS);
-    if (labelTag != null) {
-      for (NBTBase tag : labelTag) {
-        labels.add(Label.fromNbt((NBTTagCompound) tag));
+    ListNBT labelTag = (ListNBT) nbt.get("labels");
+    if(labelTag != null) {
+      for(INBT tag : labelTag) {
+        labels.add(Label.fromNbt((CompoundNBT) tag));
       }
     }
   }
 
   @Override
-  public NBTTagCompound writeToNBT() {
-    NBTTagCompound c = new NBTTagCompound();
-    c.setByteArray(NBT_STACK, stack);
-    c.setByteArray(NBT_REGISTERS, registers);
-    c.setByte(NBT_FAULTCODE, faultCode);
-    c.setLong(NBT_FLAGS, packFlags());
-    if (error != null) {
-      c.setString(NBT_ERROR, error);
-    }
-    NBTTagList programTag = new NBTTagList();
-    for (byte[] b : program) {
-      programTag.appendTag(new NBTTagByteArray(b));
-    }
-    c.setTag(NBT_PROGRAM, programTag);
-
-    NBTTagList labelTag = new NBTTagList();
-    for (Label label : labels) {
-      labelTag.appendTag(label.toNbt());
-    }
-    c.setTag(NBT_LABELS, labelTag);
-
-    return c;
+  public CompoundNBT getNBT()
+  {
+    CompoundNBT nbt = new CompoundNBT();
+    nbt.putByteArray("stack", stack);
+    nbt.putByteArray("registers", registers);
+    nbt.putByte("faultCode", faultCode);
+    nbt.putLong("flags", packFlags());
+    if(!error.isEmpty()) nbt.putString("error", error);
+    ListNBT programTag = new ListNBT();
+    for(byte[] b: program) programTag.add(new ByteArrayNBT(b));
+    nbt.put("program", programTag);
+    ListNBT labelTag = new ListNBT();
+    for (Label label : labels) labelTag.add(label.toNbt());
+    nbt.put("labels", labelTag);
+    return nbt;
   }
 
   /**
@@ -245,7 +228,7 @@ public class Processor implements IProcessor {
       process();
       // TODO handle parse exception (actually make a new exception type to use in a running processor)
     } catch (Exception e) {
-      Minecoprocessors.proxy.handleUnexpectedException(e);
+      ModMinecoprocessors.proxy.handleUnexpectedException(e);
       error = getInstructionString();
       fault = true;
     }
@@ -256,7 +239,7 @@ public class Processor implements IProcessor {
     try {
       return InstructionUtil.compileLine(instruction, labels, ip);
     } catch (Exception e) {
-      Minecoprocessors.proxy.handleUnexpectedException(e);
+      ModMinecoprocessors.proxy.handleUnexpectedException(e);
       return "??";
     }
   }
@@ -787,7 +770,12 @@ public class Processor implements IProcessor {
     for (int i = 0; i < 8; i++) {
       for (int j = 0; j < 8; j++) {
         s.append(" ");
-        s.append(GuiMinecoprocessor.toHex(stack[(i * 8) + j]));
+
+
+        // @todo: util.toHex, as GuiMinecoprocessor client only Dist
+        //  s.append(GuiMinecoprocessor.toHex(stack[(i * 8) + j]));
+
+
       }
       s.append("\n");
     }

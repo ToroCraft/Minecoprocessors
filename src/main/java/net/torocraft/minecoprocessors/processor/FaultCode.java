@@ -1,7 +1,7 @@
 package net.torocraft.minecoprocessors.processor;
 
-public class FaultCode {
-
+public class FaultCode
+{
   public static final byte FAULT_DIVISION_BY_ZERO = 0x00;
   public static final byte FAULT_STACK_UNDERFLOW = 0x01;
   public static final byte FAULT_STACK_OVERFLOW = 0x02;

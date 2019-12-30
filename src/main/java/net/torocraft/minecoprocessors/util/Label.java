@@ -1,35 +1,31 @@
 package net.torocraft.minecoprocessors.util;
 
-import net.minecraft.nbt.NBTTagCompound;
 
-public class Label {
+import net.minecraft.nbt.CompoundNBT;
 
-  private static final String NBT_ADDRESS = "address";
-  private static final String NBT_NAME = "name";
-
+public class Label
+{
   public short address;
   public String name;
 
-  public Label(short address, String name) {
+  public Label(short address, String name)
+  {
     this.address = address;
     this.name = name;
   }
 
-  public NBTTagCompound toNbt() {
-    NBTTagCompound c = new NBTTagCompound();
-    c.setShort(NBT_ADDRESS, address);
-    c.setString(NBT_NAME, name);
-    return c;
+  public CompoundNBT toNbt()
+  {
+    CompoundNBT nbt = new CompoundNBT();
+    nbt.putShort("address", address);
+    nbt.putString("name", name);
+    return nbt;
   }
 
-  public static Label fromNbt(NBTTagCompound c) {
-    short address = c.getShort(NBT_ADDRESS);
-    String name = c.getString(NBT_NAME);
-    return new Label(address, name);
-  }
+  public static Label fromNbt(CompoundNBT nbt)
+  { return new Label(nbt.getShort("address"), nbt.getString("name")); }
 
   @Override
-  public String toString() {
-    return name + "[" + address + "]";
-  }
+  public String toString()
+  { return name + "[" + address + "]"; }
 }

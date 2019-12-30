@@ -1,21 +1,15 @@
 package net.torocraft.minecoprocessors.processor;
 
+import net.minecraft.nbt.CompoundNBT;
 import java.util.List;
-import net.minecraft.nbt.NBTTagCompound;
 
-public interface IProcessor {
-
+public interface IProcessor
+{
   void reset();
-
   boolean tick();
-
   void wake();
-
   void load(List<String> program);
-
-  void readFromNBT(NBTTagCompound c);
-
-  NBTTagCompound writeToNBT();
-
+  void setNBT(CompoundNBT nbt);
+  CompoundNBT getNBT();
   byte[] getRegisters();
 }
