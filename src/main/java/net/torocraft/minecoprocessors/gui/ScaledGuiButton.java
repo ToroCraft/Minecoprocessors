@@ -1,3 +1,7 @@
+/*
+ * @file ScaledGuiButton.java
+ * @license GPL
+ */
 package net.torocraft.minecoprocessors.gui;
 
 public class ScaledGuiButton {}

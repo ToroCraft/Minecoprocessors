@@ -1,3 +1,7 @@
+/*
+ * @file MinecoprocessorTileEntity.java
+ * @license GPL
+ */
 package net.torocraft.minecoprocessors.blocks;
 
 import java.util.HashSet;
@@ -19,7 +23,7 @@ import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.RedstoneUtil;
 
 
-public class TileEntityMinecoprocessor extends TileEntity implements ITickableTileEntity //, IInventory
+public class MinecoprocessorTileEntity extends TileEntity implements ITickableTileEntity //, IInventory
 {
   private static final String NAME = "minecoprocessor_tile_entity";
   private static final String NBT_PROCESSOR = "processor";
@@ -38,10 +42,10 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickableTi
   private int tickTimer = 0;
 
 
-  public TileEntityMinecoprocessor()
+  public MinecoprocessorTileEntity()
   { super(ModContent.TET_MINECOPROCESSOR); }
 
-  public TileEntityMinecoprocessor(TileEntityType<?> te_type)
+  public MinecoprocessorTileEntity(TileEntityType<?> te_type)
   { super(te_type); }
 
   // TileEntity --------------------------------------------------------------------------------------------------------
@@ -78,15 +82,13 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickableTi
     if((world.isRemote) || (--tickTimer > 0)) return;
     tickTimer = 2;
     final BlockState currentBlockState = world.getBlockState(pos);
-    if(!(currentBlockState.getBlock() instanceof BlockMinecoprocessor)) return;
-    final BlockMinecoprocessor block = (BlockMinecoprocessor)currentBlockState.getBlock();
-    if((block.config & BlockMinecoprocessor.CONFIG_OVERCLOCKED)!=0) tickTimer = 1;
+    if(!(currentBlockState.getBlock() instanceof MinecoprocessorBlock)) return;
+    final MinecoprocessorBlock block = (MinecoprocessorBlock)currentBlockState.getBlock();
+    if((block.config & MinecoprocessorBlock.CONFIG_OVERCLOCKED)!=0) tickTimer = 1;
 
     // @todo implement
     tickTimer = 20; // test tick
-    currentBlockState.cycle(BlockMinecoprocessor.ACTIVE);
-
-
+    world.setBlockState(getPos(), currentBlockState.cycle(MinecoprocessorBlock.ACTIVE), 2);
 
     /*
     boolean isInactive = processor.isWait() || processor.isFault();
@@ -317,8 +319,8 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickableTi
 //    JsonParser parser = null;
 //
 //    List<String> code;
-//    if (ItemBookCode.isBookCode(stack)) {
-//      code = ItemBookCode.Data.loadFromStack(stack).getContinuousProgram();
+//    if (CodeBookItem.isBookCode(stack)) {
+//      code = CodeBookItem.Data.loadFromStack(stack).getContinuousProgram();
 //    } else {
 //      code = new ArrayList<>(pages.tagCount());
 //      for (int i = 0; i < pages.tagCount(); ++i) {
@@ -383,7 +385,7 @@ public class TileEntityMinecoprocessor extends TileEntity implements ITickableTi
 //  }
 //
 //  public static boolean isBook(Item item) {
-//    return item == ItemBookCode.INSTANCE || item == Items.WRITABLE_BOOK || item == Items.WRITTEN_BOOK;
+//    return item == CodeBookItem.INSTANCE || item == Items.WRITABLE_BOOK || item == Items.WRITTEN_BOOK;
 //  }
 //
 //  @Override

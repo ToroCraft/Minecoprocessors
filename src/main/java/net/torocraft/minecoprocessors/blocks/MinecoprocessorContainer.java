@@ -1,6 +1,6 @@
 package net.torocraft.minecoprocessors.blocks;
 
-public class ContainerMinecoprocessor {}
+public class MinecoprocessorContainer {}
 
 /*
 import net.minecraft.entity.player.EntityPlayer;
@@ -9,7 +9,7 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 
-public class ContainerMinecoprocessor extends Container {
+public class MinecoprocessorContainer extends Container {
 
   private final IInventory te;
   @SuppressWarnings("unused")

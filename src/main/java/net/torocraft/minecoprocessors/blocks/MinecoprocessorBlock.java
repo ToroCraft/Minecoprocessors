@@ -28,14 +28,14 @@ import net.torocraft.minecoprocessors.ModContent;
 import javax.annotation.Nullable;
 
 
-public class BlockMinecoprocessor extends Block
+public class MinecoprocessorBlock extends Block
 {
   public static final long CONFIG_DEFAULT     = 0x0000000000000000L;
   public static final long CONFIG_OVERCLOCKED = 0x0000000000000001L;  // It's the overclocked version
 
   public final long config;
 
-  public BlockMinecoprocessor(long config, Block.Properties properties)
+  public MinecoprocessorBlock(long config, Block.Properties properties)
   { super(properties); this.config = config; }
 
   // Block -------------------------------------------------------------------------------------------------------------
@@ -121,7 +121,7 @@ public class BlockMinecoprocessor extends Block
   public int getStrongPower(BlockState state, IBlockReader world, BlockPos pos, Direction side)
   {
     final TileEntity te = world.getTileEntity(pos);
-    if(!(te instanceof TileEntityMinecoprocessor)) return 0; // @sw: not sure if that is still needed.
+    if(!(te instanceof MinecoprocessorTileEntity)) return 0; // @sw: not sure if that is still needed.
     return 2; // ((TileEntityMinecoprocessor)te).getPower(side);
   }
 
@@ -131,7 +131,7 @@ public class BlockMinecoprocessor extends Block
 
   @Override
   public TileEntity createTileEntity(BlockState state, IBlockReader world)
-  { return new TileEntityMinecoprocessor(ModContent.TET_MINECOPROCESSOR); }
+  { return new MinecoprocessorTileEntity(ModContent.TET_MINECOPROCESSOR); }
 
   @Override
   @SuppressWarnings("deprecation")
@@ -143,7 +143,7 @@ public class BlockMinecoprocessor extends Block
       return; // nothing to do then.
     }
     final TileEntity te = world.getTileEntity(pos);
-    if(te instanceof TileEntityMinecoprocessor) {
+    if(te instanceof MinecoprocessorTileEntity) {
       // ((TileEntityMinecoprocessor)te).neighborChanged(fromPos);
       return;
     }

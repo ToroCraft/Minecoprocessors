@@ -1,9 +1,7 @@
 /*
- * Code and resources for our Code Book were taken from TIS-3D
- * (https://github.com/MightyPirates/TIS-3D), released under the MIT license
- * by Florian "Sangar" Nücke.
+ * @file CodeBookItem.java
+ * @license GPL
  */
-
 package net.torocraft.minecoprocessors.items;
 
 import net.minecraft.block.BlockState;
@@ -31,9 +29,9 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 
-public final class ItemBookCode extends Item
+public final class CodeBookItem extends Item
 {
-  public ItemBookCode(Item.Properties properties)
+  public CodeBookItem(Item.Properties properties)
   { super(properties); }
 
   // --------------------------------------------------------------------------------------------------------------

@@ -24,7 +24,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.event.RegistryEvent;
-import net.torocraft.minecoprocessors.items.ItemBookCode;
+import net.torocraft.minecoprocessors.items.CodeBookItem;
 
 @SuppressWarnings("unused")
 public class ModContent
@@ -33,13 +33,13 @@ public class ModContent
   // Blocks
   //--------------------------------------------------------------------------------------------------------------------
 
-  public static final BlockMinecoprocessor MINECOPROCESSOR = (BlockMinecoprocessor)(new BlockMinecoprocessor(
-    BlockMinecoprocessor.CONFIG_DEFAULT,
+  public static final MinecoprocessorBlock MINECOPROCESSOR = (MinecoprocessorBlock)(new MinecoprocessorBlock(
+    MinecoprocessorBlock.CONFIG_DEFAULT,
     Block.Properties.create(Material.MISCELLANEOUS, MaterialColor.STONE).hardnessAndResistance(0f, 10f).sound(SoundType.STONE)
   )).setRegistryName(new ResourceLocation(ModMinecoprocessors.MODID, "processor"));
 
-  public static final BlockMinecoprocessor MINECOPROCESSOR_OVERCLOCKED = (BlockMinecoprocessor)(new BlockMinecoprocessor(
-    BlockMinecoprocessor.CONFIG_OVERCLOCKED,
+  public static final MinecoprocessorBlock MINECOPROCESSOR_OVERCLOCKED = (MinecoprocessorBlock)(new MinecoprocessorBlock(
+    MinecoprocessorBlock.CONFIG_OVERCLOCKED,
     Block.Properties.create(Material.MISCELLANEOUS, MaterialColor.STONE).hardnessAndResistance(0f, 10f).sound(SoundType.STONE)
   )).setRegistryName(new ResourceLocation(ModMinecoprocessors.MODID, "overclocked_processor"));
 
@@ -52,7 +52,7 @@ public class ModContent
   // Items
   //--------------------------------------------------------------------------------------------------------------------
 
-  public static final ItemBookCode CODE_BOOK = (ItemBookCode)(new ItemBookCode(
+  public static final CodeBookItem CODE_BOOK = (CodeBookItem)(new CodeBookItem(
     (new Item.Properties()).group(ModMinecoprocessors.ITEMGROUP).setNoRepair().maxStackSize(1)
   ).setRegistryName(ModMinecoprocessors.MODID, "code_book"));
 
@@ -65,7 +65,7 @@ public class ModContent
   //--------------------------------------------------------------------------------------------------------------------
 
   public static final TileEntityType<?> TET_MINECOPROCESSOR = TileEntityType.Builder
-    .create(TileEntityMinecoprocessor::new, MOD_BLOCKS)
+    .create(MinecoprocessorTileEntity::new, MOD_BLOCKS)
     .build(null)
     .setRegistryName(ModMinecoprocessors.MODID, "te_processor");
 

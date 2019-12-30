@@ -1,7 +1,11 @@
+/*
+ * @file MinecoprocessorGui.java
+ * @license GPL
+ */
 package net.torocraft.minecoprocessors.gui;
 
 
-public class GuiMinecoprocessor {}
+public class MinecoprocessorGui {}
 
 //import java.util.ArrayList;
 //import java.util.List;

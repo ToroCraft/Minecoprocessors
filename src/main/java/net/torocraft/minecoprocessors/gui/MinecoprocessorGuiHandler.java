@@ -1,3 +1,7 @@
+/*
+ * @file MinecoprocessorGuiHandler.java
+ * @license GPL
+ */
 package net.torocraft.minecoprocessors.gui;
 
 
@@ -12,7 +16,7 @@ public class MinecoprocessorGuiHandler {}
 //import net.torocraft.minecoprocessors.Minecoprocessors;
 //import net.torocraft.minecoprocessors.blocks.ContainerMinecoprocessor;
 //import net.torocraft.minecoprocessors.blocks.TileEntityMinecoprocessor;
-//import net.torocraft.minecoprocessors.items.ItemBookCode;
+//import net.torocraft.minecoprocessors.items.CodeBookItem;
 //
 //public class MinecoprocessorGuiHandler implements IGuiHandler {
 //
@@ -38,7 +42,7 @@ public class MinecoprocessorGuiHandler {}
 //    if (ID == MINECOPROCESSOR_ENTITY_GUI) {
 //      return new GuiMinecoprocessor(player.inventory,
 //          (TileEntityMinecoprocessor) world.getTileEntity(new BlockPos(x, y, z)));
-//    } else if (ID == MINECOPROCESSOR_BOOK_GUI && ItemBookCode.isBookCode(player.getHeldItem(EnumHand.MAIN_HAND))) {
+//    } else if (ID == MINECOPROCESSOR_BOOK_GUI && CodeBookItem.isBookCode(player.getHeldItem(EnumHand.MAIN_HAND))) {
 //      return new GuiBookCode(player);
 //    }
 //    return null;

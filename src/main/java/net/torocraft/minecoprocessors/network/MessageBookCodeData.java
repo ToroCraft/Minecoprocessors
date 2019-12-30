@@ -21,7 +21,7 @@ public final class MessageBookCodeData {}
 //import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 //import net.minecraftforge.fml.relauncher.Side;
 //import net.torocraft.minecoprocessors.Minecoprocessors;
-//import net.torocraft.minecoprocessors.items.ItemBookCode;
+//import net.torocraft.minecoprocessors.items.CodeBookItem;
 //
 //public final class MessageBookCodeData implements IMessage {
 //
@@ -70,9 +70,9 @@ public final class MessageBookCodeData {}
 //      final EntityPlayer player = context.getServerHandler().player;
 //      if (player != null) {
 //        final ItemStack stack = player.getHeldItem(EnumHand.MAIN_HAND);
-//        if (ItemBookCode.isBookCode(stack)) {
-//          final ItemBookCode.Data data = ItemBookCode.Data.loadFromNBT(message.getNbt());
-//          ItemBookCode.Data.saveToStack(stack, data);
+//        if (CodeBookItem.isBookCode(stack)) {
+//          final CodeBookItem.Data data = CodeBookItem.Data.loadFromNBT(message.getNbt());
+//          CodeBookItem.Data.saveToStack(stack, data);
 //        }
 //      }
 //    }

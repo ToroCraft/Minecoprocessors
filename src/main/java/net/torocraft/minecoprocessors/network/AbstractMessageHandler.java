@@ -4,7 +4,7 @@
  * by Florian "Sangar" Nücke.
  */
 
-package net.torocraft.minecoprocessors.network;
+ package net.torocraft.minecoprocessors.network;
 
 public abstract class AbstractMessageHandler {}
 

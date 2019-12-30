@@ -1,12 +1,11 @@
 /*
- * Code and resources for our Code Book were taken from TIS-3D
- * (https://github.com/MightyPirates/TIS-3D), released under the MIT license
- * by Florian "Sangar" Nücke.
+ * @file CodeBookGui.java
+ * @license GPL
  */
 package net.torocraft.minecoprocessors.gui;
 
 
-public final class GuiBookCode {}
+public final class CodeBookGui {}
 
 //
 //import java.io.IOException;
@@ -27,7 +26,7 @@ public final class GuiBookCode {}
 //import net.minecraftforge.fml.relauncher.SideOnly;
 //import net.torocraft.minecoprocessors.Minecoprocessors;
 //import net.torocraft.minecoprocessors.Settings;
-//import net.torocraft.minecoprocessors.items.ItemBookCode;
+//import net.torocraft.minecoprocessors.items.CodeBookItem;
 //import net.torocraft.minecoprocessors.network.MessageBookCodeData;
 //import net.torocraft.minecoprocessors.util.InstructionUtil;
 //import net.torocraft.minecoprocessors.util.Label;
@@ -68,7 +67,7 @@ public final class GuiBookCode {}
 //  private ButtonDeletePage buttonDeletePage;
 //
 //  private final EntityPlayer player;
-//  private final ItemBookCode.Data data;
+//  private final CodeBookItem.Data data;
 //  private final List<StringBuilder> lines = new ArrayList<>();
 //
 //  private int guiX = 0;
@@ -83,7 +82,7 @@ public final class GuiBookCode {}
 //
 //  public GuiBookCode(final EntityPlayer player) {
 //    this.player = player;
-//    this.data = ItemBookCode.Data.loadFromStack(player.getHeldItem(EnumHand.MAIN_HAND));
+//    this.data = CodeBookItem.Data.loadFromStack(player.getHeldItem(EnumHand.MAIN_HAND));
 //
 //    rebuildLines();
 //  }
@@ -124,7 +123,7 @@ public final class GuiBookCode {}
 //
 //  @Override
 //  public void drawScreen(final int mouseX, final int mouseY, final float partialTicks) {
-//    if (!player.isEntityAlive() || !ItemBookCode.isBookCode(player.getHeldItem(EnumHand.MAIN_HAND))) {
+//    if (!player.isEntityAlive() || !CodeBookItem.isBookCode(player.getHeldItem(EnumHand.MAIN_HAND))) {
 //      Minecraft.getMinecraft().displayGuiScreen(null);
 //      return;
 //    }
@@ -282,7 +281,7 @@ public final class GuiBookCode {}
 //      recompile();
 //    } else if (keyCode == Keyboard.KEY_RETURN) {
 //      deleteSelection();
-//      if (lines.size() < ItemBookCode.MAX_LINES_PER_PAGE) {
+//      if (lines.size() < CodeBookItem.MAX_LINES_PER_PAGE) {
 //        final StringBuilder oldLine = lines.get(line);
 //        final StringBuilder newLine = new StringBuilder();
 //        if (column < oldLine.length()) {
@@ -309,7 +308,7 @@ public final class GuiBookCode {}
 //      } else if (keyCode == Keyboard.KEY_V) {
 //        deleteSelection();
 //
-//        final String[] pastedLines = ItemBookCode.PATTERN_LINES.split(getClipboardString());
+//        final String[] pastedLines = CodeBookItem.PATTERN_LINES.split(getClipboardString());
 //        if (!isValidPaste(pastedLines)) {
 //          return;
 //        }
@@ -407,7 +406,7 @@ public final class GuiBookCode {}
 //  }
 //
 //  private int cursorToLine(final int y) {
-//    return Math.max(0, Math.min(Math.min(lines.size() - 1, ItemBookCode.MAX_LINES_PER_PAGE), (y - guiY - CODE_POS_Y) / getFontRenderer().FONT_HEIGHT));
+//    return Math.max(0, Math.min(Math.min(lines.size() - 1, CodeBookItem.MAX_LINES_PER_PAGE), (y - guiY - CODE_POS_Y) / getFontRenderer().FONT_HEIGHT));
 //  }
 //
 //  private int cursorToColumn(final int x, final int y) {
@@ -457,7 +456,7 @@ public final class GuiBookCode {}
 //  private boolean isInCodeArea(final int mouseX, final int mouseY) {
 //    return mouseX >= guiX + CODE_POS_X - CODE_MARGIN && mouseX <= guiX + CODE_POS_X + CODE_WIDTH + CODE_MARGIN &&
 //        mouseY >= guiY + CODE_POS_Y - CODE_MARGIN
-//        && mouseY <= guiY + CODE_POS_Y + getFontRenderer().FONT_HEIGHT * ItemBookCode.MAX_LINES_PER_PAGE + CODE_MARGIN;
+//        && mouseY <= guiY + CODE_POS_Y + getFontRenderer().FONT_HEIGHT * CodeBookItem.MAX_LINES_PER_PAGE + CODE_MARGIN;
 //  }
 //
 //  private boolean isCurrentProgramNonEmpty() {
@@ -532,7 +531,7 @@ public final class GuiBookCode {}
 //    if (pastedLines.length == 0) {
 //      return false; // Invalid paste, nothing to paste (this shouldn't even be possible).
 //    }
-//    if (pastedLines.length - 1 + lines.size() > ItemBookCode.MAX_LINES_PER_PAGE) {
+//    if (pastedLines.length - 1 + lines.size() > CodeBookItem.MAX_LINES_PER_PAGE) {
 //      return false; // Invalid paste, too many resulting lines.
 //    }
 //    if (pastedLines[0].length() + lines.get(selectedLine).length() > Settings.maxColumnsPerLine) {

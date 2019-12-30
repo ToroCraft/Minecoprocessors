@@ -1,8 +1,5 @@
 package net.torocraft.minecoprocessors.processor;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import net.minecraft.nbt.ByteArrayNBT;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
@@ -13,8 +10,11 @@ import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
 import net.torocraft.minecoprocessors.util.ParseException;
 
+import java.util.ArrayList;
+import java.util.List;
 
-public class Processor implements IProcessor
+
+public class Processor
 {
   private static final int MEMORY_SIZE = 64;
 
@@ -99,7 +99,7 @@ public class Processor implements IProcessor
     }
   }
 
-  @Override
+
   public void reset() {
     fault = false;
     zero = false;
@@ -115,12 +115,10 @@ public class Processor implements IProcessor
     faultCode = FaultCode.FAULT_STATE_NOMINAL;
   }
 
-  @Override
   public void wake() {
     wait = false;
   }
 
-  @Override
   public void load(List<String> file) {
     try {
       flush();
@@ -171,7 +169,7 @@ public class Processor implements IProcessor
     return registersNew;
   }
 
-  @Override
+
   public void setNBT(CompoundNBT nbt)
   {
     stack = nbt.getByteArray("stack");
@@ -195,7 +193,6 @@ public class Processor implements IProcessor
     }
   }
 
-  @Override
   public CompoundNBT getNBT()
   {
     CompoundNBT nbt = new CompoundNBT();
@@ -216,7 +213,6 @@ public class Processor implements IProcessor
   /**
    * returns true if GUI should be updated after this tick
    */
-  @Override
   public boolean tick() {
     if (fault || (wait && !step)) {
       return false;
@@ -867,7 +863,7 @@ public class Processor implements IProcessor
     return s;
   }
 
-  @Override
+
   public byte[] getRegisters() {
     return registers;
   }
