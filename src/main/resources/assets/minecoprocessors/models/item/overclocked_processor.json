@@ -1,6 +1,1 @@
-{
-  "parent": "item/generated",
-  "textures": {
-    "layer0": "minecoprocessors:items/minecoprocessor_overclocked"
-  }
-}
+{"parent":"minecoprocessors:block/minecoprocessor_overclocked_on"}

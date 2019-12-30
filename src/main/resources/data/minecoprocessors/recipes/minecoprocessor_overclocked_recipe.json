@@ -7,9 +7,9 @@
   ],
   "key": {
     "d": { "item": "minecraft:diamond" },
-    "m": { "item": "minecoprocessors:minecoprocessor" }
+    "m": { "item": "minecoprocessors:processor" }
   },
   "result": {
-    "item": "minecoprocessors:minecoprocessor_overclocked"
+    "item": "minecoprocessors:overclocked_processor"
   }
 }

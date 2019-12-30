@@ -2,7 +2,7 @@
   "type": "minecraft:block",
   "pools": [
     {
-      "name": "minecoprocessor_dlt",
+      "name": "processor_dlt",
       "rolls": 1,
       "entries": [
         {
@@ -13,7 +13,7 @@
               "source": "block_entity"
             }
           ],
-          "name": "minecoprocessors:minecoprocessor"
+          "name": "minecoprocessors:processor"
         }
       ]
     }

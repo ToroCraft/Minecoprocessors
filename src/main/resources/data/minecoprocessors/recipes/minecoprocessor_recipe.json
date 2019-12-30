@@ -11,6 +11,6 @@
     "r": { "item": "minecraft:redstone_block" }
   },
   "result": {
-    "item": "minecoprocessors:minecoprocessor"
+    "item": "minecoprocessors:processor"
   }
 }

@@ -2,7 +2,7 @@
   "type": "minecraft:block",
   "pools": [
     {
-      "name": "minecoprocessor_overclocked_dlt",
+      "name": "overclocked_processor_dlt",
       "rolls": 1,
       "entries": [
         {
@@ -13,7 +13,7 @@
               "source": "block_entity"
             }
           ],
-          "name": "minecoprocessors:minecoprocessor_overclocked"
+          "name": "minecoprocessors:overclocked_processor"
         }
       ]
     }

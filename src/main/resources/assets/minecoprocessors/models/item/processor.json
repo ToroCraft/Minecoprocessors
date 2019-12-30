@@ -1,6 +1,1 @@
-{
-  "parent": "item/generated",
-  "textures": {
-    "layer0": "minecoprocessors:items/minecoprocessor"
-  }
-}
+{"parent":"minecoprocessors:block/minecoprocessor_on"}

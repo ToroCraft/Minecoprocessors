@@ -1,13 +1,13 @@
 {
   "ambientocclusion": false,
   "textures": {
-    "particle": "minecoprocessors:block/repeater_on",
-    "slab": "minecoprocessors:block/stone_slab_top",
-    "top": "minecoprocessors:blocks/minecoprocessor",
-    "unlit": "minecoprocessors:block/redstone_torch_off",
-    "redstone": "minecoprocessors:block/redstone_block",
-    "diamond": "minecoprocessors:block/diamond_block",
-    "lit": "minecoprocessors:block/redstone_torch_on"
+    "particle": "minecoprocessors:block/minecoprocessor",
+    "slab": "minecoprocessors:block/stone_top",
+    "top": "minecoprocessors:block/minecoprocessor",
+    "unlit": "minecoprocessors:block/torch_off",
+    "redstone": "minecoprocessors:block/redstone",
+    "diamond": "minecoprocessors:block/diamond",
+    "lit": "minecoprocessors:block/torch_on"
   },
   "elements": [
     {
