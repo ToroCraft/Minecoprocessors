@@ -1,23 +1,37 @@
-# eclipse
 bin
 *.launch
 .settings
 .metadata
 .classpath
 .project
-
-# idea
 out
 *.ipr
 *.iws
 *.iml
 .idea
-
-# gradle
 build
 .gradle
-
-# other
+*.tmp
+*.log
+*.jks
 eclipse
 run
-logs/
+tests
+/dist
+signing.*
+src/main/java/archive
+src/main/resources/assets/minecraft
+.vscode
+/classes
+/dev
+/tmp
+/archive
+/assets-src
+.gimp
+*.xcf
+desktop.ini
+.DS_Store
+Thumbs.db
+forge*changelog.txt
+/*.txt
+mcmodsrepo

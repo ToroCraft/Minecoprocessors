@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "tct",
+    "crc",
+    "tct"
+  ],
+  "key": {
+    "t": { "item": "minecraft:redstone_torch" },
+    "c": { "item": "minecraft:comparator"     },
+    "r": { "item": "minecraft:redstone_block" }
+  },
+  "result": {
+    "item": "minecoprocessors:minecoprocessor"
+  }
+}
