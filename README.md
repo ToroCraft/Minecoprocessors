@@ -1,4 +1,4 @@
-![Redstone Processor Block](http://i.imgur.com/Vp1e18J.png)
+![Redstone Processor Block](src/main/resources/logo.png)
 
 # Minecoprocessors
 
