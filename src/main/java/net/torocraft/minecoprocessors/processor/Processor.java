@@ -8,7 +8,6 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
 import net.minecraft.nbt.ListNBT;
 import net.torocraft.minecoprocessors.ModMinecoprocessors;
-import net.torocraft.minecoprocessors.gui.GuiMinecoprocessor;
 import net.torocraft.minecoprocessors.util.ByteUtil;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
@@ -204,7 +203,7 @@ public class Processor implements IProcessor
     nbt.putByteArray("registers", registers);
     nbt.putByte("faultCode", faultCode);
     nbt.putLong("flags", packFlags());
-    if(!error.isEmpty()) nbt.putString("error", error);
+    if((error!=null) && (!error.isEmpty())) nbt.putString("error", error);
     ListNBT programTag = new ListNBT();
     for(byte[] b: program) programTag.add(new ByteArrayNBT(b));
     nbt.put("program", programTag);
