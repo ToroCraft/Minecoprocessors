@@ -8,11 +8,14 @@ import net.minecraft.world.IBlockReader;
 
 public class RedstoneUtil
 {
+  private static final Direction[] fwd_port_mapping = { Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST };
+  private static final int[] rev_port_mapping = { 1,2,0,3 }; // S-W-N-E
+
   public static Direction convertPortIndexToFacing(Direction facing, int portIndex)
-  { return rotateFacing(Direction.byHorizontalIndex(portIndex), getRotation(facing)); } // (portIndex & 0x3) -> already checked in byHorizontalIndex()
+  { return rotateFacing(fwd_port_mapping[portIndex & 0x3], getRotation(facing)); }
 
   public static int convertFacingToPortIndex(Direction facing, Direction side)
-  { return rotateFacing(side, -getRotation(facing)).getHorizontalIndex(); }
+  { return rev_port_mapping[rotateFacing(side, -getRotation(facing)).getHorizontalIndex() & 0x3]; }
 
   private static Direction rotateFacing(Direction facing, int rotation)
   {

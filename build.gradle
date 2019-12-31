@@ -59,6 +59,8 @@ minecraft {
 
 dependencies {
   minecraft "net.minecraftforge:forge:${version_forge_minecraft}"
+  testCompile 'junit:junit:4.12'
+  testCompile 'org.jmockit:jmockit:1.34'
 }
 
 processResources {

@@ -1,7 +1,7 @@
 package net.torocraft.minecoprocessors.util;
 
 import mockit.Deencapsulation;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.util.Direction;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -31,14 +31,14 @@ public class RedstoneUtilTest {
     int b = 1;
     int l = 2;
     int r = 3;
-    Assert.assertEquals(EnumFacing.NORTH, RedstoneUtil.convertPortIndexToFacing(EnumFacing.NORTH, f));
-    Assert.assertEquals(EnumFacing.EAST, RedstoneUtil.convertPortIndexToFacing(EnumFacing.NORTH, r));
-    Assert.assertEquals(EnumFacing.SOUTH, RedstoneUtil.convertPortIndexToFacing(EnumFacing.NORTH, b));
-    Assert.assertEquals(EnumFacing.EAST, RedstoneUtil.convertPortIndexToFacing(EnumFacing.EAST, f));
-    Assert.assertEquals(EnumFacing.WEST, RedstoneUtil.convertPortIndexToFacing(EnumFacing.EAST, b));
-    Assert.assertEquals(EnumFacing.NORTH, RedstoneUtil.convertPortIndexToFacing(EnumFacing.EAST, l));
-    Assert.assertEquals(EnumFacing.NORTH, RedstoneUtil.convertPortIndexToFacing(EnumFacing.SOUTH, b));
-    Assert.assertEquals(EnumFacing.NORTH, RedstoneUtil.convertPortIndexToFacing(EnumFacing.WEST, r));
+    Assert.assertEquals(Direction.NORTH, RedstoneUtil.convertPortIndexToFacing(Direction.NORTH, f));
+    Assert.assertEquals(Direction.EAST, RedstoneUtil.convertPortIndexToFacing(Direction.NORTH, r));
+    Assert.assertEquals(Direction.SOUTH, RedstoneUtil.convertPortIndexToFacing(Direction.NORTH, b));
+    Assert.assertEquals(Direction.EAST, RedstoneUtil.convertPortIndexToFacing(Direction.EAST, f));
+    Assert.assertEquals(Direction.WEST, RedstoneUtil.convertPortIndexToFacing(Direction.EAST, b));
+    Assert.assertEquals(Direction.NORTH, RedstoneUtil.convertPortIndexToFacing(Direction.EAST, l));
+    Assert.assertEquals(Direction.NORTH, RedstoneUtil.convertPortIndexToFacing(Direction.SOUTH, b));
+    Assert.assertEquals(Direction.NORTH, RedstoneUtil.convertPortIndexToFacing(Direction.WEST, r));
   }
 
   @Test
@@ -47,18 +47,18 @@ public class RedstoneUtilTest {
     int b = 1;
     int l = 2;
     int r = 3;
-    Assert.assertEquals(f, RedstoneUtil.convertFacingToPortIndex(EnumFacing.NORTH, EnumFacing.NORTH));
-    Assert.assertEquals(b, RedstoneUtil.convertFacingToPortIndex(EnumFacing.NORTH, EnumFacing.SOUTH));
-    Assert.assertEquals(r, RedstoneUtil.convertFacingToPortIndex(EnumFacing.EAST, EnumFacing.SOUTH));
-    Assert.assertEquals(r, RedstoneUtil.convertFacingToPortIndex(EnumFacing.WEST, EnumFacing.NORTH));
-    Assert.assertEquals(l, RedstoneUtil.convertFacingToPortIndex(EnumFacing.SOUTH, EnumFacing.EAST));
+    Assert.assertEquals(f, RedstoneUtil.convertFacingToPortIndex(Direction.NORTH, Direction.NORTH));
+    Assert.assertEquals(b, RedstoneUtil.convertFacingToPortIndex(Direction.NORTH, Direction.SOUTH));
+    Assert.assertEquals(r, RedstoneUtil.convertFacingToPortIndex(Direction.EAST, Direction.SOUTH));
+    Assert.assertEquals(r, RedstoneUtil.convertFacingToPortIndex(Direction.WEST, Direction.NORTH));
+    Assert.assertEquals(l, RedstoneUtil.convertFacingToPortIndex(Direction.SOUTH, Direction.EAST));
   }
 
   @Test
   public void testRotateFacing() {
-    Assert.assertEquals(EnumFacing.EAST, Deencapsulation.invoke(RedstoneUtil.class, "rotateFacing", EnumFacing.NORTH, -3));
-    Assert.assertEquals(EnumFacing.NORTH, Deencapsulation.invoke(RedstoneUtil.class, "rotateFacing", EnumFacing.NORTH, 0));
-    Assert.assertEquals(EnumFacing.EAST, Deencapsulation.invoke(RedstoneUtil.class, "rotateFacing", EnumFacing.EAST, 0));
-    Assert.assertEquals(EnumFacing.EAST, Deencapsulation.invoke(RedstoneUtil.class, "rotateFacing", EnumFacing.WEST, -2));
+    Assert.assertEquals(Direction.EAST, Deencapsulation.invoke(RedstoneUtil.class, "rotateFacing", Direction.NORTH, -3));
+    Assert.assertEquals(Direction.NORTH, Deencapsulation.invoke(RedstoneUtil.class, "rotateFacing", Direction.NORTH, 0));
+    Assert.assertEquals(Direction.EAST, Deencapsulation.invoke(RedstoneUtil.class, "rotateFacing", Direction.EAST, 0));
+    Assert.assertEquals(Direction.EAST, Deencapsulation.invoke(RedstoneUtil.class, "rotateFacing", Direction.WEST, -2));
   }
 }
