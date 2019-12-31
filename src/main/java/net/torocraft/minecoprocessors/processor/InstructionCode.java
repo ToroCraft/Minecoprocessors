@@ -1,6 +1,7 @@
 package net.torocraft.minecoprocessors.processor;
 
-public enum InstructionCode {
+public enum InstructionCode
+{
   MOV,
   ADD,
   SUB,

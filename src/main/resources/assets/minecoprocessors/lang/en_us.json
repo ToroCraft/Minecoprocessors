@@ -1,0 +1,17 @@
+{
+ "language": "English",
+ "language.code": "en_us",
+ "language.region": "United States",
+ "itemGroup.tabminecoprocessors": "Minecoprocessors",
+ "block.minecoprocessors.processor":"Redstone Processor",
+ "block.minecoprocessors.overclocked_processor":"Overclocked Processor",
+ "item.minecoprocessors.code_book":"Code Book",
+ "item.minecoprocessors.code_book.tooltip":"Redstone Processor",
+ "minecoprocessors.container.processor":"Redstone Processor",
+ "minecoprocessors.gui.button.reset":"reset",
+ "minecoprocessors.gui.button.sleep":"sleep",
+ "minecoprocessors.gui.button.step":"step",
+ "minecoprocessors.gui.button.wake":"wake",
+ "minecoprocessors.gui.button.help":"manual",
+ "minecoprocessors.error_chat":"An unexpected exception occurred in Minecoprocessors. This may cause problems and should be reported to the developer. Details have been logged."
+}
