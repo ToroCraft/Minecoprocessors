@@ -6,8 +6,8 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
 
-public class RedstoneUtil
-{
+public class RedstoneUtil {
+  
   private static final Direction[] fwd_port_mapping = { Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST };
   private static final int[] rev_port_mapping = { 1,2,0,3 }; // S-W-N-E
 
