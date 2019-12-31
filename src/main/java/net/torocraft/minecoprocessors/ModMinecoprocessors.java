@@ -82,10 +82,7 @@ public class ModMinecoprocessors
 
     @SubscribeEvent
     public static final void onItemRegistry(final RegistryEvent.Register<Item> event)
-    {
-      ModContent.registerBlockItems(event);
-      ModContent.registerItems(event);
-    }
+    { ModContent.registerBlockItems(event); ModContent.registerItems(event); }
 
     @SubscribeEvent
     public static final void onTileEntityRegistry(final RegistryEvent.Register<TileEntityType<?>> event)
@@ -117,7 +114,7 @@ public class ModMinecoprocessors
 
     @SubscribeEvent
     public static void onClientSetup(final FMLClientSetupEvent event)
-    {}
+    { ModContent.registerContainerGuis(event); }
 
     @SubscribeEvent
     public static void onConfigLoad(net.minecraftforge.fml.config.ModConfig.Loading event)

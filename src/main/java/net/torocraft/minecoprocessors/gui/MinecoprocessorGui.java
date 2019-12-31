@@ -5,7 +5,56 @@
 package net.torocraft.minecoprocessors.gui;
 
 
-public class MinecoprocessorGui {}
+import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.gui.screen.inventory.ContainerScreen;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.torocraft.minecoprocessors.ModMinecoprocessors;
+import net.torocraft.minecoprocessors.blocks.MinecoprocessorContainer;
+
+@OnlyIn(Dist.CLIENT)
+public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer>
+{
+  private final ResourceLocation BACKGROUND_IMAGE = new ResourceLocation(ModMinecoprocessors.MODID, "textures/gui/minecoprocessor.png");
+  protected final PlayerEntity player_;
+
+  public MinecoprocessorGui(MinecoprocessorContainer container, PlayerInventory player_inventory, ITextComponent title)
+  {
+    super(container, player_inventory, title);
+    this.player_ = player_inventory.player;
+  }
+
+  @Override
+  public void render(int mouseX, int mouseY, float partialTicks)
+  {
+    renderBackground();
+    super.render(mouseX, mouseY, partialTicks);
+    renderHoveredToolTip(mouseX, mouseY);
+  }
+
+  @Override
+  protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY)
+  {
+    GlStateManager.color4f(1f, 1f, 1f, 1f);
+    this.minecraft.getTextureManager().bindTexture(BACKGROUND_IMAGE);
+    final int x0=getGuiLeft(), y0=getGuiTop(), w=getXSize(), h=getYSize();
+    blit(x0, y0, 0, 0, w, h);
+    MinecoprocessorContainer container = (MinecoprocessorContainer)getContainer();
+    // Additional blit'ing, field drawing, etc.
+  }
+
+}
+
+
+
+
+
+
+
 
 //import java.util.ArrayList;
 //import java.util.List;

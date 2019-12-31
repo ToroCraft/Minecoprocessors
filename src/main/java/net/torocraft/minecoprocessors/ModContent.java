@@ -7,10 +7,10 @@
  */
 package net.torocraft.minecoprocessors;
 
-import net.torocraft.minecoprocessors.*;
 import net.torocraft.minecoprocessors.blocks.*;
 import net.torocraft.minecoprocessors.gui.*;
 import net.minecraft.client.gui.ScreenManager;
+import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.block.material.MaterialColor;
@@ -25,6 +25,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.event.RegistryEvent;
 import net.torocraft.minecoprocessors.items.CodeBookItem;
+
 
 @SuppressWarnings("unused")
 public class ModContent
@@ -77,13 +78,19 @@ public class ModContent
   // Container registration
   //--------------------------------------------------------------------------------------------------------------------
 
-  //@todo implement
-  //  public static final ContainerType<ContainerMinecoprocessor> CT_MINECOPROCESSOR = new ContainerType<ContainerMinecoprocessor>(ContainerMinecoprocessor::new);
-  //
-  //  // DON'T FORGET TO REGISTER THE GUI in registerContainerGuis(), no list/map format found yet for that.
-  //  private static final ContainerType<?> CONTAINER_TYPES[] = {
-  //    CT_MINECOPROCESSOR,
-  //  };
+  private static <T extends Container> ContainerType<T> register(ContainerType.IFactory<T> factory, String regname)
+  {
+    ContainerType<T> container_type = new ContainerType<T>(factory);
+    container_type.setRegistryName(new ResourceLocation(ModMinecoprocessors.MODID, regname));
+    return container_type;
+  }
+
+  public static final ContainerType<MinecoprocessorContainer> CT_MINECOPROCESSOR = register(MinecoprocessorContainer::new, "ct_minecoprocessor");
+
+  // DON'T FORGET TO REGISTER THE GUI in registerContainerGuis(), no list/map format found yet for that.
+  private static final ContainerType<?> CONTAINER_TYPES[] = {
+    CT_MINECOPROCESSOR,
+  };
 
   //--------------------------------------------------------------------------------------------------------------------
   // Initialisation events
@@ -104,26 +111,18 @@ public class ModContent
   }
 
   public static void registerItems(final RegistryEvent.Register<Item> event)
-  {
-    for(Item e:MOD_ITEMS) event.getRegistry().register(e);
-  }
+  { for(Item e:MOD_ITEMS) event.getRegistry().register(e); }
 
   public static void registerTileEntities(final RegistryEvent.Register<TileEntityType<?>> event)
-  {
-    for(final TileEntityType<?> e:TILE_ENTITY_TYPES) event.getRegistry().register(e);
-  }
+  { for(final TileEntityType<?> e:TILE_ENTITY_TYPES) event.getRegistry().register(e); }
 
   public static void registerContainers(final RegistryEvent.Register<ContainerType<?>> event)
-  {
-    //@todo implement
-    // for(final ContainerType<?> e:CONTAINER_TYPES) event.getRegistry().register(e);
-  }
+  { for(final ContainerType<?> e:CONTAINER_TYPES) event.getRegistry().register(e); }
 
   @OnlyIn(Dist.CLIENT)
   public static void registerContainerGuis(final FMLClientSetupEvent event)
   {
-    //@todo implement
-    //ScreenManager.registerFactory(CT_MINECOPROCESSOR, GuiMinecoprocessor::new);
+    ScreenManager.registerFactory(CT_MINECOPROCESSOR, MinecoprocessorGui::new);
   }
 
 }

@@ -9,6 +9,9 @@ package net.torocraft.minecoprocessors.blocks;
 import net.minecraft.block.*;
 import net.minecraft.block.material.PushReaction;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.state.BooleanProperty;
 import net.minecraft.state.DirectionProperty;
@@ -16,6 +19,7 @@ import net.minecraft.state.StateContainer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
@@ -24,6 +28,8 @@ import net.minecraft.world.IWorldReader;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.common.util.FakePlayer;
+import net.minecraftforge.fml.network.NetworkHooks;
 import net.torocraft.minecoprocessors.ModContent;
 import javax.annotation.Nullable;
 
@@ -149,7 +155,22 @@ public class MinecoprocessorBlock extends Block
     }
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
+  @Override
+  @SuppressWarnings("deprecation")
+  public boolean onBlockActivated(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockRayTraceResult rayTraceResult)
+  {
+    if(world.isRemote) return true;
+    final TileEntity te = world.getTileEntity(pos);
+    if(!(te instanceof MinecoprocessorTileEntity)) return true;
+    if((!(player instanceof ServerPlayerEntity) && (!(player instanceof FakePlayer)))) return true;
+    NetworkHooks.openGui((ServerPlayerEntity)player,(INamedContainerProvider)te);
+    return true;
+  }
+
+}
+
+
+// -------------------------------------------------------------------------------------------------------------------
 
 //
 //  @Override
@@ -337,4 +358,3 @@ public class MinecoprocessorBlock extends Block
 //  public String getSpecialName(ItemStack stack) {
 //    return getUnlocalizedName() + ((stack.getItemDamage() & 4) == 0 ? "" : "_overclocked");
 //  }
-}

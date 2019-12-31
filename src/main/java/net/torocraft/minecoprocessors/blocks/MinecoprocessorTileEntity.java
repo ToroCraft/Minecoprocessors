@@ -4,43 +4,39 @@
  */
 package net.torocraft.minecoprocessors.blocks;
 
-import java.util.HashSet;
-import java.util.Set;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ItemStackHelper;
+import net.minecraft.inventory.container.Container;
+import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityType;
-import net.minecraft.util.NonNullList;
+import net.minecraft.util.*;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
 import net.torocraft.minecoprocessors.ModContent;
 import net.torocraft.minecoprocessors.processor.Processor;
-import net.torocraft.minecoprocessors.processor.Register;
-import net.torocraft.minecoprocessors.util.ByteUtil;
-import net.torocraft.minecoprocessors.util.InstructionUtil;
-import net.torocraft.minecoprocessors.util.RedstoneUtil;
 
 
-public class MinecoprocessorTileEntity extends TileEntity implements ITickableTileEntity //, IInventory
+public class MinecoprocessorTileEntity extends TileEntity implements ITickableTileEntity, INameable, IInventory, INamedContainerProvider
 {
-  private static final String NAME = "minecoprocessor_tile_entity";
-  private static final String NBT_PROCESSOR = "processor";
-  private static final String NBT_LOAD_TIME = "loadTime";
-  private static final String NBT_CUSTOM_NAME = "CustomName";
+  public static final int NUM_OF_SLOTS = 1;
 
+  private NonNullList<ItemStack> inventory = NonNullList.withSize(NUM_OF_SLOTS, ItemStack.EMPTY);
   private final Processor processor = new Processor();
   private final byte[] prevPortValues = new byte[4];
-  private NonNullList<ItemStack> codeItemStacks = NonNullList.withSize(1, ItemStack.EMPTY);
-  private Set<ServerPlayerEntity> playersToUpdate = new HashSet<ServerPlayerEntity>();
   private String customName;
   private int loadTime;
   private boolean loaded;
   private byte prevPortsRegister = 0x0f;
   private boolean prevIsInactive;
   private int tickTimer = 0;
-
 
   public MinecoprocessorTileEntity()
   { super(ModContent.TET_MINECOPROCESSOR); }
@@ -54,12 +50,12 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
   public void read(CompoundNBT nbt)
   {
     super.read(nbt);
-    processor.setNBT(nbt.getCompound(NBT_PROCESSOR));
-    codeItemStacks = NonNullList.<ItemStack>withSize(1, ItemStack.EMPTY);  // <<-- this.getSizeInventory() -> 1
-    ItemStackHelper.loadAllItems(nbt, codeItemStacks);
-    loadTime = nbt.getShort(NBT_LOAD_TIME);
-    if(nbt.contains(NBT_CUSTOM_NAME, 8)) {
-      this.customName = nbt.getString(NBT_CUSTOM_NAME);
+    processor.setNBT(nbt.getCompound("processor"));
+    inventory = NonNullList.<ItemStack>withSize(1, ItemStack.EMPTY);  // <<-- this.getSizeInventory() -> 1
+    ItemStackHelper.loadAllItems(nbt, inventory);
+    loadTime = nbt.getShort("loadTime");
+    if(nbt.contains("CustomName", 8)) {
+      this.customName = nbt.getString("CustomName");
     }
   }
 
@@ -67,12 +63,116 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
   public CompoundNBT write(CompoundNBT nbt)
   {
     super.write(nbt);
-    nbt.put(NBT_PROCESSOR, processor.getNBT());
-    nbt.putShort(NBT_LOAD_TIME, (short)loadTime);
-    ItemStackHelper.saveAllItems(nbt, codeItemStacks);
-    if(this.hasCustomName()) nbt.putString(NBT_CUSTOM_NAME, this.customName);
+    nbt.put("processor", processor.getNBT());
+    nbt.putShort("loadTime", (short)loadTime);
+    ItemStackHelper.saveAllItems(nbt, inventory);
+    if(this.hasCustomName()) nbt.putString("CustomName", this.customName);
     return nbt;
   }
+
+  // INameable ---------------------------------------------------------------------------
+
+  @Override
+  public ITextComponent getName()
+  { final Block block=getBlockState().getBlock(); return new StringTextComponent((block!=null) ? block.getTranslationKey() : "Minecoprocessor"); }
+
+  @Override
+  public boolean hasCustomName()
+  { return false; }
+
+  @Override
+  public ITextComponent getCustomName()
+  { return getName(); }
+
+  @Override
+  public ITextComponent getDisplayName()
+  { return INameable.super.getDisplayName(); }
+
+  // INamedContainerProvider ------------------------------------------------------------------------------
+
+  @Override
+  public Container createMenu(int id, PlayerInventory inventory, PlayerEntity player )
+  { return new MinecoprocessorContainer(id, inventory, this, IWorldPosCallable.of(world, pos), fields); }
+
+  public static final int NUM_OF_FIELDS = 1; // Container/GUI synchronization fields
+
+  protected final IIntArray fields = new IntArray(NUM_OF_FIELDS)
+  {
+    @Override
+    public int get(int id)
+    {
+      switch(id) {
+        case  0: return 0;
+        default: return 0;
+      }
+    }
+    @Override
+    public void set(int id, int value)
+    {
+      switch(id) {
+        case  0: break;
+        default: return;
+      }
+    }
+  };
+
+  // IInventory -------------------------------------------------------------------------------------------
+
+  @Override
+  public int getSizeInventory()
+  { return inventory.size(); }
+
+  @Override
+  public boolean isEmpty()
+  { for(ItemStack stack: inventory) { if(!stack.isEmpty()) return false; } return true; }
+
+  @Override
+  public ItemStack getStackInSlot(int index)
+  { return (index < getSizeInventory()) ? inventory.get(index) : ItemStack.EMPTY; }
+
+  @Override
+  public ItemStack decrStackSize(int index, int count)
+  { onInventoryChanged(); return ItemStackHelper.getAndSplit(inventory, index, count); }
+
+  @Override
+  public ItemStack removeStackFromSlot(int index)
+  { onInventoryChanged(); return ItemStackHelper.getAndRemove(inventory, index); }
+
+  @Override
+  public void setInventorySlotContents(int index, ItemStack stack)
+  {
+    onInventoryChanged();
+    inventory.set(index, stack);
+    if(stack.getCount() > getInventoryStackLimit()) stack.setCount(getInventoryStackLimit());
+  }
+
+  @Override
+  public int getInventoryStackLimit()
+  { return NUM_OF_SLOTS; }
+
+  @Override
+  public void markDirty()
+  { super.markDirty(); }
+
+  @Override
+  public boolean isUsableByPlayer(PlayerEntity player)
+  { return getPos().distanceSq(player.getPosition()) < 36; }
+
+  @Override
+  public void openInventory(PlayerEntity player)
+  {}
+
+  @Override
+  public void closeInventory(PlayerEntity player)
+  { markDirty(); }
+
+  @Override
+  public boolean isItemValidForSlot(int index, ItemStack stack)
+  { return (!stack.isEmpty()) && (stack.getItem() == ModContent.CODE_BOOK); }
+
+  @Override
+  public void clear()
+  { onInventoryChanged(); inventory.clear(); }
 
   // ITickable ---------------------------------------------------------------------------------------------------------
 
@@ -86,9 +186,18 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     final MinecoprocessorBlock block = (MinecoprocessorBlock)currentBlockState.getBlock();
     if((block.config & MinecoprocessorBlock.CONFIG_OVERCLOCKED)!=0) tickTimer = 1;
 
-    // @todo implement
-    tickTimer = 20; // test tick
-    world.setBlockState(getPos(), currentBlockState.cycle(MinecoprocessorBlock.ACTIVE), 2);
+    ///------------------------------------------------------------------------------------------------------
+    // test tick
+    tickTimer = 20;
+    if(!inventory.get(0).isEmpty()) {
+      world.setBlockState(getPos(), currentBlockState.cycle(MinecoprocessorBlock.ACTIVE), 2);
+    } else if(currentBlockState.get(MinecoprocessorBlock.ACTIVE)) {
+      world.setBlockState(getPos(), currentBlockState.with(MinecoprocessorBlock.ACTIVE, false), 2);
+    }
+    ///------------------------------------------------------------------------------------------------------
+
+
+
 
     /*
     boolean isInactive = processor.isWait() || processor.isFault();
@@ -117,8 +226,13 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     */
   }
 
+  // Class private -----------------------------------------------------------------------------------------------------
+
+  private void onInventoryChanged() //
+  { tickTimer = 0; }
 
 
+//  private Set<ServerPlayerEntity> playersToUpdate = new HashSet<ServerPlayerEntity>();
 //
 //  public void updatePlayers() {
 //    for (EntityPlayerMP player : playersToUpdate) {
@@ -417,10 +531,10 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
 //    this.customName = name;
 //  }
 //
-    //@Override
-    public boolean hasCustomName() {
-      return customName != null && !customName.isEmpty();
-    }
+//    //@Override
+//    public boolean hasCustomName() {
+//      return customName != null && !customName.isEmpty();
+//    }
 //
 //  @Override
 //  public ITextComponent getDisplayName() {
