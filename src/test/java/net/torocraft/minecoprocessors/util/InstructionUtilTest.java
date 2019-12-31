@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import mockit.Deencapsulation;
-import net.torocraft.minecoprocessors.gui.GuiMinecoprocessor;
+//import net.torocraft.minecoprocessors.gui.MinecoprocessorGui;
 import net.torocraft.minecoprocessors.processor.InstructionCode;
 import net.torocraft.minecoprocessors.processor.Register;
 import org.junit.Assert;
@@ -430,7 +430,8 @@ public class InstructionUtilTest {
   private static void printInstruction(byte[] instruction) {
     System.out.print("Instruction: ");
     for (byte b : instruction) {
-      System.out.print(GuiMinecoprocessor.toBinary(b));
+      // @todo: RE-ENABLE
+      // System.out.print(MinecoprocessorGui.toBinary(b));
       System.out.print("  ");
     }
     System.out.println();
