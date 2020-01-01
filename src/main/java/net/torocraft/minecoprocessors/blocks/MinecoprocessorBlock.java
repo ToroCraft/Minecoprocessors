@@ -191,6 +191,6 @@ public class MinecoprocessorBlock extends Block
   {
     final TileEntity te = world.getTileEntity(pos);
     if(!(te instanceof MinecoprocessorTileEntity)) return 0;
-    return ((MinecoprocessorTileEntity)te).getPower(side, strong);
+    return ((MinecoprocessorTileEntity)te).getPower(state, side, strong);
   }
 }

@@ -119,11 +119,12 @@ public class Processor
     wait = false;
   }
 
-  public void load(List<String> file) {
+  public boolean load(List<String> file) {
     try {
       flush();
       if (file != null) {
         program = InstructionUtil.parseFile(file, labels);
+        return true;
       } else {
         program = new ArrayList<>();
         labels = new ArrayList<>();
@@ -133,6 +134,7 @@ public class Processor
       faultCode = FaultCode.FAULT_UNKNOWN_OPCODE;
       fault = true;
     }
+    return false;
   }
 
   long packFlags() {

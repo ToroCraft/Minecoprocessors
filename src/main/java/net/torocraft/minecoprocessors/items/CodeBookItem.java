@@ -11,6 +11,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUseContext;
+import net.minecraft.item.WrittenBookItem;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.StringNBT;
@@ -29,7 +30,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 
-public final class CodeBookItem extends Item//WrittenBookItem
+public final class CodeBookItem extends WrittenBookItem
 {
   public CodeBookItem(Item.Properties properties)
   { super(properties); }

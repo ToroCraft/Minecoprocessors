@@ -40,7 +40,9 @@ public class MinecoprocessorContainer extends Container
     int i=-1;
     // Book slot
     addSlot(new Slot(inventory_, ++i, 80, 35){
-      @Override public boolean isItemValid(ItemStack stack) { return stack.getItem() == ModContent.CODE_BOOK; }
+      @Override
+      public boolean isItemValid(ItemStack stack)
+      { return MinecoprocessorTileEntity.isValidBook(stack); }
     });
     // Player slots
     for(int x=0; x<9; ++x) {
