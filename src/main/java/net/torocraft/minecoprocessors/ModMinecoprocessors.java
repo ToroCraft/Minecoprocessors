@@ -31,18 +31,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import javax.annotation.Nullable;
 
-    //// @todo remove ------------------------------------------------------------------------------------------------------
-    //@Mod(modid = Minecoprocessors.MODID, version = Minecoprocessors.VERSION, name = Minecoprocessors.MODNAME)
-    //public class Minecoprocessors {
-    //  @Mod.Instance(MODID)
-    //  public static Minecoprocessors INSTANCE;
-    //  public static SimpleNetworkWrapper NETWORK = NetworkRegistry.INSTANCE.newSimpleChannel(Minecoprocessors.MODID);
-    //  @SidedProxy(clientSide = "net.torocraft.minecoprocessors.ClientProxy", serverSide = "net.torocraft.minecoprocessors.CommonProxy")
-    //  public static CommonProxy proxy;
-    //  @EventHandler public void preInit(FMLPreInitializationEvent e) { proxy.preInit(e); }
-    //  @EventHandler public void init(FMLInitializationEvent e) { proxy.init(e); }
-    //}
-    //// @todo /remove -----------------------------------------------------------------------------------------------------
 
 @Mod("minecoprocessors")
 public class ModMinecoprocessors
@@ -114,7 +102,7 @@ public class ModMinecoprocessors
 
     @SubscribeEvent
     public static void onClientSetup(final FMLClientSetupEvent event)
-    { ModContent.registerContainerGuis(event); }
+    { ModContent.registerGuis(event); }
 
     @SubscribeEvent
     public static void onConfigLoad(net.minecraftforge.fml.config.ModConfig.Loading event)

@@ -120,9 +120,12 @@ public class ModContent
   { for(final ContainerType<?> e:CONTAINER_TYPES) event.getRegistry().register(e); }
 
   @OnlyIn(Dist.CLIENT)
-  public static void registerContainerGuis(final FMLClientSetupEvent event)
+  public static void registerGuis(final FMLClientSetupEvent event)
   {
     ScreenManager.registerFactory(CT_MINECOPROCESSOR, MinecoprocessorGui::new);
+    // @todo: See how book GUIs have to be registered,
+    // Added correspondent line from 1.12 MinecoprocessorGuiHandler:
+    /// Item GUI: {{(ID == MINECOPROCESSOR_BOOK_GUI && CodeBookItem.isBookCode(player.getHeldItem(EnumHand.MAIN_HAND))) return new GuiBookCode(player);}}
   }
 
 }

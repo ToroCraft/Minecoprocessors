@@ -18,6 +18,7 @@ import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.*;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.torocraft.minecoprocessors.ModContent;
@@ -196,9 +197,6 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     }
     ///------------------------------------------------------------------------------------------------------
 
-
-
-
     /*
     boolean isInactive = processor.isWait() || processor.isFault();
     if(prevIsInactive != isInactive) {
@@ -226,10 +224,52 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     */
   }
 
-  // Class private -----------------------------------------------------------------------------------------------------
+  // Class specific methods --------------------------------------------------------------------------------------------
 
-  private void onInventoryChanged() //
+  private void onInventoryChanged() // Invoked from inventory methods
   { tickTimer = 0; }
+
+  public void setDisplayName(ITextComponent name) // Invoked from block
+  { }
+
+  public void neighborChanged(BlockPos fromPos) // Invoked from block
+  {} // Update redstone input state
+
+  public int getPower(Direction side, boolean strong) //  Invoked from block
+  {
+    return 0;
+    // ---> @review: I moved this from Block moved to here, as the actual logic is in the TE.
+    //  @Override
+    //  public int getWeakPower(BlockState state, IBlockAccess blockAccess, BlockPos pos, EnumFacing side) {
+    //    TileEntityMinecoprocessor te = ((TileEntityMinecoprocessor) blockAccess.getTileEntity(pos));
+    //
+    //    if (te.getWorld().isRemote) {
+    //      return 0;
+    //    }
+    //
+    //    if (RedstoneUtil.isFrontPort(state, side)) {
+    //      return RedstoneUtil.portToPower(te.getFrontPortSignal());
+    //    }
+    //
+    //    if (RedstoneUtil.isBackPort(state, side)) {
+    //      return RedstoneUtil.portToPower(te.getBackPortSignal());
+    //    }
+    //
+    //    if (RedstoneUtil.isLeftPort(state, side)) {
+    //      return RedstoneUtil.portToPower(te.getLeftPortSignal());
+    //    }
+    //
+    //    if (RedstoneUtil.isRightPort(state, side)) {
+    //      return RedstoneUtil.portToPower(te.getRightPortSignal());
+    //    }
+    //
+    //    return 0;
+    //  }
+  }
+}
+
+
+
 
 
 //  private Set<ServerPlayerEntity> playersToUpdate = new HashSet<ServerPlayerEntity>();
@@ -576,4 +616,97 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
 //    return processor;
 //  }
 
-}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// FUNCTIONALITY THAT IS PROPOSED TO BE MOVED FROM THE BLOCK TO HERE
+// ---------------------------------------------------------------------------------------------------------------------
+//
+//  @Override
+//  protected void updateState(World worldIn, BlockPos pos, BlockState state) {
+//    worldIn.updateBlockTick(pos, this, 0, -1);
+//  }
+
+//  public void onPortChange(World worldIn, BlockPos pos, BlockState state, int portIndex) {
+//    notifyNeighborsOnSide(worldIn, pos, RedstoneUtil.convertPortIndexToFacing(state.getValue(FACING).getOpposite(), portIndex));
+//  }
+//
+//  protected void notifyNeighborsOnSide(World worldIn, BlockPos pos, EnumFacing side) {
+//    BlockPos neighborPos = pos.offset(side);
+//    if (net.minecraftforge.event.ForgeEventFactory.onNeighborNotify(worldIn, pos, worldIn.getBlockState(pos), java.util.EnumSet.of(side), false)
+//        .isCanceled()) {
+//      return;
+//    }
+//    worldIn.neighborChanged(neighborPos, this, pos);
+//    worldIn.notifyNeighborsOfStateExcept(neighborPos, this, side.getOpposite());
+//  }
+//
+//  @Override
+//  public void updateTick(World world, BlockPos pos, BlockState state, Random rand) {
+//    super.updateTick(world, pos, state, rand);
+//    updateInputPorts(world, pos, state);
+//
+//    if (world.isRemote) {
+//      return;
+//    }
+//
+//    TileEntityMinecoprocessor te = (TileEntityMinecoprocessor) world.getTileEntity(pos);
+//
+//    boolean changed = false;
+//
+//    boolean blockActive = state.getValue(ACTIVE);
+//    boolean processorActive = !te.getProcessor().isWait() && !te.getProcessor().isFault();
+//
+//    if (blockActive && !processorActive) {
+//      state = state.withProperty(ACTIVE, Boolean.valueOf(false));
+//      changed = true;
+//    } else if (!blockActive && processorActive) {
+//      state = state.withProperty(ACTIVE, Boolean.valueOf(true));
+//      changed = true;
+//    }
+//
+//    if (changed) {
+//      world.setBlockState(pos, state, 2);
+//    }
+//  }
+//
+//  public static void updateInputPorts(World world, BlockPos pos, BlockState state) {
+//    if (world.isRemote) {
+//      return;
+//    }
+//    EnumFacing facing = state.getValue(FACING).getOpposite();
+//
+//    int e = calculateInputStrength(world, pos.offset(EnumFacing.EAST), EnumFacing.EAST);
+//    int w = calculateInputStrength(world, pos.offset(EnumFacing.WEST), EnumFacing.WEST);
+//    int n = calculateInputStrength(world, pos.offset(EnumFacing.NORTH), EnumFacing.NORTH);
+//    int s = calculateInputStrength(world, pos.offset(EnumFacing.SOUTH), EnumFacing.SOUTH);
+//
+//    int[] values = new int[4];
+//
+//    values[RedstoneUtil.convertFacingToPortIndex(facing, EnumFacing.NORTH)] = n;
+//    values[RedstoneUtil.convertFacingToPortIndex(facing, EnumFacing.SOUTH)] = s;
+//    values[RedstoneUtil.convertFacingToPortIndex(facing, EnumFacing.WEST)] = w;
+//    values[RedstoneUtil.convertFacingToPortIndex(facing, EnumFacing.EAST)] = e;
+//
+//    ((TileEntityMinecoprocessor) world.getTileEntity(pos)).updateInputPorts(values);
+//  }
+//
+//  protected static int calculateInputStrength(World worldIn, BlockPos pos, EnumFacing enumfacing) {
+//    BlockState adjacentState = worldIn.getBlockState(pos);
+//    Block block = adjacentState.getBlock();
+//
+//    int i = worldIn.getRedstonePower(pos, enumfacing);
+//
+//    if (i >= 15) {
+//      return 15;
+//    }
+//
+//    int redstoneWirePower = 0;
+//
+//    if (block == Blocks.REDSTONE_WIRE) {
+//      redstoneWirePower = adjacentState.getValue(BlockRedstoneWire.POWER);
+//    }
+//
+//    return Math.max(i, redstoneWirePower);
+//
+//  }
+
