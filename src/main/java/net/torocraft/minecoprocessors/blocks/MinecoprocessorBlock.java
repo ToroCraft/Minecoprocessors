@@ -106,7 +106,9 @@ public class MinecoprocessorBlock extends Block
     super.onBlockPlacedBy(world, pos, state, placer, stack);
     final TileEntity te = world.getTileEntity(pos);
     if(!(te instanceof MinecoprocessorTileEntity)) return;
-    if(stack.hasDisplayName()) ((MinecoprocessorTileEntity)te).setDisplayName(stack.getDisplayName());
+    if(stack.hasDisplayName()) {
+      ((MinecoprocessorTileEntity)te).setCustomName(stack.getDisplayName());
+    }
   }
 
   @Override

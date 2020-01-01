@@ -4,7 +4,6 @@
  */
 package net.torocraft.minecoprocessors.blocks;
 
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -32,7 +31,7 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
   private NonNullList<ItemStack> inventory = NonNullList.withSize(NUM_OF_SLOTS, ItemStack.EMPTY);
   private final Processor processor = new Processor();
   private final byte[] prevPortValues = new byte[4];
-  private String customName;
+  private String customName = new String();
   private int loadTime;
   private boolean loaded;
   private byte prevPortsRegister = 0x0f;
@@ -56,7 +55,7 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     ItemStackHelper.loadAllItems(nbt, inventory);
     loadTime = nbt.getShort("loadTime");
     if(nbt.contains("CustomName", 8)) {
-      this.customName = nbt.getString("CustomName");
+      customName = nbt.getString("CustomName");
     }
   }
 
@@ -67,7 +66,7 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     nbt.put("processor", processor.getNBT());
     nbt.putShort("loadTime", (short)loadTime);
     ItemStackHelper.saveAllItems(nbt, inventory);
-    if(this.hasCustomName()) nbt.putString("CustomName", this.customName);
+    if(hasCustomName()) nbt.putString("CustomName", customName);
     return nbt;
   }
 
@@ -75,11 +74,15 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
 
   @Override
   public ITextComponent getName()
-  { final Block block=getBlockState().getBlock(); return new StringTextComponent((block!=null) ? block.getTranslationKey() : "Minecoprocessor"); }
+  {
+    if(hasCustomName()) return new StringTextComponent(customName);
+    final BlockState state = getBlockState();
+    return new StringTextComponent((state!=null) ? (state.getBlock().getTranslationKey()) : ("Minecoprocessor"));
+  }
 
   @Override
   public boolean hasCustomName()
-  { return false; }
+  { return (customName != null) && (!customName.isEmpty()); }
 
   @Override
   public ITextComponent getCustomName()
@@ -229,8 +232,8 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
   private void onInventoryChanged() // Invoked from inventory methods
   { tickTimer = 0; }
 
-  public void setDisplayName(ITextComponent name) // Invoked from block
-  { }
+  public void setCustomName(ITextComponent name) // Invoked from block
+  { this.customName = name.getString(); }
 
   public void neighborChanged(BlockPos fromPos) // Invoked from block
   {} // Update redstone input state
