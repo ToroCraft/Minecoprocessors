@@ -124,7 +124,7 @@ public class Processor
       flush();
       if (file != null) {
         program = InstructionUtil.parseFile(file, labels);
-        return true;
+        return (!program.isEmpty());
       } else {
         program = new ArrayList<>();
         labels = new ArrayList<>();

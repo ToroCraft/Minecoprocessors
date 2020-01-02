@@ -36,6 +36,7 @@ import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.RedstoneUtil;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -212,10 +213,8 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     if(inventoryChanged) {
       inventoryChanged = false;
       if(inventory.get(0).isEmpty()) {
-        System.out.println("UNLOAD BOOK");
         unloadBook();
       } else {
-        System.out.println("LOAD BOOK");
         loadBook(inventory.get(0));
       }
       dirty = true;
@@ -332,7 +331,11 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
         BlockPos neighborPos = pos.offset(side);
         if(ForgeEventFactory.onNeighborNotify(world, pos, state, java.util.EnumSet.of(side), false).isCanceled()) return;
         world.neighborChanged(neighborPos, block, pos);
-        world.notifyNeighborsOfStateExcept(neighborPos, block, side.getOpposite());
+        if(world.getTileEntity(neighborPos)==null) {
+          // @todo: review: TEs will likely update neigbours themselves. Only strong power affects
+          //        adjecent blocks of the neighbour.
+          world.notifyNeighborsOfStateExcept(neighborPos, block, side.getOpposite());
+        }
       }
     }
   }
@@ -398,13 +401,13 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     } else if (stack.getItem() instanceof WritableBookItem) {
       ListNBT pages = stack.getTag().getList("pages", 8);
       for(int i = 0; i < pages.size(); ++i) {
-        code.add(pages.getString(i));
+        Collections.addAll(code, pages.getString(i).split("\\r?\\n"));
       }
     } else if (stack.getItem() instanceof WrittenBookItem) {
       // @todo: check if this is really the same
       ListNBT pages = stack.getTag().getList("pages", 8);
       for(int i = 0; i < pages.size(); ++i) {
-        code.add(pages.getString(i));
+        Collections.addAll(code, pages.getString(i).split("\\r?\\n"));
       }
     }
     customName = readNameFromHeader(code);
