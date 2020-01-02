@@ -10,8 +10,10 @@ import net.minecraft.block.*;
 import net.minecraft.block.material.PushReaction;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.fluid.IFluidState;
 import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.ItemStack;
@@ -25,15 +27,19 @@ import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
+import net.minecraft.world.Explosion;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorldReader;
 import net.minecraft.world.World;
+import net.minecraft.world.storage.loot.LootContext;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.fml.network.NetworkHooks;
 import net.torocraft.minecoprocessors.ModContent;
 import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.List;
 
 
 public class MinecoprocessorBlock extends Block
@@ -183,6 +189,19 @@ public class MinecoprocessorBlock extends Block
     return true;
   }
 
+  @Override
+  public boolean removedByPlayer(BlockState state, World world, BlockPos pos, PlayerEntity player, boolean willHarvest, IFluidState fluid)
+  { return dropBlock(state, world, pos, player); }
+
+  @Override
+  public void onExplosionDestroy(World world, BlockPos pos, Explosion explosion)
+  { dropBlock(world.getBlockState(pos), world, pos, null); }
+
+  @Override
+  @SuppressWarnings("deprecation")
+  public List<ItemStack> getDrops(BlockState state, LootContext.Builder builder)
+  { return Collections.singletonList(ItemStack.EMPTY); }
+
   // -------------------------------------------------------------------------------------------------------------------
 
   private int getPower(BlockState state, IBlockReader world, BlockPos pos, Direction side, boolean strong)
@@ -190,5 +209,25 @@ public class MinecoprocessorBlock extends Block
     final TileEntity te = world.getTileEntity(pos);
     if(!(te instanceof MinecoprocessorTileEntity)) return 0;
     return ((MinecoprocessorTileEntity)te).getPower(state, side, strong);
+  }
+
+  public static boolean dropBlock(BlockState state, World world, BlockPos pos, @Nullable PlayerEntity player)
+  {
+    if(!(state.getBlock() instanceof MinecoprocessorBlock)) {
+      world.removeBlock(pos, false);
+      return true;
+    }
+    if(!world.isRemote()) {
+      if((player==null) || (!player.isCreative())) {
+        world.addEntity( new ItemEntity(world, pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5, new ItemStack(state.getBlock().asItem())));
+      }
+    }
+    if(world.getTileEntity(pos) instanceof MinecoprocessorTileEntity) {
+      ItemStack book = ((MinecoprocessorTileEntity)world.getTileEntity(pos)).getStackInSlot(0);
+      if(!book.isEmpty()) world.addEntity( new ItemEntity(world, pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5, book));
+    }
+    world.removeTileEntity(pos);
+    world.removeBlock(pos, false);
+    return true;
   }
 }
