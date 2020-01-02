@@ -125,13 +125,13 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     {
       final byte[] regs = processor.getRegisters();
       set(0, 0 // IP SP FAULT
-        | (((int)processor.getIp()) & 0xffff)
-        | ((((int)processor.getSp())<<16) & 0xff)
-        | ((((int)processor.getFaultCode())<<24) & 0xffff)
+        | ((((int)processor.getIp()) & 0xffff)<< 0)
+        | ((((int)processor.getSp()) & 0xff)<<16)
+        | ((((int)processor.getFaultCode()) & 0xff)<<24)
       );
-      set(1, (((int)regs[0])) | (((int)regs[1])<<8) | (((int)regs[2])<<16) | (((int)regs[3])<<24)); // A B C D
-      set(2, (((int)regs[4])) | (((int)regs[5])<<8) | (((int)regs[6])<<16) | (((int)regs[7])<<24)); // PF PB PL PR
-      set(3, (((int)regs[8])) | (((int)regs[9])<<8) | (0 // PORTS ADC FLAGS
+      set(1, (((int)regs[0]) & 0xff) | ((((int)regs[1]) & 0xff)<<8) | ((((int)regs[2]) & 0xff)<<16) | ((((int)regs[3]) & 0xff)<<24)); // A B C D
+      set(2, (((int)regs[4]) & 0xff) | ((((int)regs[5]) & 0xff)<<8) | ((((int)regs[6]) & 0xff)<<16) | ((((int)regs[7]) & 0xff)<<24)); // PF PB PL PR
+      set(3, (((int)regs[8]) & 0xff) | ((((int)regs[9]) & 0xff)<<8) | (0 // PORTS ADC FLAGS
         | (processor.isFault()    ? 0x0100 : 0)
         | (processor.isZero()     ? 0x0200 : 0)
         | (processor.isOverflow() ? 0x0400 : 0)
@@ -145,16 +145,18 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     public short ip()             { return (short)((get(0)>> 0) & 0xffff); }
     public byte sp()              { return (byte)((get(0)>>16) & 0xff); }
     public byte fault()           { return (byte)((get(0)>>24) & 0xff); }
-    public byte a()               { return (byte)((get(1)>> 0) & 0xff); }
-    public byte b()               { return (byte)((get(1)>> 8) & 0xff); }
-    public byte c()               { return (byte)((get(1)>>16) & 0xff); }
-    public byte d()               { return (byte)((get(1)>>24) & 0xff); }
-    public byte pf()              { return (byte)((get(2)>> 0) & 0xff); }
-    public byte pb()              { return (byte)((get(2)>> 8) & 0xff); }
-    public byte pl()              { return (byte)((get(2)>>16) & 0xff); }
-    public byte pr()              { return (byte)((get(2)>>24) & 0xff); }
-    public byte ports()           { return (byte)((get(3)>> 0) & 0xff); }
-    public byte adc()             { return (byte)((get(3)>> 8) & 0xff); }
+    public byte register(int i)   { return (byte)((get(1+(i/4)) >> (8*(i&0x3))) & 0xff); }
+    public byte port(int i)       { return register(i+4); }
+    public byte a()               { return register(0); }
+    public byte b()               { return register(1); }
+    public byte c()               { return register(2); }
+    public byte d()               { return register(3); }
+    public byte pf()              { return register(4); }
+    public byte pb()              { return register(5); }
+    public byte pl()              { return register(6); }
+    public byte pr()              { return register(7); }
+    public byte ports()           { return register(8); }
+    public byte adc()             { return register(9); }
     public boolean isFault()      { return (get(3) & 0x0100) != 0; }
     public boolean isZero()       { return (get(3) & 0x0200) != 0; }
     public boolean isOverflow()   { return (get(3) & 0x0400) != 0; }
@@ -285,6 +287,18 @@ System.out.println("(state != blockState)");
   public static boolean isValidBook(ItemStack stack)
   { return (!stack.isEmpty()) && ((stack.getItem() == ModContent.CODE_BOOK) || (stack.getItem() == Items.WRITTEN_BOOK) || (stack.getItem() == Items.WRITABLE_BOOK)); }
 
+  public static boolean isInInputMode(byte ports, int portIndex)
+  { return (ByteUtil.getBit(ports, portIndex)) && (!ByteUtil.getBit(ports, portIndex + 4)); }
+
+  public static boolean isInOutputMode(byte ports, int portIndex)
+  { return (!ByteUtil.getBit(ports, portIndex)) && (!ByteUtil.getBit(ports, portIndex + 4)); }
+
+  public static boolean isADCMode(byte adc, int portIndex)
+  { return ByteUtil.getBit(adc, portIndex); }
+
+  public static boolean isInResetMode(byte ports, int portIndex)
+  { return ByteUtil.getBit(ports, portIndex) && ByteUtil.getBit(ports, portIndex + 4); }
+
   public Processor getProcessor()
   { return processor; }
 
@@ -326,18 +340,6 @@ System.out.println("getPower("+side+") = " + p);
          ? MathHelper.clamp(signal, 0, 15)
          : ((signal == 0) ? (0) : (15)));
   }
-
-  private static boolean isInInputMode(byte ports, int portIndex)
-  { return (ByteUtil.getBit(ports, portIndex)) && (!ByteUtil.getBit(ports, portIndex + 4)); }
-
-  private static boolean isInOutputMode(byte ports, int portIndex)
-  { return (!ByteUtil.getBit(ports, portIndex)) && (!ByteUtil.getBit(ports, portIndex + 4)); }
-
-  private static boolean isADCMode(byte adc, int portIndex)
-  { return ByteUtil.getBit(adc, portIndex); }
-
-  private static boolean isInResetMode(byte ports, int portIndex)
-  { return ByteUtil.getBit(ports, portIndex) && ByteUtil.getBit(ports, portIndex + 4); }
 
   //
   // @review: Combined block methods and detectOutputChange() (were only a few lines in summary after porting).

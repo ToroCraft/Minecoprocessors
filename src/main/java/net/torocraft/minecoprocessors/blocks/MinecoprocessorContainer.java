@@ -95,6 +95,9 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
 
   // INetworkSynchronisableContainer ---------------------------------------------------------
 
+  public MinecoprocessorTileEntity.ContainerSyncFields getFields()
+  { return fields_; }
+
   @OnlyIn(Dist.CLIENT)
   public void onGuiAction(CompoundNBT nbt)
   { Networking.PacketContainerSyncClientToServer.sendToServer(windowId, nbt); }
