@@ -285,6 +285,12 @@ System.out.println("(state != blockState)");
   public static boolean isValidBook(ItemStack stack)
   { return (!stack.isEmpty()) && ((stack.getItem() == ModContent.CODE_BOOK) || (stack.getItem() == Items.WRITTEN_BOOK) || (stack.getItem() == Items.WRITABLE_BOOK)); }
 
+  public Processor getProcessor()
+  { return processor; }
+
+  public void resetProcessor()
+  { inventoryChanged = true; }
+
   public void setCustomName(ITextComponent name) // Invoked from block
   { this.customName = name.getString(); }
 

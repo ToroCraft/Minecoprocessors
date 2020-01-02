@@ -6,15 +6,20 @@ package net.torocraft.minecoprocessors.gui;
 
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screen.ReadBookScreen;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
+import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.torocraft.minecoprocessors.ModMinecoprocessors;
 import net.torocraft.minecoprocessors.blocks.MinecoprocessorContainer;
+import net.torocraft.minecoprocessors.util.BookCreator;
 
 @OnlyIn(Dist.CLIENT)
 public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer>
@@ -26,6 +31,38 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
   {
     super(container, player_inventory, title);
     this.player_ = player_inventory.player;
+  }
+
+
+  @Override
+  public void init()
+  {
+    super.init();
+    final int x0=getGuiLeft();
+    final int y0=getGuiTop();
+    final int w = 49;
+    final int h = 12;
+    buttons.clear();
+    // buttonPause = new ScaledGuiButton(buttonId++, x+8, y + 11, buttonWidth, buttonHeight, I18n.format("gui.button.sleep"));
+    buttons.add(addButton(
+      new Button(x0+8,y0+32+(0*(h+2)), w,h, (new TranslationTextComponent("minecoprocessors.gui.button.sleep")).getFormattedText(),
+      (bt)->getContainer().onGuiAction("sleep",1))
+    ));
+    // buttonReset = new ScaledGuiButton(buttonId++, x+8, y, buttonWidth, buttonHeight, I18n.format("gui.button.reset"));
+    buttons.add(addButton(
+      new Button(x0+8,y0+32+(1*(h+2)), w,h, (new TranslationTextComponent("minecoprocessors.gui.button.reset")).getFormattedText(),
+      (bt)->getContainer().onGuiAction("reset",1))
+    ));
+    // buttonStep = new ScaledGuiButton(buttonId++, x+8, y + 22, buttonWidth, buttonHeight, I18n.format("gui.button.step"));
+    buttons.add(addButton(
+      new Button(x0+8,y0+32+(2*(h+2)), w,h, (new TranslationTextComponent("minecoprocessors.gui.button.step")).getFormattedText(),
+      (bt)->getContainer().onGuiAction("step", 1))
+    ));
+    // buttonHelp = new ScaledGuiButton(buttonId++, guiLeft + 133, guiTop + 66, 35, buttonHeight, I18n.format("gui.button.help"));
+    buttons.add(addButton(
+      new Button(x0+133,y0+66, 35,h, (new TranslationTextComponent("minecoprocessors.gui.button.help")).getFormattedText(),
+      (bt)->{ Minecraft.getInstance().displayGuiScreen(new ReadBookScreen(ReadBookScreen.IBookInfo.func_216917_a(BookCreator.getManual()))); })
+    ));
   }
 
   @Override
@@ -44,45 +81,74 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
     final int x0=getGuiLeft(), y0=getGuiTop(), w=getXSize(), h=getYSize();
     blit(x0, y0, 0, 0, w, h);
     MinecoprocessorContainer container = (MinecoprocessorContainer)getContainer();
-    // Additional blit'ing, field drawing, etc.
   }
 
+  @Override
+  protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY)
+  {
+    /// @TODO IMPLEMENTATION WIP HERE
+
+    //  @Override
+    //  protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY) {
+    //    hoveredFeature.clear();
+    //
+    //    GlStateManager.pushMatrix();
+    //    GlStateManager.scale(0.5d, 0.5d, 0.5d);
+    //    int scale = 2;
+    //    int y;
+    //
+    //    mouseX = (mouseX - guiLeft) * scale;
+    //    mouseY = (mouseY - guiTop) * scale;
+    //
+    //    y = 50;
+    //    drawRegister(Register.A, 130 * 2, y, mouseX, mouseY);
+    //    drawRegister(Register.B, 139 * 2, y, mouseX, mouseY);
+    //    drawRegister(Register.C, 148 * 2, y, mouseX, mouseY);
+    //    drawRegister(Register.D, 157 * 2, y, mouseX, mouseY);
+    //
+    //    y = 82;
+    //    drawFlag("Z", processor == null ? null : processor.isZero(), 130 * 2, y, mouseX, mouseY);
+    //    drawFlag("C", processor == null ? null : processor.isCarry() || processor.isOverflow(), 139 * 2, y, mouseX, mouseY);
+    //    drawFlag("F", processor == null ? null : processor.isFault(), 148 * 2, y, 0xff0000, mouseX, mouseY);
+    //    drawFlag("S", processor == null ? null : processor.isWait(), 157 * 2, y, 0x00ff00, mouseX, mouseY);
+    //
+    //    y = 114;
+    //    boolean mouseIsOver = drawLabeledShort("IP", processor == null ? null : processor.getIp(), 128 * 2, y, mouseX, mouseY);
+    //    if (mouseIsOver) {
+    //      hoveredFeature.add("Instruction Pointer");
+    //    }
+    //
+    //    drawRegister(Register.ADC, 142 * 2, y, mouseX, mouseY);
+    //    drawRegister(Register.PORTS, 158 * 2, y, mouseX, mouseY);
+    //
+    //    drawPortRegister(Register.PF, 176, 47, mouseX, mouseY);
+    //    drawPortRegister(Register.PR, 216, 86, mouseX, mouseY);
+    //    drawPortRegister(Register.PL, 137, 86, mouseX, mouseY);
+    //    drawPortRegister(Register.PB, 176, 125, mouseX, mouseY);
+    //
+    //    drawCode();
+    //
+    //    GlStateManager.popMatrix();
+    //
+    //    drawGuiTitle();
+    //    drawInventoryTitle();
+    //
+    //    String pauseText = "gui.button.sleep";
+    //    if (processor == null || processor.isWait()) {
+    //      pauseText = "gui.button.wake";
+    //    }
+    //    buttonPause.displayString = I18n.format(pauseText);
+    //    buttonStep.enabled = processor != null && processor.isWait();
+    //  }
+
+
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
 }
 
 
 
-
-
-
-
-
-//import java.util.ArrayList;
-//import java.util.List;
-//import net.minecraft.client.gui.GuiButton;
-//import net.minecraft.client.gui.GuiScreenBook;
-//import net.minecraft.client.renderer.GlStateManager;
-//import net.minecraft.client.resources.I18n;
-//import net.minecraft.inventory.IInventory;
-//import net.minecraft.nbt.NBTTagCompound;
-//import net.minecraft.util.ResourceLocation;
-//import net.minecraft.util.math.BlockPos;
-//import net.minecraft.util.math.MathHelper;
-//import net.torocraft.minecoprocessors.Minecoprocessors;
-//import net.torocraft.minecoprocessors.blocks.ContainerMinecoprocessor;
-//import net.torocraft.minecoprocessors.blocks.TileEntityMinecoprocessor;
-//import net.torocraft.minecoprocessors.network.MessageEnableGuiUpdates;
-//import net.torocraft.minecoprocessors.network.MessageProcessorAction;
-//import net.torocraft.minecoprocessors.network.MessageProcessorAction.Action;
-//import net.torocraft.minecoprocessors.processor.FaultCode;
-//import net.torocraft.minecoprocessors.processor.Processor;
-//import net.torocraft.minecoprocessors.processor.Register;
-//import net.torocraft.minecoprocessors.util.BookCreator;
-//import net.torocraft.minecoprocessors.util.InstructionUtil;
-//
-//public class GuiMinecoprocessor extends net.minecraft.client.gui.inventory.GuiContainer {
-//
-//  private static final ResourceLocation TEXTURES = new ResourceLocation(Minecoprocessors.MODID, "textures/gui/minecoprocessor.png");
-//
 //  private final IInventory playerInventory;
 //  private final TileEntityMinecoprocessor minecoprocessor;
 //  private final List<String> hoveredFeature = new ArrayList<>(5);
@@ -274,34 +340,10 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
 //      } else {
 //        hoveredFeature.add("General Purpose");
 //      }
-//      hoveredFeature.add(String.format("0x%s %sb %s", toHex(value), toBinary(value), Integer.toString(value, 10)));
+//      hoveredFeature.add(String.format("0x%s %sb %s", toHex(value), GuiUtil.toBinary(value), Integer.toString(value, 10)));
 //    }
 //  }
 //
-//  public static String toBinary(Byte b) {
-//    if (b == null) {
-//      return null;
-//    }
-//    return maxLength(leftPad(Integer.toBinaryString(b), 8), 8);
-//  }
-//
-//  private static String maxLength(String s, int l) {
-//    if (s.length() > l) {
-//      return s.substring(s.length() - l, s.length());
-//    }
-//    return s;
-//  }
-//
-//  public static String toHex(Byte b) {
-//    if (b == null) {
-//      return null;
-//    }
-//    String s = Integer.toHexString(b);
-//    if (s.length() > 2) {
-//      return s.substring(s.length() - 2, s.length());
-//    }
-//    return leftPad(s, 2);
-//  }
 //
 //  public static String leftPad(final String str, final int size) {
 //    if (str == null) {
@@ -317,17 +359,6 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
 //    }
 //    buf.append(str);
 //    return buf.toString();
-//  }
-//
-//  private static String toHex(Short b) {
-//    if (b == null) {
-//      return null;
-//    }
-//    String s = Integer.toHexString(b);
-//    if (s.length() > 4) {
-//      return s.substring(s.length() - 4, s.length());
-//    }
-//    return leftPad(s, 4);
 //  }
 //
 //  private void drawFlag(String label, Boolean flag, int x, int y, int mouseX, int mouseY) {

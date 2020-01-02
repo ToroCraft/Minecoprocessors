@@ -211,7 +211,7 @@ public class MinecoprocessorBlock extends Block
     return ((MinecoprocessorTileEntity)te).getPower(state, side, strong);
   }
 
-  public static boolean dropBlock(BlockState state, World world, BlockPos pos, @Nullable PlayerEntity player)
+  private static boolean dropBlock(BlockState state, World world, BlockPos pos, @Nullable PlayerEntity player)
   {
     if(!(state.getBlock() instanceof MinecoprocessorBlock)) {
       world.removeBlock(pos, false);
@@ -219,12 +219,12 @@ public class MinecoprocessorBlock extends Block
     }
     if(!world.isRemote()) {
       if((player==null) || (!player.isCreative())) {
-        world.addEntity( new ItemEntity(world, pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5, new ItemStack(state.getBlock().asItem())));
+        world.addEntity(new ItemEntity(world, pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5, new ItemStack(state.getBlock().asItem())));
       }
     }
     if(world.getTileEntity(pos) instanceof MinecoprocessorTileEntity) {
       ItemStack book = ((MinecoprocessorTileEntity)world.getTileEntity(pos)).getStackInSlot(0);
-      if(!book.isEmpty()) world.addEntity( new ItemEntity(world, pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5, book));
+      if(!book.isEmpty()) world.addEntity(new ItemEntity(world, pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5, book));
     }
     world.removeTileEntity(pos);
     world.removeBlock(pos, false);

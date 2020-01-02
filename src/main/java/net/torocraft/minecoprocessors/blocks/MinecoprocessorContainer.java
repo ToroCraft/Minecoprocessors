@@ -6,6 +6,9 @@
  */
 package net.torocraft.minecoprocessors.blocks;
 
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.torocraft.minecoprocessors.ModContent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.entity.player.PlayerEntity;
@@ -15,9 +18,10 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.util.IWorldPosCallable;
+import net.torocraft.minecoprocessors.network.Networking;
 
 
-public class MinecoprocessorContainer extends Container
+public class MinecoprocessorContainer extends Container implements Networking.INetworkSynchronisableContainer
 {
   private static final int PLAYER_INV_START_SLOTNO = MinecoprocessorTileEntity.NUM_OF_SLOTS;
   private final IInventory inventory_;
@@ -89,6 +93,35 @@ public class MinecoprocessorContainer extends Container
     return transferred;
   }
 
+  // INetworkSynchronisableContainer ---------------------------------------------------------
+
+  @OnlyIn(Dist.CLIENT)
+  public void onGuiAction(CompoundNBT nbt)
+  { Networking.PacketContainerSyncClientToServer.sendToServer(windowId, nbt); }
+
+  @OnlyIn(Dist.CLIENT)
+  public void onGuiAction(String key, int value)
+  {
+    CompoundNBT nbt = new CompoundNBT();
+    nbt.putInt(key, value);
+    Networking.PacketContainerSyncClientToServer.sendToServer(windowId, nbt);
+  }
+
+  @Override
+  public void onServerPacketReceived(int windowId, CompoundNBT nbt)
+  {}
+
+  @Override
+  public void onClientPacketReceived(int windowId, PlayerEntity player, CompoundNBT nbt)
+  {
+    if(!(inventory_ instanceof MinecoprocessorTileEntity)) return;
+    MinecoprocessorTileEntity te = (MinecoprocessorTileEntity)inventory_;
+System.out.println("onClientPacketReceived: " + nbt.toString());
+    if(nbt.contains("sleep")) te.getProcessor().setWait(!te.getProcessor().isWait());
+    if(nbt.contains("reset")) te.resetProcessor();
+    if(nbt.contains("step")) te.getProcessor().setStep(true);
+    te.markDirty();
+  }
 }
 
 

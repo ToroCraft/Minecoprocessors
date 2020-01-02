@@ -27,6 +27,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.torocraft.minecoprocessors.network.Networking;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import javax.annotation.Nullable;
@@ -84,7 +85,7 @@ public class ModMinecoprocessors
     public static void onCommonSetup(final FMLCommonSetupEvent event)
     {
       ModConfig.apply();
-      // Networking.init();
+      Networking.init();
 
       /// @todo THIS WAS CommonProxy.preInit() -----------
       // public void preInit(FMLPreInitializationEvent e) {
