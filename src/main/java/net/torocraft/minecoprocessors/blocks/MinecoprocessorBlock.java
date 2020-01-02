@@ -94,9 +94,7 @@ public class MinecoprocessorBlock extends Block
   public BlockState getStateForPlacement(BlockItemUseContext context)
   {
     Direction facing = context.getPlacementHorizontalFacing();
-    if(!context.getPlayer().isSneaking()) {
-      facing = facing.getOpposite();
-    }
+    if(!context.getPlayer().isSneaking()) facing = facing.getOpposite();
     return super.getStateForPlacement(context).with(HORIZONTAL_FACING, facing).with(ACTIVE, false);
   }
 

@@ -140,10 +140,8 @@ public class ProcessorTest {
     Assert.assertFalse(processor.zero);
     Assert.assertEquals(0, processor.labels.size());
     Assert.assertEquals(0, processor.program.size());
-    Processor.reset(processor.registers);
-
+    for(int i=0; i<processor.registers.length; ++i) processor.registers[i] = 0;
     processor.setNBT(c);
-
     Assert.assertTrue(processor.zero);
     Assert.assertEquals(64, processor.stack.length);
     Assert.assertEquals((byte) 0x99, processor.stack[0]);

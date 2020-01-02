@@ -14,9 +14,7 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.Slot;
-import net.minecraft.util.IIntArray;
 import net.minecraft.util.IWorldPosCallable;
-import net.minecraft.util.IntArray;
 
 
 public class MinecoprocessorContainer extends Container
@@ -25,12 +23,12 @@ public class MinecoprocessorContainer extends Container
   private final IInventory inventory_;
   private final PlayerEntity player_;
   private final IWorldPosCallable wpc_;
-  private final IIntArray fields_;
+  private final MinecoprocessorTileEntity.ContainerSyncFields fields_;
 
   public MinecoprocessorContainer(int cid, PlayerInventory player_inventory)
-  { this(cid, player_inventory, new Inventory(MinecoprocessorTileEntity.NUM_OF_SLOTS), IWorldPosCallable.DUMMY, new IntArray(MinecoprocessorTileEntity.NUM_OF_FIELDS)); }
+  { this(cid, player_inventory, new Inventory(MinecoprocessorTileEntity.NUM_OF_SLOTS), IWorldPosCallable.DUMMY, new MinecoprocessorTileEntity.ContainerSyncFields()); }
 
-  public MinecoprocessorContainer(int cid, PlayerInventory player_inventory, IInventory block_inventory, IWorldPosCallable wpc, IIntArray fields)
+  public MinecoprocessorContainer(int cid, PlayerInventory player_inventory, IInventory block_inventory, IWorldPosCallable wpc, MinecoprocessorTileEntity.ContainerSyncFields fields)
   {
     super(ModContent.CT_MINECOPROCESSOR, cid);
     fields_ = fields;
@@ -53,7 +51,7 @@ public class MinecoprocessorContainer extends Container
         addSlot(new Slot(player_inventory, x+y*9+9, 8+x*18, 84+y*18)); // player slots: 9..35
       }
     }
-    this.trackIntArray(fields_); // === Add reference holders
+    trackIntArray(fields_); // <-- Add reference holders
   }
 
   @Override

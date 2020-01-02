@@ -79,27 +79,6 @@ public class Processor
     program.clear();
   }
 
-  // TODO move to util class
-  public static void reset(byte[] a) {
-    for (int i = 0; i < a.length; i++) {
-      a[i] = 0;
-    }
-  }
-
-  // TODO move to util class
-  public static void reset(boolean[] a) {
-    for (int i = 0; i < a.length; i++) {
-      a[i] = false;
-    }
-  }
-
-  public static void reset(int[] a) {
-    for (int i = 0; i < a.length; i++) {
-      a[i] = 0;
-    }
-  }
-
-
   public void reset() {
     fault = false;
     zero = false;
@@ -788,6 +767,16 @@ public class Processor
     s.append(flag ? "1 " : "0 ");
   }
 
+  public String stateLineDump() {
+    return String.format(
+      "{ ip:%04x sp:%02x f:%s regs:%02x%02x%02x%02x io:%02x%02x%02x%02x }",
+      ip, sp,
+      (fault ? "F" : "-") + (zero ? "Z" : "-") + (overflow ? "O" : "-") + (carry ? "C" : "-") + (wait ? "W" : "-"),
+      registers[Register.A.ordinal()], registers[Register.B.ordinal()], registers[Register.C.ordinal()], registers[Register.D.ordinal()],
+      registers[Register.PF.ordinal()], registers[Register.PB.ordinal()], registers[Register.PL.ordinal()], registers[Register.PR.ordinal()]
+    );
+  }
+
   byte getVariableOperand(int operandIndex) {
     if (isLabelOperand(instruction, operandIndex)) {
       return getProgramValueFromLabelOperand(operandIndex);
@@ -908,6 +897,10 @@ public class Processor
 
   public void setStep(boolean step) {
     this.step = step;
+  }
+
+  public boolean isStep() {
+    return step;
   }
 
   public String getError() {
