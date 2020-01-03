@@ -123,12 +123,12 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
   {
     if(!(inventory_ instanceof MinecoprocessorTileEntity)) return;
     MinecoprocessorTileEntity te = (MinecoprocessorTileEntity)inventory_;
-System.out.println("onClientPacketReceived: " + nbt.toString());
     if(nbt.contains("sleep")) te.getProcessor().setWait(!te.getProcessor().isWait());
     if(nbt.contains("reset")) te.resetProcessor();
     if(nbt.contains("step")) te.getProcessor().setStep(true);
     te.markDirty();
   }
+
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

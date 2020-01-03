@@ -21,9 +21,11 @@ import net.torocraft.minecoprocessors.ModMinecoprocessors;
 import net.torocraft.minecoprocessors.blocks.MinecoprocessorContainer;
 import net.torocraft.minecoprocessors.blocks.MinecoprocessorTileEntity;
 import net.torocraft.minecoprocessors.blocks.MinecoprocessorTileEntity.ContainerSyncFields;
+import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
 import net.torocraft.minecoprocessors.util.BookCreator;
 import net.torocraft.minecoprocessors.util.GuiUtil;
+import net.torocraft.minecoprocessors.util.InstructionUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +40,7 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
   private Button buttonReset;
   private Button buttonHelp;
 
-  protected final PlayerEntity player_;
+  private final PlayerEntity player_;
   private final List<String> hoveredFeature = new ArrayList<>(5);
 
   public MinecoprocessorGui(MinecoprocessorContainer container, PlayerInventory player_inventory, ITextComponent title)
@@ -94,7 +96,6 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
     getMinecraft().getTextureManager().bindTexture(BACKGROUND_IMAGE);
     final int x0=getGuiLeft(), y0=getGuiTop(), w=getXSize(), h=getYSize();
     blit(x0, y0, 0, 0, w, h);
-    MinecoprocessorContainer container = (MinecoprocessorContainer)getContainer();
   }
 
   @Override
@@ -104,8 +105,8 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
     ContainerSyncFields fields = getContainer().getFields();
     GlStateManager.pushMatrix();
     GlStateManager.scaled(GUI_SCALE, GUI_SCALE, GUI_SCALE);
-    mouseX -= getGuiLeft();
-    mouseY -= getGuiTop();
+    mouseX = (int)((mouseX-getGuiLeft())/GUI_SCALE);
+    mouseY = (int)((mouseY-getGuiTop())/GUI_SCALE);
 
     int y;
     y = 50;
@@ -121,7 +122,6 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
     drawFlag("S", fields.isWait(), 157 * 2, y, 0x00ff00, mouseX, mouseY);
 
     y = 114;
-
     boolean mouseIsOver = drawLabeledValue("IP", GuiUtil.toHex(fields.ip()), 128*2, y, null, mouseX, mouseY);
     if(mouseIsOver) hoveredFeature.add("Instruction Pointer");
 
@@ -131,12 +131,9 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
     drawPortRegister(Register.PR, 216, 86, mouseX, mouseY);
     drawPortRegister(Register.PL, 137, 86, mouseX, mouseY);
     drawPortRegister(Register.PB, 176, 125, mouseX, mouseY);
-
-    //drawCode();
-
-    GlStateManager.popMatrix();
+    drawCode();
     drawGuiTitle();
-    drawInventoryTitle();
+    GlStateManager.popMatrix();
     if(fields.isWait()) {
       buttonSleep.setMessage((new TranslationTextComponent("minecoprocessors.gui.button.wake")).getFormattedText());
       buttonStep.active = true;
@@ -151,7 +148,10 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
   {
     super.renderHoveredToolTip(mouseX, mouseY);
     if(!hoveredFeature.isEmpty()) {
-      renderTooltip(hoveredFeature, mouseX, mouseY);
+      GlStateManager.pushMatrix();
+      GlStateManager.scaled(GUI_SCALE, GUI_SCALE, GUI_SCALE);
+      renderTooltip(hoveredFeature, (int)(mouseX/GUI_SCALE), (int)(mouseY/GUI_SCALE));
+      GlStateManager.popMatrix();
     }
   }
 
@@ -243,15 +243,15 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
   {
     int wLabel = font.getStringWidth(label) / 2;
     int wValue = 0;
-    if(value != null) {
+    if(!value.isEmpty()) {
       wValue = font.getStringWidth(value) / 2;
     }
     int color = 0xffffff;
-    if((flashColor != null) && (ModMinecoprocessors.proxy.getWorldClientSide().getGameTime() & 0xf) == 0) {
+    if((flashColor != null) && (ModMinecoprocessors.proxy.getWorldClientSide().getGameTime() & 0xf) < 4) {
       color = flashColor;
     }
     font.drawString(label, x - wLabel, y - 14, 0x404040);
-    if(value != null) {
+    if(!value.isEmpty()) {
       font.drawString(value, x - wValue, y, color);
     }
     int wMax = Math.max(wLabel, wValue);
@@ -272,23 +272,45 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
     return mouseIsOver;
   }
 
-  private void drawInventoryTitle()
-  {
-    // @todo: implement
-    //font.drawString(playerInventory.getDisplayName().getString(), 8, ySize - 96 + 2, 4210752);
-  }
-
   private void drawGuiTitle()
   {
-    // @todo: implement
-    //String s = getContainer()  .getUnformattedText();
-    //font.drawString(s, xSize / 2 - font.getStringWidth(s) / 2, 6, 4210752);
+    // getContainer().getInventory().getDisplayName() --- does not work for IInventory ...
+    String s = "Processor"; // @todo See how the TE name can be used here
+    font.drawString(s, (float)xSize/2 - (float)font.getStringWidth(s)/2, 6, 4210752);
   }
 
-
+  private void drawCode()
+  {
+    int x = 22;
+    int y = 50;
+    String label = "NEXT";
+    Processor processor = null; // <<<------------------------- @todo access tile entity or have the server sent the loaded book on open ?
+    byte[] a = null;
+    if(processor != null) {
+      try {
+        int ip = processor.getIp();
+        List<byte[]> program = processor.getProgram();
+        if (ip < program.size()) {
+          a = program.get(ip);
+        }
+      } catch (Exception e) {
+        ModMinecoprocessors.proxy.handleUnexpectedException(e);
+      }
+    }
+    int color = 0xffffff;
+    String value = "";
+    if (a != null) {
+      value = InstructionUtil.compileLine(a, processor.getLabels(), (short) -1);
+    }
+    if (value.isEmpty() && processor != null && processor.getError() != null) {
+      value = processor.getError();
+      color = 0xff0000;
+    }
+    font.drawString(label, x - 4, y - 14, 0x404040);
+    font.drawString(value, x, y, color);
+  }
 }
 
-//
 //  public GuiMinecoprocessor(IInventory playerInv, TileEntityMinecoprocessor te) {
 //    super(new ContainerMinecoprocessor(playerInv, te));
 //    this.playerInventory = playerInv;
@@ -296,7 +318,7 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
 //    INSTANCE = this;
 //    Minecoprocessors.NETWORK.sendToServer(new MessageEnableGuiUpdates(minecoprocessor.getPos(), true));
 //  }
-//
+
 //  public void updateData(NBTTagCompound processorData, String name) {
 //    if (processor == null) {
 //      processor = new Processor();
@@ -306,7 +328,7 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
 //    registers = processor.getRegisters();
 //    faultCode = processor.getFaultCode();
 //  }
-//
+
 //  @Override
 //  public void onGuiClosed() {
 //    super.onGuiClosed();
@@ -315,68 +337,7 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
 //  }
 //
 
-//
-//  private void drawCode() {
-//    int x = 22;
-//    int y = 50;
-//
-//    String label = "NEXT";
-//
-//    byte[] a = null;
-//    if (processor != null) {
-//      try {
-//        int ip = processor.getIp();
-//        List<byte[]> program = processor.getProgram();
-//        if (ip < program.size()) {
-//          a = program.get(ip);
-//        }
-//      } catch (Exception e) {
-//        Minecoprocessors.proxy.handleUnexpectedException(e);
-//      }
-//    }
-//
-//    int color = 0xffffff;
-//
-//    String value = "";
-//
-//    if (a != null) {
-//      value = InstructionUtil.compileLine(a, processor.getLabels(), (short) -1);
-//    }
-//
-//    if (value.isEmpty() && processor != null && processor.getError() != null) {
-//      value = processor.getError();
-//      color = 0xff0000;
-//    }
-//
-//    fontRenderer.drawString(label, x - 4, y - 14, 0x404040);
-//    fontRenderer.drawString(value, x, y, color);
-//  }
-//
 
-
-
-//  @Override
-//  protected void actionPerformed(GuiButton button) {
-//    if (button == buttonReset) {
-//      Minecoprocessors.NETWORK.sendToServer(new MessageProcessorAction(minecoprocessor.getPos(), Action.RESET));
-//    }
-//    if (button == buttonPause) {
-//      Minecoprocessors.NETWORK.sendToServer(new MessageProcessorAction(minecoprocessor.getPos(), Action.PAUSE));
-//    }
-//    if (button == buttonStep) {
-//      Minecoprocessors.NETWORK.sendToServer(new MessageProcessorAction(minecoprocessor.getPos(), Action.STEP));
-//    }
-//    if (button == buttonHelp) {
-//      // TODO override the book GUI so that it returns the processor GUI when closed
-//      this.mc.displayGuiScreen(new GuiScreenBook(mc.player, BookCreator.manual, false));
-//    }
-//  }
-
-
-//  /**
-//   * Draws the background layer of this container (behind the items).
-//   */
-//  @Override
 //  protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {
 //    GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 //    this.mc.getTextureManager().bindTexture(TEXTURES);
