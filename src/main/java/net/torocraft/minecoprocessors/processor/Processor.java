@@ -867,6 +867,10 @@ public class Processor
     return program;
   }
 
+  public boolean hasProgram() {
+    return (program!=null) && (!program.isEmpty());
+  }
+
   public short getIp() {
     return ip;
   }

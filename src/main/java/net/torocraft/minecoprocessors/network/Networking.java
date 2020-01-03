@@ -204,16 +204,13 @@ public class Networking
       DEFAULT_CHANNEL.sendTo(new PacketContainerSyncServerToClient(container.windowId, nbt), ((ServerPlayerEntity)player).connection.netManager, NetworkDirection.PLAY_TO_CLIENT);
     }
 
-    // Container listners are private, and add/remove listener overriding seems not too nice, as
-    // removeListner is client only???
-
-    //public static <C extends Container & INetworkSynchronisableContainer> void sendToListeners(C container, CompoundNBT nbt)
-    //{
-    //  for(IContainerListener listener: container.getListeners()) {
-    //    if(!(listener instanceof ServerPlayerEntity)) continue;
-    //    DEFAULT_CHANNEL.sendTo(new PacketContainerSyncServerToClient(container.windowId, nbt), ((ServerPlayerEntity)listener).connection.netManager, NetworkDirection.PLAY_TO_CLIENT);
-    //  }
-    //}
+    public static <C extends Container & INetworkSynchronisableContainer> void sendToListeners(World world, C container, CompoundNBT nbt)
+    {
+      for(PlayerEntity player: world.getPlayers()) {
+        if(player.openContainer.windowId != container.windowId) continue;
+        sendToPlayer(player, container.windowId, nbt);
+      }
+    }
 
     public PacketContainerSyncServerToClient()
     {}
@@ -234,8 +231,8 @@ public class Networking
         ctx.get().enqueueWork(() -> {
           PlayerEntity player = ModMinecoprocessors.proxy.getPlayerClientSide();
           if(!(player.openContainer instanceof INetworkSynchronisableContainer)) return;
-          if(player.openContainer.windowId != pkt.id) return;
-          ((INetworkSynchronisableContainer)player.openContainer).onServerPacketReceived(pkt.id,pkt.nbt);
+          if((player.openContainer.windowId != pkt.id) || (pkt.nbt == null)) return;
+          ((INetworkSynchronisableContainer)player.openContainer).onServerPacketReceived(pkt.id, pkt.nbt);
         });
         ctx.get().setPacketHandled(true);
       }
@@ -274,7 +271,6 @@ public class Networking
   }
 
   public static class PacketItemSyncServerToClient
-  {
-  }
+  {}
 
 }

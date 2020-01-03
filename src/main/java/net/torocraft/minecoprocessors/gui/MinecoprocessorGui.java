@@ -274,9 +274,8 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
 
   private void drawGuiTitle()
   {
-    // getContainer().getInventory().getDisplayName() --- does not work for IInventory ...
-    String s = "Processor"; // @todo See how the TE name can be used here
-    font.drawString(s, (float)xSize/2 - (float)font.getStringWidth(s)/2, 6, 4210752);
+    String s = getContainer().getDisplayName();
+    font.drawString(s, getXSize() - 0.5f * font.getStringWidth(s), 10, 4210752);
   }
 
   private void drawCode()
@@ -284,58 +283,34 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
     int x = 22;
     int y = 50;
     String label = "NEXT";
-    Processor processor = null; // <<<------------------------- @todo access tile entity or have the server sent the loaded book on open ?
-    byte[] a = null;
-    if(processor != null) {
-      try {
-        int ip = processor.getIp();
-        List<byte[]> program = processor.getProgram();
-        if (ip < program.size()) {
-          a = program.get(ip);
-        }
-      } catch (Exception e) {
-        ModMinecoprocessors.proxy.handleUnexpectedException(e);
-      }
-    }
-    int color = 0xffffff;
     String value = "";
-    if (a != null) {
-      value = InstructionUtil.compileLine(a, processor.getLabels(), (short) -1);
-    }
-    if (value.isEmpty() && processor != null && processor.getError() != null) {
-      value = processor.getError();
-      color = 0xff0000;
+    int color = 0xffffff;
+    if(getContainer().getFields().isLoaded()) {
+      Processor processor = getContainer().getProcessor();
+      byte[] a = null;
+      if(processor != null) {
+        try {
+          int ip = getContainer().getFields().ip();
+          List<byte[]> program = processor.getProgram();
+          if (ip < program.size()) {
+            a = program.get(ip);
+          }
+        } catch (Exception e) {
+          ModMinecoprocessors.proxy.handleUnexpectedException(e);
+        }
+      }
+      if (a != null) {
+        value = InstructionUtil.compileLine(a, processor.getLabels(), (short) -1);
+      }
+      if (value.isEmpty() && (!getContainer().getProcessorError().isEmpty())) {
+        value = getContainer().getProcessorError();
+        color = 0xff0000;
+      }
     }
     font.drawString(label, x - 4, y - 14, 0x404040);
     font.drawString(value, x, y, color);
   }
 }
-
-//  public GuiMinecoprocessor(IInventory playerInv, TileEntityMinecoprocessor te) {
-//    super(new ContainerMinecoprocessor(playerInv, te));
-//    this.playerInventory = playerInv;
-//    this.minecoprocessor = te;
-//    INSTANCE = this;
-//    Minecoprocessors.NETWORK.sendToServer(new MessageEnableGuiUpdates(minecoprocessor.getPos(), true));
-//  }
-
-//  public void updateData(NBTTagCompound processorData, String name) {
-//    if (processor == null) {
-//      processor = new Processor();
-//    }
-//    processor.readFromNBT(processorData);
-//    minecoprocessor.setName(I18n.format(name));
-//    registers = processor.getRegisters();
-//    faultCode = processor.getFaultCode();
-//  }
-
-//  @Override
-//  public void onGuiClosed() {
-//    super.onGuiClosed();
-//    Minecoprocessors.NETWORK.sendToServer(new MessageEnableGuiUpdates(minecoprocessor.getPos(), false));
-//    INSTANCE = null;
-//  }
-//
 
 
 //  protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY) {

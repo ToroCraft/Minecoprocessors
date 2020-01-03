@@ -187,7 +187,6 @@ public class MinecoprocessorBlock extends Block
   @SuppressWarnings("deprecation")
   public void neighborChanged(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving)
   {
-System.out.println("neighborChanged from:" + fromPos);
     super.neighborChanged(state, world, pos, block, fromPos, isMoving);
     final Vec3i directionVector = fromPos.subtract(pos);
     if(isMoving || (!state.get(ACTIVE)) || (directionVector.getY() != 0)) return; // nothing to do then.

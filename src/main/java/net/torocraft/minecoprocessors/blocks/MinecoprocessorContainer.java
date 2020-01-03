@@ -7,18 +7,22 @@
 package net.torocraft.minecoprocessors.blocks;
 
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.torocraft.minecoprocessors.ModContent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.inventory.container.IContainerListener;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.Slot;
 import net.minecraft.util.IWorldPosCallable;
+import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.torocraft.minecoprocessors.network.Networking;
+import net.torocraft.minecoprocessors.ModContent;
+import net.torocraft.minecoprocessors.processor.Processor;
 
 
 public class MinecoprocessorContainer extends Container implements Networking.INetworkSynchronisableContainer
@@ -28,6 +32,11 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
   private final PlayerEntity player_;
   private final IWorldPosCallable wpc_;
   private final MinecoprocessorTileEntity.ContainerSyncFields fields_;
+  private final Processor processor_ = new Processor();
+  private String name_ = new String();
+  private String transl_ = new String();
+  private String error_ = new String();
+  private CompoundNBT nbt_ = new CompoundNBT();
 
   public MinecoprocessorContainer(int cid, PlayerInventory player_inventory)
   { this(cid, player_inventory, new Inventory(MinecoprocessorTileEntity.NUM_OF_SLOTS), IWorldPosCallable.DUMMY, new MinecoprocessorTileEntity.ContainerSyncFields()); }
@@ -66,6 +75,12 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
   public boolean canMergeSlot(ItemStack stack, Slot slot)
   { return false; }
 
+  public void putStackInSlot(int slotId, ItemStack stack)
+  {
+    super.putStackInSlot(slotId, stack);
+    if(slotId==0) updateProgram(stack);
+  }
+
   @Override
   public ItemStack transferStackInSlot(PlayerEntity player, int index)
   {
@@ -79,6 +94,7 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
     } else if( (index >= PLAYER_INV_START_SLOTNO) && (index <= PLAYER_INV_START_SLOTNO+36) ) {
       // Player slot
       if(!mergeItemStack(slot_stack, 0, PLAYER_INV_START_SLOTNO, false)) return ItemStack.EMPTY;
+      updateProgram(transferred);
     } else {
       // invalid slot
       return ItemStack.EMPTY;
@@ -93,10 +109,16 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
     return transferred;
   }
 
-  // INetworkSynchronisableContainer ---------------------------------------------------------
+  @Override
+  public void addListener(IContainerListener listener)
+  {
+    super.addListener(listener);
+    if((!(listener instanceof ServerPlayerEntity)) || (!(inventory_ instanceof MinecoprocessorTileEntity))) return;
+    ServerPlayerEntity player = ((ServerPlayerEntity)listener);
+    Networking.PacketContainerSyncServerToClient.sendToPlayer(player, this.windowId, getSyncData());
+  }
 
-  public MinecoprocessorTileEntity.ContainerSyncFields getFields()
-  { return fields_; }
+  // INetworkSynchronisableContainer ---------------------------------------------------------
 
   @OnlyIn(Dist.CLIENT)
   public void onGuiAction(CompoundNBT nbt)
@@ -111,94 +133,68 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
   }
 
   @Override
-  public void onServerPacketReceived(int windowId, CompoundNBT nbt)
-  {
-    // Reference/purpose: Porting of 1.12 MessageProcessorUpdate
-    // On the client the TE data can be updated here to have the full synchronised state of the server TE.
-    // May be needed for displaying error string, and sycning the loaded code for stepping.
-  }
-
-  @Override
   public void onClientPacketReceived(int windowId, PlayerEntity player, CompoundNBT nbt)
   {
+    // Actions executed on the server from received GUI messages
     if(!(inventory_ instanceof MinecoprocessorTileEntity)) return;
     MinecoprocessorTileEntity te = (MinecoprocessorTileEntity)inventory_;
     if(nbt.contains("sleep")) te.getProcessor().setWait(!te.getProcessor().isWait());
     if(nbt.contains("reset")) te.resetProcessor();
     if(nbt.contains("step")) te.getProcessor().setStep(true);
-    te.markDirty();
+  }
+
+  @Override
+  public void onServerPacketReceived(int windowId, CompoundNBT nbt)
+  {
+    // Data received from the server for display purposes
+    if(nbt.contains("sync_data")) {
+      nbt_ = nbt.getCompound("sync_data");
+      if(nbt_.contains("name")) name_ = nbt_.getString("name");
+      if(nbt_.contains("error")) error_ = nbt_.getString("error");
+      if(nbt_.contains("transl")) transl_ = nbt_.getString("transl");
+    }
+  }
+
+  // ---------------------------------------------------------------------------------------------------------------------
+
+  public MinecoprocessorTileEntity.ContainerSyncFields getFields()
+  { return fields_; }
+
+  private void updateProgram(ItemStack stack)
+  {
+    name_ = MinecoprocessorTileEntity.loadBook(stack, processor_);
+    System.out.println("updateProgram: " + name_);
+    wpc_.consume((world, pos)->{
+      // Lambda executed only on server
+      nbt_.putString("name", name_);
+      Networking.PacketContainerSyncServerToClient.sendToListeners(world, this, nbt_);
+    });
+  }
+
+  public String getDisplayName()
+  {
+    // Called in client side GUI the translation is available here.
+    if((!name_.isEmpty()) && (getFields().isLoaded())) return name_;
+    if(transl_.isEmpty()) return "Processor";
+    return (new TranslationTextComponent(transl_)).getUnformattedComponentText();
+  }
+
+  public Processor getProcessor()
+  { return processor_; }
+
+  public String getProcessorError()
+  { return error_; }
+
+  private CompoundNBT getSyncData()
+  {
+    // Server data composition
+    final MinecoprocessorTileEntity te = ((MinecoprocessorTileEntity)inventory_);
+    nbt_.putString("name", te.hasCustomName() ? te.getCustomName().getString() : "");
+    nbt_.putString("error", te.getProcessor().getError());
+    nbt_.putString("transl", te.getBlockState().getBlock().getTranslationKey());
+    CompoundNBT msg = new CompoundNBT();
+    msg.put("sync_data", nbt_);
+    return msg;
   }
 
 }
-
-// ---------------------------------------------------------------------------------------------------------------------
-// MessageEnableGuiUpdates from 1.12 branch.
-// -> TE data sync for clients that have the processor GUI open should be somehow done via the container in 1.14.
-// ---------------------------------------------------------------------------------------------------------------------
-
-//public class MessageEnableGuiUpdates implements IMessage {
-//
-//  public BlockPos pos;
-//  public Boolean enable;
-//
-//  public static void init(int packetId) {
-//    Minecoprocessors.NETWORK.registerMessage(MessageEnableGuiUpdates.Handler.class, MessageEnableGuiUpdates.class, packetId, Side.SERVER);
-//  }
-//
-//  public MessageEnableGuiUpdates() {
-//
-//  }
-//
-//  public MessageEnableGuiUpdates(BlockPos controlBlockPos, Boolean enable) {
-//    this.pos = controlBlockPos;
-//    this.enable = enable;
-//  }
-//
-//  @Override
-//  public void fromBytes(ByteBuf buf) {
-//    pos = BlockPos.fromLong(buf.readLong());
-//    enable = buf.readBoolean();
-//  }
-//
-//  @Override
-//  public void toBytes(ByteBuf buf) {
-//    buf.writeLong(pos.toLong());
-//    buf.writeBoolean(enable);
-//  }
-//
-//  public static class Handler implements IMessageHandler<MessageEnableGuiUpdates, IMessage> {
-//
-//    @Override
-//    public IMessage onMessage(final MessageEnableGuiUpdates message, MessageContext ctx) {
-//      if (message.pos == null) {
-//        return null;
-//      }
-//      final EntityPlayerMP payer = ctx.getServerHandler().player;
-//      payer.getServerWorld().addScheduledTask(new Worker(payer, message));
-//      return null;
-//    }
-//  }
-//
-//  private static class Worker implements Runnable {
-//
-//    private final EntityPlayerMP player;
-//    private final MessageEnableGuiUpdates message;
-//
-//    public Worker(EntityPlayerMP player, MessageEnableGuiUpdates message) {
-//      this.player = player;
-//      this.message = message;
-//    }
-//
-//    @Override
-//    public void run() {
-//      try {
-//        TileEntityMinecoprocessor mp = (TileEntityMinecoprocessor) player.world.getTileEntity(message.pos);
-//        mp.enablePlayerGuiUpdates(player, message.enable);
-//      } catch (Exception e) {
-//        Minecoprocessors.proxy.handleUnexpectedException(e);
-//      }
-//    }
-//
-//  }
-//
-//}
