@@ -149,6 +149,10 @@ public class MinecoprocessorBlock extends Block
   { return false; }
 
   @Override
+  public boolean getWeakChanges(BlockState state, IWorldReader world, BlockPos pos)
+  { return true; }
+
+  @Override
   @SuppressWarnings("deprecation")
   public int getWeakPower(BlockState state, IBlockReader world, BlockPos pos, Direction side)
   { return getPower(state, world, pos, side, false); }

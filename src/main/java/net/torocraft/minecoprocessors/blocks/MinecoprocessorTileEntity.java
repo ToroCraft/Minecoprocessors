@@ -147,14 +147,14 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     public byte fault()           { return (byte)((get(0)>>24) & 0xff); }
     public byte register(int i)   { return (byte)((get(1+(i/4)) >> (8*(i&0x3))) & 0xff); }
     public byte port(int i)       { return register(i+4); }
-    public byte a()               { return register(0); }
-    public byte b()               { return register(1); }
-    public byte c()               { return register(2); }
-    public byte d()               { return register(3); }
-    public byte pf()              { return register(4); }
-    public byte pb()              { return register(5); }
-    public byte pl()              { return register(6); }
-    public byte pr()              { return register(7); }
+    //public byte a()             { return register(0); }
+    //public byte b()             { return register(1); }
+    //public byte c()             { return register(2); }
+    //public byte d()             { return register(3); }
+    //public byte pf()            { return register(4); }
+    //public byte pb()            { return register(5); }
+    //public byte pl()            { return register(6); }
+    //public byte pr()            { return register(7); }
     public byte ports()           { return register(8); }
     public byte adc()             { return register(9); }
     public boolean isFault()      { return (get(3) & 0x0100) != 0; }
@@ -242,7 +242,6 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     // "Firmware update"
     if(inventoryChanged) {
       // @todo: ---> moved book loading/unloading to here to have it in sync with the tick.
-System.out.println("INVENTORY CHANGED");
       inventoryChanged = false;
       loadBook(inventory.get(0));
       prevPortsRegister = 0x0f;
@@ -270,12 +269,10 @@ System.out.println("(inputsChanged || portConfigChanged)");
       updateInputPorts(blockState);
     }
     if(outputsChanged) {
-//System.out.println("outputsChanged");
       updateOutputs(blockState, block);
     }
     BlockState state = blockState.with(MinecoprocessorBlock.ACTIVE, (!inventory.get(0).isEmpty()) && (!processor.isWait()) && (!processor.isFault()));
     if(state != blockState) {
-System.out.println("(state != blockState)");
       world.setBlockState(pos, state, 2);
     }
     fields.writeServerSide(processor);
@@ -346,61 +343,50 @@ System.out.println("getPower("+side+") = " + p);
   //
   private void updateOutputs(final BlockState state, final Block block)
   {
-    byte[] registers = processor.getRegisters();
-    byte ports = registers[Register.PORTS.ordinal()];
+    final Direction front = state.get(MinecoprocessorBlock.HORIZONTAL_FACING).getOpposite();
+    final byte[] registers = processor.getRegisters();
+    final byte ports = registers[Register.PORTS.ordinal()];
     for(int portIndex=0; portIndex<4; ++portIndex) {
       byte curVal = registers[Register.PF.ordinal() + portIndex];
-      if(isInOutputMode(ports, portIndex) && (prevPortValues[portIndex] != curVal)) {
-        prevPortValues[portIndex] = curVal;
-        Direction side = RedstoneUtil.convertPortIndexToFacing(state.get(MinecoprocessorBlock.HORIZONTAL_FACING).getOpposite(), portIndex);
-        BlockPos neighborPos = pos.offset(side);
+      if(!isInOutputMode(ports, portIndex) || (prevPortValues[portIndex] != curVal)) continue;
+      prevPortValues[portIndex] = curVal;
+      Direction side = RedstoneUtil.convertPortIndexToFacing(front, portIndex);
+      BlockPos neighborPos = pos.offset(side);
 System.out.println("port["+portIndex+"]=" + curVal + " -> " + side + " -> " + neighborPos);
-        if(ForgeEventFactory.onNeighborNotify(world, pos, state, java.util.EnumSet.of(side), false).isCanceled()) continue;
-        world.neighborChanged(neighborPos, block, pos);
-        world.notifyNeighborsOfStateExcept(neighborPos, block, side.getOpposite());
-      }
+      if(ForgeEventFactory.onNeighborNotify(world, pos, state, java.util.EnumSet.of(side), false).isCanceled()) continue;
+      world.neighborChanged(neighborPos, block, pos);
+      world.notifyNeighborsOfStateExcept(neighborPos, block, side.getOpposite());
     }
   }
 
   private boolean updateInputPorts(BlockState state)
   {
-    Direction facing = state.get(MinecoprocessorBlock.HORIZONTAL_FACING).getOpposite();
-    int[] values = new int[4];
-    values[RedstoneUtil.convertFacingToPortIndex(facing, Direction.NORTH)] = calculateInputStrength(pos.offset(Direction.NORTH), Direction.NORTH);
-    values[RedstoneUtil.convertFacingToPortIndex(facing, Direction.SOUTH)] = calculateInputStrength(pos.offset(Direction.SOUTH), Direction.SOUTH);
-    values[RedstoneUtil.convertFacingToPortIndex(facing, Direction.WEST)]  = calculateInputStrength(pos.offset(Direction.WEST), Direction.WEST);
-    values[RedstoneUtil.convertFacingToPortIndex(facing, Direction.EAST)]  = calculateInputStrength(pos.offset(Direction.EAST), Direction.EAST);
+    //
+    // @review: included updateInputPort() here to have for reusing local vars on the stack.
+    //
+    final Direction front = state.get(MinecoprocessorBlock.HORIZONTAL_FACING).getOpposite();
+    final byte[] registers = processor.getRegisters();
+    final byte ports = registers[Register.PORTS.ordinal()];
+    final byte adc = registers[Register.ADC.ordinal()];
     boolean updated = false;
-    for(int i = 0; i < 4; i++) {
-      updated = updateInputPort(i, values[i]) || updated;
-    }
-    if (updated) {
-      processor.wake();
-    }
-    return updated;
-  }
-
-  /**
-   * return true for positive edge changes
-   */
-  private boolean updateInputPort(int portIndex, int powerValue)
-  {
-    byte[] registers = processor.getRegisters();
-    byte ports = registers[Register.PORTS.ordinal()];
-    byte adc = registers[Register.ADC.ordinal()];
-    byte value = (byte)((isADCMode(adc, portIndex)) ? RedstoneUtil.powerToPort(powerValue) : ((powerValue == 0) ? (0) : (0xff)));
-    if(isInInputMode(ports, portIndex) && (prevPortValues[portIndex] != value)) {
+    boolean reset = false;
+    for(int portIndex=0; portIndex<4; ++portIndex) {
+      Direction side = RedstoneUtil.convertPortIndexToFacing(front, portIndex);
+      int power = calculateInputStrength(pos.offset(side), side);
+      byte value = (byte)((isADCMode(adc, portIndex)) ? RedstoneUtil.powerToPort(power) : ((power == 0) ? (0) : (0xff)));
+      if(prevPortValues[portIndex] == value) continue; // not changed
       prevPortValues[portIndex] = value;
-      registers[Register.PF.ordinal() + portIndex] = value;
-      return true;
-    } else if(isInResetMode(ports, portIndex) && (prevPortValues[portIndex] != value)) {
-      prevPortValues[portIndex] = value;
-      if(value != 0) {
-        processor.reset();
-        return true;
+      if(isInInputMode(ports, portIndex)) {
+        registers[Register.PF.ordinal() + portIndex] = value;
+        updated = true;
+      } else if((value != 0) && isInResetMode(ports, portIndex)) {
+        updated = true;
+        reset = true;
       }
     }
-    return false;
+    if(reset) processor.reset();
+    if(updated) processor.wake();
+    return updated;
   }
 
   /**
@@ -424,13 +410,17 @@ System.out.println("port["+portIndex+"]=" + curVal + " -> " + side + " -> " + ne
           Collections.addAll(code, pages.getString(i).split("\\r?\\n"));
         }
       } else if (stack.getItem() instanceof WrittenBookItem) {
-        // @todo: check if this is really the same
         ListNBT pages = stack.getTag().getList("pages", 8);
         for(int i = 0; i < pages.size(); ++i) {
-          Collections.addAll(code, pages.getString(i).split("\\r?\\n"));
+          try {
+            ITextComponent tc = ITextComponent.Serializer.fromJsonLenient(pages.getString(i));
+            Collections.addAll(code, tc.getUnformattedComponentText().split("\\r?\\n"));
+          } catch(Exception e) {
+            // don't load, will result in a processor fault flag displayed.
+          }
         }
       }
-      customName = readNameFromHeader(code);
+      if(customName.isEmpty()) customName = readNameFromHeader(code);
       return processor.load(code);
     }
   }
@@ -452,13 +442,14 @@ System.out.println("port["+portIndex+"]=" + curVal + " -> " + side + " -> " + ne
     return "";
   }
 
-  private int calculateInputStrength(BlockPos pos, Direction enumfacing)
+  private int calculateInputStrength(BlockPos pos, Direction side)
   {
-    BlockState adjacentState = world.getBlockState(pos);
-    Block block = adjacentState.getBlock();
-    int p = world.getRedstonePower(pos, enumfacing);
+    BlockState adjacent = world.getBlockState(pos);
+    Block block = adjacent.getBlock();
+    int p = world.getRedstonePower(pos, side);
     if (p >= 15) return 15;
-    return Math.max(p, ((block == Blocks.REDSTONE_WIRE) ? adjacentState.get(RedstoneWireBlock.POWER) : 0));
+    // @todo: check if for modded compat something like "instanceof RedstoneWireBlock" is good. Would be less performance however.
+    return Math.max(p, ((block == Blocks.REDSTONE_WIRE) ? adjacent.get(RedstoneWireBlock.POWER) : 0));
   }
 
 }
@@ -467,7 +458,6 @@ System.out.println("port["+portIndex+"]=" + curVal + " -> " + side + " -> " + ne
 // ---------------------------------------------------------------------------------------------------------------------
 // PORTING: LEFT CODE FROM 1.12 TILE ENTITY
 // ---------------------------------------------------------------------------------------------------------------------
-
 //  private Set<ServerPlayerEntity> playersToUpdate = new HashSet<ServerPlayerEntity>();
 //
 //  public void updatePlayers() {
@@ -475,8 +465,6 @@ System.out.println("port["+portIndex+"]=" + curVal + " -> " + side + " -> " + ne
 //      Minecoprocessors.NETWORK.sendTo(new MessageProcessorUpdate(processor.writeToNBT(), pos, getName()), player);
 //    }
 //  }
-//
-
 //  public void enablePlayerGuiUpdates(EntityPlayerMP player, boolean enable) {
 //    if (enable) {
 //      playersToUpdate.add(player);
@@ -485,44 +473,3 @@ System.out.println("port["+portIndex+"]=" + curVal + " -> " + side + " -> " + ne
 //      playersToUpdate.remove(player);
 //    }
 //  }
-//
-//  public Processor getProcessor() {
-//    return processor;
-//  }
-
-
-// ---------------------------------------------------------------------------------------------------------------------
-// FUNCTIONALITY THAT IS PROPOSED TO BE MOVED FROM THE BLOCK TO HERE
-// ---------------------------------------------------------------------------------------------------------------------
-
-
-//
-//  @Override
-//  public void updateTick(World world, BlockPos pos, BlockState state, Random rand) {
-//    super.updateTick(world, pos, state, rand);
-//    updateInputPorts(world, pos, state);
-//
-//    if (world.isRemote) {
-//      return;
-//    }
-//
-//    TileEntityMinecoprocessor te = (TileEntityMinecoprocessor) world.getTileEntity(pos);
-//
-//    boolean changed = false;
-//
-//    boolean blockActive = state.getValue(ACTIVE);
-//    boolean processorActive = !te.getProcessor().isWait() && !te.getProcessor().isFault();
-//
-//    if (blockActive && !processorActive) {
-//      state = state.withProperty(ACTIVE, Boolean.valueOf(false));
-//      changed = true;
-//    } else if (!blockActive && processorActive) {
-//      state = state.withProperty(ACTIVE, Boolean.valueOf(true));
-//      changed = true;
-//    }
-//
-//    if (changed) {
-//      world.setBlockState(pos, state, 2);
-//    }
-//  }
-//
