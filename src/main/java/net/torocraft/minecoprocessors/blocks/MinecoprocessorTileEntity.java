@@ -48,11 +48,12 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
   private NonNullList<ItemStack> inventory = NonNullList.withSize(NUM_OF_SLOTS, ItemStack.EMPTY);
   private final Processor processor = new Processor();
   private final byte[] prevPortValues = new byte[4];
-  private String customName = new String();
-  private int loadTime;
-  private byte prevPortsRegister = 0x0f;
+  private byte prevPortsRegister = -1;
   private boolean inventoryChanged = false;
   private boolean inputsChanged = false;
+  private boolean outputsChanged = false;
+  private String customName = new String();
+  private int loadTime;
   private int tickTimer = 0;
 
   public MinecoprocessorTileEntity()
@@ -65,8 +66,10 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
 
   @Override
   public void read(CompoundNBT nbt)
+  { super.read(nbt); readnbt(nbt); }
+
+  private void readnbt(CompoundNBT nbt)
   {
-    super.read(nbt);
     processor.setNBT(nbt.getCompound("processor"));
     inventory = NonNullList.<ItemStack>withSize(1, ItemStack.EMPTY);  // <<-- this.getSizeInventory() -> 1
     ItemStackHelper.loadAllItems(nbt, inventory);
@@ -76,8 +79,10 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
 
   @Override
   public CompoundNBT write(CompoundNBT nbt)
+  { return writennbt(super.write(nbt)); }
+
+  private CompoundNBT writennbt(CompoundNBT nbt)
   {
-    super.write(nbt);
     ItemStackHelper.saveAllItems(nbt, inventory);
     if(hasCustomName()) nbt.putString("CustomName", customName);
     nbt.put("processor", processor.getNBT());
@@ -147,14 +152,6 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     public byte fault()           { return (byte)((get(0)>>24) & 0xff); }
     public byte register(int i)   { return (byte)((get(1+(i/4)) >> (8*(i&0x3))) & 0xff); }
     public byte port(int i)       { return register(i+4); }
-    //public byte a()             { return register(0); }
-    //public byte b()             { return register(1); }
-    //public byte c()             { return register(2); }
-    //public byte d()             { return register(3); }
-    //public byte pf()            { return register(4); }
-    //public byte pb()            { return register(5); }
-    //public byte pl()            { return register(6); }
-    //public byte pr()            { return register(7); }
     public byte ports()           { return register(8); }
     public byte adc()             { return register(9); }
     public boolean isFault()      { return (get(3) & 0x0100) != 0; }
@@ -236,8 +233,7 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     final MinecoprocessorBlock block = (MinecoprocessorBlock)blockState.getBlock();
     tickTimer = ((block.config & MinecoprocessorBlock.CONFIG_OVERCLOCKED)!=0) ? 1 : 2;
     boolean dirty = false;
-    boolean outputsChanged = false;
-    boolean portConfigChanged = false;
+    final boolean hasBook = !inventory.get(0).isEmpty();
 
     // "Firmware update"
     if(inventoryChanged) {
@@ -246,34 +242,33 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
       loadBook(inventory.get(0));
       prevPortsRegister = 0x0f;
       for(int i=0; i<prevPortValues.length; i++) prevPortValues[i] = 0;
-      portConfigChanged = true;
+      inputsChanged = true;
       outputsChanged = true;
       dirty = true;
-    } else if(!inventory.get(0).isEmpty()) {
+    } else if(hasBook) {
       // Processor run
       if(processor.tick()) {
         outputsChanged = true;
       }
-//System.out.println("CPU: " + processor.stateLineDump());
       // Port config update
-      if(prevPortsRegister != processor.getRegisters()[Register.PORTS.ordinal()]) {
-        prevPortsRegister = processor.getRegisters()[Register.PORTS.ordinal()];
-        portConfigChanged = true;
-        outputsChanged = false; // don't output if the port config has changed
+      if(prevPortsRegister != processor.getRegister(Register.PORTS)) {
+        prevPortsRegister = processor.getRegister(Register.PORTS);
+        inputsChanged = true;
+        outputsChanged = true;
+      }
+      // Input
+      if(inputsChanged) {
+        inputsChanged = false;
+        updateInputPorts(blockState);
       }
     }
-    // Conditional data updates
-    if(inputsChanged || portConfigChanged) {
-System.out.println("(inputsChanged || portConfigChanged)");
-      inputsChanged = false;
-      updateInputPorts(blockState);
-    }
     if(outputsChanged) {
+      outputsChanged = false;
       updateOutputs(blockState, block);
     }
-    BlockState state = blockState.with(MinecoprocessorBlock.ACTIVE, (!inventory.get(0).isEmpty()) && (!processor.isWait()) && (!processor.isFault()));
+    BlockState state = blockState.with(MinecoprocessorBlock.ACTIVE, hasBook && (!processor.isWait()) && (!processor.isFault()));
     if(state != blockState) {
-      world.setBlockState(pos, state, 2);
+      world.setBlockState(pos, state, 1|2|16);
     }
     fields.writeServerSide(processor);
     if(dirty) markDirty();
@@ -320,7 +315,7 @@ System.out.println("(inputsChanged || portConfigChanged)");
             (RedstoneUtil.isLeftPort(state, side))  ? getPortSignal(2) : (
             (RedstoneUtil.isRightPort(state, side)) ? getPortSignal(3) : (
             0))));
-System.out.println("getPower("+side+") = " + p);
+System.out.println("getPower("+side+", "+(strong?"strong":"weak")+") = "+p);
     return p;
   }
 
@@ -329,11 +324,11 @@ System.out.println("getPower("+side+") = " + p);
 
   private byte getPortSignal(int portIndex)
   {
-    if(!isInOutputMode(processor.getRegisters()[Register.PORTS.ordinal()], portIndex)) {
+    if(!isInOutputMode(processor.getRegister(Register.PORTS), portIndex)) {
       return 0;
     }
     byte signal = processor.getRegisters()[Register.PF.ordinal() + portIndex];
-    return (byte)(isADCMode(processor.getRegisters()[Register.ADC.ordinal()], portIndex)
+    return (byte)(isADCMode(processor.getRegister(Register.ADC), portIndex)
          ? MathHelper.clamp(signal, 0, 15)
          : ((signal == 0) ? (0) : (15)));
   }
@@ -341,22 +336,26 @@ System.out.println("getPower("+side+") = " + p);
   //
   // @review: Combined block methods and detectOutputChange() (were only a few lines in summary after porting).
   //
-  private void updateOutputs(final BlockState state, final Block block)
+  private boolean updateOutputs(final BlockState state, final Block block)
   {
     final Direction front = state.get(MinecoprocessorBlock.HORIZONTAL_FACING).getOpposite();
     final byte[] registers = processor.getRegisters();
-    final byte ports = registers[Register.PORTS.ordinal()];
+    final byte ports = processor.getRegister(Register.PORTS);
+    boolean updated = false;
     for(int portIndex=0; portIndex<4; ++portIndex) {
       byte curVal = registers[Register.PF.ordinal() + portIndex];
-      if(!isInOutputMode(ports, portIndex) || (prevPortValues[portIndex] != curVal)) continue;
+      if(prevPortValues[portIndex] == curVal) continue;
+      if(!isInOutputMode(ports, portIndex)) continue;
+      updated = true;
       prevPortValues[portIndex] = curVal;
       Direction side = RedstoneUtil.convertPortIndexToFacing(front, portIndex);
       BlockPos neighborPos = pos.offset(side);
-System.out.println("port["+portIndex+"]=" + curVal + " -> " + side + " -> " + neighborPos);
+System.out.println("out["+portIndex+"]=" + (((int)curVal)&0xff) + " -> " + side + " -> " + neighborPos);
       if(ForgeEventFactory.onNeighborNotify(world, pos, state, java.util.EnumSet.of(side), false).isCanceled()) continue;
       world.neighborChanged(neighborPos, block, pos);
       world.notifyNeighborsOfStateExcept(neighborPos, block, side.getOpposite());
     }
+    return updated;
   }
 
   private boolean updateInputPorts(BlockState state)
@@ -366,8 +365,8 @@ System.out.println("port["+portIndex+"]=" + curVal + " -> " + side + " -> " + ne
     //
     final Direction front = state.get(MinecoprocessorBlock.HORIZONTAL_FACING).getOpposite();
     final byte[] registers = processor.getRegisters();
-    final byte ports = registers[Register.PORTS.ordinal()];
-    final byte adc = registers[Register.ADC.ordinal()];
+    final byte ports = processor.getRegister(Register.PORTS);
+    final byte adc = processor.getRegister(Register.ADC);
     boolean updated = false;
     boolean reset = false;
     for(int portIndex=0; portIndex<4; ++portIndex) {
@@ -383,6 +382,7 @@ System.out.println("port["+portIndex+"]=" + curVal + " -> " + side + " -> " + ne
         updated = true;
         reset = true;
       }
+System.out.println("inp["+portIndex+"]=" + value + " -> " + side);
     }
     if(reset) processor.reset();
     if(updated) processor.wake();

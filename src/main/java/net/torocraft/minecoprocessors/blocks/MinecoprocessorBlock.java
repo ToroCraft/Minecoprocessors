@@ -83,6 +83,11 @@ public class MinecoprocessorBlock extends Block
 
   @Override
   @SuppressWarnings("deprecation")
+  public boolean isSolid(BlockState state)
+  { return true; }
+
+  @Override
+  @SuppressWarnings("deprecation")
   public PushReaction getPushReaction(BlockState state)
   { return PushReaction.DESTROY; }
 
@@ -118,7 +123,15 @@ public class MinecoprocessorBlock extends Block
   @Override
   @SuppressWarnings("deprecation")
   public void onReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean isMoving)
-  { super.onReplaced(state, world, pos, newState, isMoving); } // @todo might be possible that we have to explicitly notify adjacent blocks due for strong power.
+  {
+    super.onReplaced(state, world, pos, newState, isMoving);
+    if(newState.getBlock() != state.getBlock()) {
+      world.notifyNeighbors(pos, newState.getBlock());
+      for(Direction side: Direction.values()) {
+        world.notifyNeighborsOfStateExcept(pos.offset(side), newState.getBlock(), side.getOpposite());
+      }
+    }
+  }
 
   @Override
   @SuppressWarnings("deprecation")
@@ -141,7 +154,7 @@ public class MinecoprocessorBlock extends Block
 
   @Override
   public boolean canConnectRedstone(BlockState state, IBlockReader world, BlockPos pos, @Nullable Direction side)
-  { return (side.getAxis() != Direction.Axis.Y); }
+  { return true; }
 
   @Override
   @SuppressWarnings("deprecation")
@@ -174,6 +187,7 @@ public class MinecoprocessorBlock extends Block
   @SuppressWarnings("deprecation")
   public void neighborChanged(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving)
   {
+System.out.println("neighborChanged from:" + fromPos);
     super.neighborChanged(state, world, pos, block, fromPos, isMoving);
     final Vec3i directionVector = fromPos.subtract(pos);
     if(isMoving || (!state.get(ACTIVE)) || (directionVector.getY() != 0)) return; // nothing to do then.

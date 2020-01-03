@@ -32,6 +32,7 @@ import java.util.List;
 public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer>
 {
   private static final ResourceLocation BACKGROUND_IMAGE = new ResourceLocation(ModMinecoprocessors.MODID, "textures/gui/minecoprocessor.png");
+  private static final double GUI_SCALE = 0.5;
   private Button buttonSleep;
   private Button buttonStep;
   private Button buttonReset;
@@ -50,29 +51,29 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
   public void init()
   {
     super.init();
-    final int x0=getGuiLeft();
-    final int y0=getGuiTop();
+    final int x0 = getGuiLeft();
+    final int y0 = getGuiTop();
     final int w = 49;
-    final int h = 12;
+    final int h = 10;
     buttons.clear();
     // buttonPause = new ScaledGuiButton(buttonId++, x+8, y + 11, buttonWidth, buttonHeight, I18n.format("gui.button.sleep"));
     buttons.add(buttonSleep = addButton(
-      new Button(x0+8,y0+32+(0*(h+2)), w,h, (new TranslationTextComponent("minecoprocessors.gui.button.sleep")).getFormattedText(),
+      new ScaledButton(GUI_SCALE, x0+8,y0+34+(0*(h+2)), w,h, (new TranslationTextComponent("minecoprocessors.gui.button.sleep")).getFormattedText(),
         (bt)->getContainer().onGuiAction("sleep",1))
     ));
     // buttonReset = new ScaledGuiButton(buttonId++, x+8, y, buttonWidth, buttonHeight, I18n.format("gui.button.reset"));
     buttons.add(buttonReset = addButton(
-      new Button(x0+8,y0+32+(1*(h+2)), w,h, (new TranslationTextComponent("minecoprocessors.gui.button.reset")).getFormattedText(),
+      new ScaledButton(GUI_SCALE, x0+8,y0+34+(1*(h+2)), w,h, (new TranslationTextComponent("minecoprocessors.gui.button.reset")).getFormattedText(),
       (bt)->getContainer().onGuiAction("reset",1))
     ));
     // buttonStep = new ScaledGuiButton(buttonId++, x+8, y + 22, buttonWidth, buttonHeight, I18n.format("gui.button.step"));
     buttons.add(buttonStep = addButton(
-      new Button(x0+8,y0+32+(2*(h+2)), w,h, (new TranslationTextComponent("minecoprocessors.gui.button.step")).getFormattedText(),
+      new ScaledButton(GUI_SCALE, x0+8,y0+34+(2*(h+2)), w,h, (new TranslationTextComponent("minecoprocessors.gui.button.step")).getFormattedText(),
       (bt)->getContainer().onGuiAction("step", 1))
     ));
     // buttonHelp = new ScaledGuiButton(buttonId++, guiLeft + 133, guiTop + 66, 35, buttonHeight, I18n.format("gui.button.help"));
     buttons.add(buttonHelp = addButton(
-      new Button(x0+133,y0+66, 35,h, (new TranslationTextComponent("minecoprocessors.gui.button.help")).getFormattedText(),
+      new ScaledButton(GUI_SCALE, x0+133,y0+66, 35,h, (new TranslationTextComponent("minecoprocessors.gui.button.help")).getFormattedText(),
       (bt)->{ Minecraft.getInstance().displayGuiScreen(new ReadBookScreen(ReadBookScreen.IBookInfo.func_216917_a(BookCreator.getManual()))); })
     ));
     buttonStep.active = false;
@@ -99,14 +100,12 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
   @Override
   protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY)
   {
-    /// @TODO IMPLEMENTATION WIP HERE
     hoveredFeature.clear();
     ContainerSyncFields fields = getContainer().getFields();
     GlStateManager.pushMatrix();
-    //GlStateManager.scale(0.5d, 0.5d, 0.5d);
-    //int scale = 2;
-    mouseX -= guiLeft;
-    mouseY -= guiTop;
+    GlStateManager.scaled(GUI_SCALE, GUI_SCALE, GUI_SCALE);
+    mouseX -= getGuiLeft();
+    mouseY -= getGuiTop();
 
     int y;
     y = 50;

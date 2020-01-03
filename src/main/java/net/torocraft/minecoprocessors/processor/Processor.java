@@ -859,6 +859,10 @@ public class Processor
     return registers;
   }
 
+  public byte getRegister(Register reg) {
+    return registers[reg.ordinal()];
+  }
+
   public List<byte[]> getProgram() {
     return program;
   }
