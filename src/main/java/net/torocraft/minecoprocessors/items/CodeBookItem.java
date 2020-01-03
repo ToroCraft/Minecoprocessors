@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 
 
 public final class CodeBookItem extends WrittenBookItem
+       // implements INetworkSynchronisableItem <<-- will replace class MessageBookCodeData as general item NBT sync.
 {
   public CodeBookItem(Item.Properties properties)
   { super(properties); }

@@ -7,6 +7,7 @@
  * Main client/server message handling.
  */
 package net.torocraft.minecoprocessors.network;
+
 import net.torocraft.minecoprocessors.ModMinecoprocessors;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.util.FakePlayer;
@@ -239,6 +240,41 @@ public class Networking
         ctx.get().setPacketHandled(true);
       }
     }
+  }
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Item data synchrsonisation
+  //--------------------------------------------------------------------------------------------------------------------
+
+  public interface INetworkSynchronisableItem
+  {
+    void onServerPacketReceived(int stackid, PlayerEntity player, CompoundNBT nbt);
+    void onClientPacketReceived(int stackid, PlayerEntity player, CompoundNBT nbt);
+  }
+
+  public static class PacketItemSyncClientToServer
+  {
+    // @todo check and implement (may also be converted to a player slot sync, depending what MC already offers).
+    /// Purpose / reference for this is 1.12 MessageBookCodeData:
+    //
+    //  public static final class Handler extends AbstractMessageHandler<MessageBookCodeData> {
+    //
+    //    @Override
+    //    protected void onMessageSynchronized(final MessageBookCodeData message, final MessageContext context) {
+    //      final EntityPlayer player = context.getServerHandler().player;
+    //      if (player != null) {
+    //        final ItemStack stack = player.getHeldItem(EnumHand.MAIN_HAND);
+    //        if (CodeBookItem.isBookCode(stack)) {
+    //          final CodeBookItem.Data data = CodeBookItem.Data.loadFromNBT(message.getNbt());
+    //          CodeBookItem.Data.saveToStack(stack, data);
+    //        }
+    //      }
+    //    }
+    //  }
+  }
+
+  public static class PacketItemSyncServerToClient
+  {
   }
 
 }
