@@ -78,11 +78,10 @@ public final class CodeBookItem extends WrittenBookItem
   {
     ItemStack stack = player.getHeldItem(hand);
     if(world.isRemote()) {
-      System.out.println("Open Code Book");
+      // "Open Code Book";
       // player.openGui(Minecoprocessors.INSTANCE, MinecoprocessorGuiHandler.CODE_BOOK_GUI, world, 0, 0, 0);
     } else {
       /// TEST MANUAL
-      System.out.println("Create manual ...");
       stack = BookCreator.getManual();
     }
     return new ActionResult<>(ActionResultType.SUCCESS, stack);

@@ -164,6 +164,10 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
 
   private void updateProgram(ItemStack stack)
   {
+    // Allows to load processor data locally on the client and prevent tile entity
+    // sync form server to client. The IP and SP is retrieved in the GUI form the
+    // IntArray fields, which are permanently synced from server to client via this
+    // container.
     name_ = MinecoprocessorTileEntity.loadBook(stack, processor_);
     wpc_.consume((world, pos)->{
       // Lambda executed only on server

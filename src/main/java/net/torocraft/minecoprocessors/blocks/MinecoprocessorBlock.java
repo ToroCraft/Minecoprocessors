@@ -18,7 +18,6 @@ import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.state.BooleanProperty;
-import net.minecraft.state.DirectionProperty;
 import net.minecraft.state.StateContainer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.*;
@@ -40,9 +39,10 @@ import net.torocraft.minecoprocessors.ModContent;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 
-public class MinecoprocessorBlock extends Block
+public class MinecoprocessorBlock extends HorizontalBlock
 {
   public static final long CONFIG_DEFAULT     = 0x0000000000000000L;
   public static final long CONFIG_OVERCLOCKED = 0x0000000000000001L;  // It's the overclocked version
@@ -55,7 +55,6 @@ public class MinecoprocessorBlock extends Block
 
   protected static final VoxelShape SHAPE = Block.makeCuboidShape(0,0,0, 16,3,16);
   public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
-  public static final DirectionProperty HORIZONTAL_FACING = HorizontalBlock.HORIZONTAL_FACING;
 
   @Override
   @OnlyIn(Dist.CLIENT)
@@ -218,6 +217,15 @@ public class MinecoprocessorBlock extends Block
   @SuppressWarnings("deprecation")
   public List<ItemStack> getDrops(BlockState state, LootContext.Builder builder)
   { return Collections.singletonList(ItemStack.EMPTY); }
+
+  @Override
+  public int tickRate(IWorldReader world)
+  { return 2; }
+
+  @Override
+  @SuppressWarnings("deprecation")
+  public void tick(BlockState state, World world, BlockPos pos, Random random)
+  {}
 
   // -------------------------------------------------------------------------------------------------------------------
 

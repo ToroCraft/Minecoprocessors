@@ -69,7 +69,7 @@ public class Processor
    * tmp
    */
   private boolean step;
-  private String error;
+  private String error = "";
 
   void flush() {
     reset();
@@ -181,7 +181,7 @@ public class Processor
     nbt.putByteArray("registers", registers);
     nbt.putByte("faultCode", faultCode);
     nbt.putLong("flags", packFlags());
-    if((error!=null) && (!error.isEmpty())) nbt.putString("error", error);
+    nbt.putString("error", error);
     ListNBT programTag = new ListNBT();
     for(byte[] b: program) programTag.add(new ByteArrayNBT(b));
     nbt.put("program", programTag);

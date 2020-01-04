@@ -47,17 +47,18 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
   private NonNullList<ItemStack> inventory = NonNullList.withSize(NUM_OF_SLOTS, ItemStack.EMPTY);
   private final Processor processor = new Processor();
   private final byte[] prevPortValues = new byte[4];
+  private final int[] outputPower = new int[Direction.values().length];
   private byte prevPortsRegister = -1;
   private byte prevAdcRegister = -1;
   private boolean inventoryChanged = false;
   private boolean inputsChanged = false;
   private boolean outputsChanged = false;
   private boolean initialized = false;
-  private String customName = new String();
+  private String customName = "";
   private int loadTime;
   private int tickTimer = 0;
 
-  private static void testlog(String s) {} // System.out.println(s); }
+  private static void testlog(String s) { System.out.println(s); }
 
   public MinecoprocessorTileEntity()
   { super(ModContent.TET_MINECOPROCESSOR); }
@@ -76,6 +77,7 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     ItemStackHelper.loadAllItems(nbt, inventory);
     loadTime = nbt.getShort("loadTime");
     customName = nbt.getString("CustomName");
+    if(customName==null) customName = "";
   }
 
   @Override
@@ -101,11 +103,11 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
 
   @Override
   public boolean hasCustomName()
-  { return (customName != null) && (!customName.isEmpty()); }
+  { return !customName.isEmpty(); }
 
   @Override
   public ITextComponent getCustomName()
-  { return getName(); }
+  { return new StringTextComponent(customName); }
 
   @Override
   public ITextComponent getDisplayName()
@@ -251,6 +253,7 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
       prevPortsRegister = processor.getRegister(Register.PORTS);
       prevAdcRegister = processor.getRegister(Register.ADC);
       for(int i=0; i<prevPortValues.length; i++) prevPortValues[i] = 0;
+      for(int i=0; i<outputPower.length; i++) outputPower[i] = 0;
       inputsChanged = true;
       outputsChanged = true;
       dirty = true;
@@ -264,6 +267,8 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
          (prevAdcRegister != processor.getRegister(Register.ADC))) {
         prevPortsRegister = processor.getRegister(Register.PORTS);
         prevAdcRegister = processor.getRegister(Register.ADC);
+        for(int i=0; i<prevPortValues.length; i++) prevPortValues[i] = 0;
+        for(int i=0; i<outputPower.length; i++) outputPower[i] = 0;
         inputsChanged = true;
         outputsChanged = true;
       }
@@ -316,16 +321,7 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
 
   public int getPower(BlockState state, Direction side, boolean strong) //  Invoked from block
   {
-    // @todo: Considering making a mapping here, where we have in here only a
-    //        array with N,E,S,W -> p(N), p(E), p(S), p(W). Calculation of this
-    //        cache values on port change?
-    //        Does this make sense for you?
-    // @review: getPortSignal() already clamps 0..15, so removed RedstoneUtil.portToPower()
-    int p = (RedstoneUtil.isFrontPort(state, side)) ? getPortSignal(0) : (
-            (RedstoneUtil.isBackPort(state, side))  ? getPortSignal(1) : (
-            (RedstoneUtil.isLeftPort(state, side))  ? getPortSignal(2) : (
-            (RedstoneUtil.isRightPort(state, side)) ? getPortSignal(3) : (
-            0))));
+    int p = outputPower[side.getIndex()];
     testlog("getPower("+side+", "+(strong?"strong":"weak")+") = "+p);
     return p;
   }
@@ -353,18 +349,32 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     final byte[] registers = processor.getRegisters();
     final byte ports = processor.getRegister(Register.PORTS);
     boolean updated = false;
+
+    //
+    // @todo: I'm fishing in dark waters here to find out how to bloody update the neighbours properly -
+    //
     for(int portIndex=0; portIndex<4; ++portIndex) {
-      byte curVal = registers[Register.PF.ordinal() + portIndex];
-      if(prevPortValues[portIndex] == curVal) continue;
+      byte value = registers[Register.PF.ordinal() + portIndex];
+      if(prevPortValues[portIndex] == value) continue;
+      prevPortValues[portIndex] = value;
       if(!isInOutputMode(ports, portIndex)) continue;
       updated = true;
-      prevPortValues[portIndex] = curVal;
       Direction side = RedstoneUtil.convertPortIndexToFacing(front, portIndex);
-      BlockPos neighborPos = pos.offset(side);
-      testlog("out["+portIndex+"]=" + (((int)curVal)&0xff) + " -> " + side + " -> " + neighborPos);
-      if(ForgeEventFactory.onNeighborNotify(world, pos, state, java.util.EnumSet.of(side), false).isCanceled()) continue;
-      world.neighborChanged(neighborPos, block, pos);
+      outputPower[side.getOpposite().getIndex()] = getPortSignal(portIndex);
+      BlockPos neighborPos = getPos().offset(side);
+      if(ForgeEventFactory.onNeighborNotify(world, getPos(), state, java.util.EnumSet.of(side), true).isCanceled()) continue;
+      world.neighborChanged(neighborPos, block, getPos());
       world.notifyNeighborsOfStateExcept(neighborPos, block, side.getOpposite());
+      testlog("out["+portIndex+"]=" + (((int)value)&0xff) + "=" + outputPower[side.getOpposite().getIndex()] + " -> " + side + " -> " + neighborPos);
+    }
+    if(updated) {
+      // world.notifyNeighborsOfStateChange(getPos(), block);
+      //
+      //
+      //world.notifyBlockUpdate(pos, state, state, 1|2);
+      //if(!world.getPendingBlockTicks().isTickPending(pos, block)) {
+      //  world.getPendingBlockTicks().scheduleTick(pos, block, block.tickRate(world), TickPriority.HIGH);
+      //}
     }
     return updated;
   }
