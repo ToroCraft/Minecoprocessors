@@ -138,9 +138,11 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
     // Actions executed on the server from received GUI messages
     if(!(inventory_ instanceof MinecoprocessorTileEntity)) return;
     MinecoprocessorTileEntity te = (MinecoprocessorTileEntity)inventory_;
-    if(nbt.contains("sleep")) te.getProcessor().setWait(!te.getProcessor().isWait());
-    if(nbt.contains("reset")) te.resetProcessor();
-    if(nbt.contains("step")) te.getProcessor().setStep(true);
+    boolean dirty = false;
+    if(nbt.contains("sleep")) { dirty = true; te.getProcessor().setWait(!te.getProcessor().isWait()); }
+    if(nbt.contains("reset")) { dirty = true; te.resetProcessor(); }
+    if(nbt.contains("step"))  { dirty = true; te.getProcessor().setStep(true); }
+    if(dirty) te.markDirty();
   }
 
   @Override
@@ -163,7 +165,6 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
   private void updateProgram(ItemStack stack)
   {
     name_ = MinecoprocessorTileEntity.loadBook(stack, processor_);
-    System.out.println("updateProgram: " + name_);
     wpc_.consume((world, pos)->{
       // Lambda executed only on server
       nbt_.putString("name", name_);

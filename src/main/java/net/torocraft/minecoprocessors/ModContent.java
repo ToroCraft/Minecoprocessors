@@ -58,7 +58,7 @@ public class ModContent
   ).setRegistryName(ModMinecoprocessors.MODID, "code_book"));
 
   private static final Item MOD_ITEMS[] = {
-    CODE_BOOK,
+    // CODE_BOOK, // @todo Re-enable code book when implemented.
   };
 
   //--------------------------------------------------------------------------------------------------------------------

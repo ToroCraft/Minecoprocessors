@@ -48,9 +48,11 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
   private final Processor processor = new Processor();
   private final byte[] prevPortValues = new byte[4];
   private byte prevPortsRegister = -1;
+  private byte prevAdcRegister = -1;
   private boolean inventoryChanged = false;
   private boolean inputsChanged = false;
   private boolean outputsChanged = false;
+  private boolean initialized = false;
   private String customName = new String();
   private int loadTime;
   private int tickTimer = 0;
@@ -134,13 +136,13 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
       set(1, (((int)regs[0]) & 0xff) | ((((int)regs[1]) & 0xff)<<8) | ((((int)regs[2]) & 0xff)<<16) | ((((int)regs[3]) & 0xff)<<24)); // A B C D
       set(2, (((int)regs[4]) & 0xff) | ((((int)regs[5]) & 0xff)<<8) | ((((int)regs[6]) & 0xff)<<16) | ((((int)regs[7]) & 0xff)<<24)); // PF PB PL PR
       set(3, (((int)regs[8]) & 0xff) | ((((int)regs[9]) & 0xff)<<8) | (0 // PORTS ADC FLAGS
-        | (processor.isFault()    ? 0x0100 : 0)
-        | (processor.isZero()     ? 0x0200 : 0)
-        | (processor.isOverflow() ? 0x0400 : 0)
-        | (processor.isCarry()    ? 0x0800 : 0)
-        | (processor.isWait()     ? 0x1000 : 0)
-        | (processor.isStep()     ? 0x2000 : 0)
-        | (processor.hasProgram() ? 0x4000 : 0)
+        | (processor.isFault()    ? 0x00010000 : 0)
+        | (processor.isZero()     ? 0x00020000 : 0)
+        | (processor.isOverflow() ? 0x00040000 : 0)
+        | (processor.isCarry()    ? 0x00080000 : 0)
+        | (processor.isWait()     ? 0x00100000 : 0)
+        | (processor.isStep()     ? 0x00200000 : 0)
+        | (processor.hasProgram() ? 0x00400000 : 0)
       ));
     }
 
@@ -152,13 +154,13 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     public byte port(int i)       { return register(i+4); }
     public byte ports()           { return register(8); }
     public byte adc()             { return register(9); }
-    public boolean isFault()      { return (get(3) & 0x0100) != 0; }
-    public boolean isZero()       { return (get(3) & 0x0200) != 0; }
-    public boolean isOverflow()   { return (get(3) & 0x0400) != 0; }
-    public boolean isCarry()      { return (get(3) & 0x0800) != 0; }
-    public boolean isWait()       { return (get(3) & 0x1000) != 0; }
-    public boolean isStep()       { return (get(3) & 0x2000) != 0; }
-    public boolean isLoaded()     { return (get(3) & 0x4000) != 0; }
+    public boolean isFault()      { return (get(3) & 0x00010000) != 0; }
+    public boolean isZero()       { return (get(3) & 0x00020000) != 0; }
+    public boolean isOverflow()   { return (get(3) & 0x00040000) != 0; }
+    public boolean isCarry()      { return (get(3) & 0x00080000) != 0; }
+    public boolean isWait()       { return (get(3) & 0x00100000) != 0; }
+    public boolean isStep()       { return (get(3) & 0x00200000) != 0; }
+    public boolean isLoaded()     { return (get(3) & 0x00400000) != 0; }
   }
 
   protected final ContainerSyncFields fields = new ContainerSyncFields();
@@ -227,38 +229,48 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
   public void tick()
   {
     if((world.isRemote()) || (--tickTimer > 0)) return;
-    final BlockState blockState = world.getBlockState(pos); // @todo --> not sure if the caches getBlockState() would be good here.
+    final BlockState blockState = world.getBlockState(pos); // @todo --> not sure if the cached getBlockState() would be good here.
     if(!(blockState.getBlock() instanceof MinecoprocessorBlock)) { tickTimer = 20; return; }
     final MinecoprocessorBlock block = (MinecoprocessorBlock)blockState.getBlock();
     tickTimer = ((block.config & MinecoprocessorBlock.CONFIG_OVERCLOCKED)!=0) ? 1 : 2;
     boolean dirty = false;
     final boolean hasBook = !inventory.get(0).isEmpty();
-
+    // TE loading initialisation
+    if(!initialized) {
+      // Uncool that this has to be done in tick(), but TE::onLoad() is no help here.
+      initialized = true;
+      // This is needed because otherwise the processor will wakeup from sleep after
+      // loading, because an input change is detected.
+      updateInputPorts(blockState, true);
+    }
     // "Firmware update"
     if(inventoryChanged) {
       // @todo: ---> moved book loading/unloading to here to have it in sync with the tick.
       inventoryChanged = false;
       customName = loadBook(inventory.get(0), processor);
-      prevPortsRegister = 0x0f;
+      prevPortsRegister = processor.getRegister(Register.PORTS);
+      prevAdcRegister = processor.getRegister(Register.ADC);
       for(int i=0; i<prevPortValues.length; i++) prevPortValues[i] = 0;
       inputsChanged = true;
       outputsChanged = true;
       dirty = true;
-    } else if(hasBook) {
+    } else if(hasBook && (!processor.isFault())) {
       // Processor run
       if(processor.tick()) {
         outputsChanged = true;
       }
       // Port config update
-      if(prevPortsRegister != processor.getRegister(Register.PORTS)) {
+      if((prevPortsRegister != processor.getRegister(Register.PORTS)) ||
+         (prevAdcRegister != processor.getRegister(Register.ADC))) {
         prevPortsRegister = processor.getRegister(Register.PORTS);
+        prevAdcRegister = processor.getRegister(Register.ADC);
         inputsChanged = true;
         outputsChanged = true;
       }
       // Input
       if(inputsChanged) {
         inputsChanged = false;
-        updateInputPorts(blockState);
+        updateInputPorts(blockState, false);
       }
     }
     if(outputsChanged) {
@@ -357,7 +369,7 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     return updated;
   }
 
-  private boolean updateInputPorts(BlockState state)
+  private boolean updateInputPorts(BlockState state, boolean initialLoading)
   {
     //
     // @review: included updateInputPort() here to have for reusing local vars on the stack.
@@ -382,8 +394,10 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
         reset = true;
       }
     }
-    if(reset) processor.reset();
-    if(updated) processor.wake();
+    if(!initialLoading) {
+      if(reset) processor.reset();
+      if(updated) processor.wake();
+    }
     return updated;
   }
 

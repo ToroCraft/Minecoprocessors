@@ -53,7 +53,7 @@ public class MinecoprocessorBlock extends Block
 
   // Block -------------------------------------------------------------------------------------------------------------
 
-  protected static final VoxelShape SHAPE = Block.makeCuboidShape(0,0,0, 16,2,16);
+  protected static final VoxelShape SHAPE = Block.makeCuboidShape(0,0,0, 16,3,16);
   public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
   public static final DirectionProperty HORIZONTAL_FACING = HorizontalBlock.HORIZONTAL_FACING;
 
