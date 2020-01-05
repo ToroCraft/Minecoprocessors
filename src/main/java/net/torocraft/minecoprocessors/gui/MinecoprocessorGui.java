@@ -87,6 +87,7 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
     renderBackground();
     super.render(mouseX, mouseY, partialTicks);
     renderHoveredToolTip(mouseX, mouseY);
+    getContainer().checkResync();
   }
 
   @Override
@@ -285,7 +286,11 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
     String label = "NEXT";
     String value = "";
     int color = 0xffffff;
-    if(getContainer().getFields().isLoaded()) {
+    if((!getContainer().getProcessorError().isEmpty()) || (getContainer().getFields().isFault())) {
+      label = "ERROR";
+      value = getContainer().getProcessorError();
+      color = 0xff0000;
+    } else if(getContainer().getFields().isLoaded()) {
       Processor processor = getContainer().getProcessor();
       byte[] a = null;
       if(processor != null) {
@@ -301,10 +306,6 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
       }
       if (a != null) {
         value = InstructionUtil.compileLine(a, processor.getLabels(), (short) -1);
-      }
-      if (value.isEmpty() && (!getContainer().getProcessorError().isEmpty())) {
-        value = getContainer().getProcessorError();
-        color = 0xff0000;
       }
     }
     font.drawString(label, x - 4, y - 14, 0x404040);

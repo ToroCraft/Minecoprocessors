@@ -57,8 +57,6 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
   private int loadTime;
   private int tickTimer = 0;
 
-  private static void testlog(String s) { System.out.println(s); }
-
   public MinecoprocessorTileEntity()
   { super(ModContent.TET_MINECOPROCESSOR); }
 
@@ -351,7 +349,7 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
       outputPower[side.getIndex()] = getPortSignal(portIndex);
       to_update[side.getIndex()] = true;
       updated = true;
-      testlog("out["+portIndex+"]=" + (((int)value)&0xff) + "=" + outputPower[side.getIndex()] + " -> " + side + " -> " + getPos().offset(side));
+      // testlog("out["+portIndex+"]=" + (((int)value)&0xff) + "=" + outputPower[side.getIndex()] + " -> " + side + " -> " + getPos().offset(side));
     }
     // Neighbour block updates
     for(Direction side: Direction.values()) {
