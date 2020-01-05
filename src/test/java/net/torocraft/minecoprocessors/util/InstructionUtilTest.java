@@ -430,8 +430,7 @@ public class InstructionUtilTest {
   private static void printInstruction(byte[] instruction) {
     System.out.print("Instruction: ");
     for (byte b : instruction) {
-      // @todo: RE-ENABLE
-      // System.out.print(MinecoprocessorGui.toBinary(b));
+      System.out.print(GuiUtil.toBinary(b));
       System.out.print("  ");
     }
     System.out.println();

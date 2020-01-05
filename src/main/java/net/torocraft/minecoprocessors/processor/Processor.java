@@ -69,7 +69,7 @@ public class Processor
    * tmp
    */
   private boolean step;
-  private String error;
+  private String error = "";
 
   void flush() {
     reset();
@@ -78,27 +78,6 @@ public class Processor
     labels.clear();
     program.clear();
   }
-
-  // TODO move to util class
-  public static void reset(byte[] a) {
-    for (int i = 0; i < a.length; i++) {
-      a[i] = 0;
-    }
-  }
-
-  // TODO move to util class
-  public static void reset(boolean[] a) {
-    for (int i = 0; i < a.length; i++) {
-      a[i] = false;
-    }
-  }
-
-  public static void reset(int[] a) {
-    for (int i = 0; i < a.length; i++) {
-      a[i] = 0;
-    }
-  }
-
 
   public void reset() {
     fault = false;
@@ -119,11 +98,12 @@ public class Processor
     wait = false;
   }
 
-  public void load(List<String> file) {
+  public boolean load(List<String> file) {
     try {
       flush();
       if (file != null) {
         program = InstructionUtil.parseFile(file, labels);
+        return (!program.isEmpty());
       } else {
         program = new ArrayList<>();
         labels = new ArrayList<>();
@@ -133,6 +113,7 @@ public class Processor
       faultCode = FaultCode.FAULT_UNKNOWN_OPCODE;
       fault = true;
     }
+    return false;
   }
 
   long packFlags() {
@@ -200,7 +181,7 @@ public class Processor
     nbt.putByteArray("registers", registers);
     nbt.putByte("faultCode", faultCode);
     nbt.putLong("flags", packFlags());
-    if((error!=null) && (!error.isEmpty())) nbt.putString("error", error);
+    nbt.putString("error", error);
     ListNBT programTag = new ListNBT();
     for(byte[] b: program) programTag.add(new ByteArrayNBT(b));
     nbt.put("program", programTag);
@@ -786,6 +767,16 @@ public class Processor
     s.append(flag ? "1 " : "0 ");
   }
 
+  public String stateLineDump() {
+    return String.format(
+      "{ ip:%04x sp:%02x f:%s regs:%02x%02x%02x%02x io:%02x%02x%02x%02x }",
+      ip, sp,
+      (fault ? "F" : "-") + (zero ? "Z" : "-") + (overflow ? "O" : "-") + (carry ? "C" : "-") + (wait ? "W" : "-"),
+      registers[Register.A.ordinal()], registers[Register.B.ordinal()], registers[Register.C.ordinal()], registers[Register.D.ordinal()],
+      registers[Register.PF.ordinal()], registers[Register.PB.ordinal()], registers[Register.PL.ordinal()], registers[Register.PR.ordinal()]
+    );
+  }
+
   byte getVariableOperand(int operandIndex) {
     if (isLabelOperand(instruction, operandIndex)) {
       return getProgramValueFromLabelOperand(operandIndex);
@@ -868,8 +859,16 @@ public class Processor
     return registers;
   }
 
+  public byte getRegister(Register reg) {
+    return registers[reg.ordinal()];
+  }
+
   public List<byte[]> getProgram() {
     return program;
+  }
+
+  public boolean hasProgram() {
+    return (program!=null) && (!program.isEmpty());
   }
 
   public short getIp() {
@@ -906,6 +905,10 @@ public class Processor
 
   public void setStep(boolean step) {
     this.step = step;
+  }
+
+  public boolean isStep() {
+    return step;
   }
 
   public String getError() {

@@ -10,6 +10,8 @@ import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUseContext;
+import net.minecraft.item.WrittenBookItem;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.StringNBT;
@@ -23,13 +25,13 @@ import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.torocraft.minecoprocessors.util.BookCreator;
-
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.regex.Pattern;
 
 
-public final class CodeBookItem extends Item
+public final class CodeBookItem extends WrittenBookItem
+       // implements INetworkSynchronisableItem <<-- will replace class MessageBookCodeData as general item NBT sync.
 {
   public CodeBookItem(Item.Properties properties)
   { super(properties); }
@@ -68,15 +70,18 @@ public final class CodeBookItem extends Item
   { tooltip.add(new TranslationTextComponent("item.minecoprocessors.code_book.tooltip")); }
 
   @Override
+  public ActionResultType onItemUse(ItemUseContext context)
+  { return ActionResultType.PASS; } // prevent Lectern usage.
+
+  @Override
   public ActionResult<ItemStack> onItemRightClick(World world, PlayerEntity player, Hand hand)
   {
     ItemStack stack = player.getHeldItem(hand);
     if(world.isRemote()) {
-      System.out.println("Open Code Book");
-      // player.openGui(Minecoprocessors.INSTANCE, MinecoprocessorGuiHandler.MINECOPROCESSOR_BOOK_GUI, world, 0, 0, 0);
+      // "Open Code Book";
+      // player.openGui(Minecoprocessors.INSTANCE, MinecoprocessorGuiHandler.CODE_BOOK_GUI, world, 0, 0, 0);
     } else {
       /// TEST MANUAL
-      System.out.println("Create manual ...");
       stack = BookCreator.getManual();
     }
     return new ActionResult<>(ActionResultType.SUCCESS, stack);

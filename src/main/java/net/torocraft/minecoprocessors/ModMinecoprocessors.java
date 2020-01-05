@@ -27,32 +27,17 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.torocraft.minecoprocessors.network.Networking;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import javax.annotation.Nullable;
 
-    //// @todo remove ------------------------------------------------------------------------------------------------------
-    //@Mod(modid = Minecoprocessors.MODID, version = Minecoprocessors.VERSION, name = Minecoprocessors.MODNAME)
-    //public class Minecoprocessors {
-    //  @Mod.Instance(MODID)
-    //  public static Minecoprocessors INSTANCE;
-    //  public static SimpleNetworkWrapper NETWORK = NetworkRegistry.INSTANCE.newSimpleChannel(Minecoprocessors.MODID);
-    //  @SidedProxy(clientSide = "net.torocraft.minecoprocessors.ClientProxy", serverSide = "net.torocraft.minecoprocessors.CommonProxy")
-    //  public static CommonProxy proxy;
-    //  @EventHandler public void preInit(FMLPreInitializationEvent e) { proxy.preInit(e); }
-    //  @EventHandler public void init(FMLInitializationEvent e) { proxy.init(e); }
-    //}
-    //// @todo /remove -----------------------------------------------------------------------------------------------------
 
 @Mod("minecoprocessors")
 public class ModMinecoprocessors
 {
   public static final String MODID = "minecoprocessors";
   public static final String MODNAME = "Minecoprocessors";
-  public static final String MODVERSION = "@MOD_VERSION@";
-  public static final String MODMCVERSION = "@MOD_MCVERSION@";
-  public static final String MODFINGERPRINT = "@MOD_SIGNSHA1@";
-  public static final String MODBUILDID = "@MOD_BUILDID@";
   public static final int VERSION_DATAFIXER = 0;
   private static final Logger LOGGER = LogManager.getLogger();
 
@@ -96,25 +81,15 @@ public class ModMinecoprocessors
     public static void onCommonSetup(final FMLCommonSetupEvent event)
     {
       ModConfig.apply();
-      // Networking.init();
-
-      /// @todo THIS WAS CommonProxy.preInit() -----------
-      // public void preInit(FMLPreInitializationEvent e) {
-      //    logger = e.getModLog();
-      //    int packetId = 0;
-      //    MessageEnableGuiUpdates.init(packetId++);
-      //    MessageProcessorUpdate.init(packetId++);
-      //    MessageProcessorAction.init(packetId++);
-      //    MessageBookCodeData.init(packetId++);
-      //    TileEntityMinecoprocessor.init();
-      //    MinecoprocessorGuiHandler.init();
-      //  }
-      /// @todo ------------------------------------------
+      Networking.init();
     }
+    /// @todo THIS WAS CommonProxy.preInit() -----------
+    // MessageProcessorUpdate.init(packetId++);
+    // MessageBookCodeData.init(packetId++);
 
     @SubscribeEvent
     public static void onClientSetup(final FMLClientSetupEvent event)
-    { ModContent.registerContainerGuis(event); }
+    { ModContent.registerGuis(event); }
 
     @SubscribeEvent
     public static void onConfigLoad(net.minecraftforge.fml.config.ModConfig.Loading event)
@@ -137,7 +112,6 @@ public class ModMinecoprocessors
     default @Nullable PlayerEntity getPlayerClientSide() { return null; }
     default @Nullable World getWorldClientSide() { return null; }
     default @Nullable Minecraft mc() { return null; }
-    default String i18nFormat(String key, Object... parameters) { return key; }
     default void handleUnexpectedException(Exception e) { e.printStackTrace(); }
   }
 
@@ -146,7 +120,6 @@ public class ModMinecoprocessors
     public @Nullable PlayerEntity getPlayerClientSide() { return Minecraft.getInstance().player; }
     public @Nullable World getWorldClientSide() { return Minecraft.getInstance().world; }
     public @Nullable Minecraft mc() { return Minecraft.getInstance(); }
-    public String i18nFormat(String key, Object... parameters) { return I18n.format(key, parameters); }
 
     private static boolean toldPlayerAboutException = false;
     public void handleUnexpectedException(Exception e) {

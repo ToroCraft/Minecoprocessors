@@ -4,8 +4,7 @@
  */
 package net.torocraft.minecoprocessors.blocks;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
+import net.minecraft.block.*;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.IInventory;
@@ -13,30 +12,53 @@ import net.minecraft.inventory.ItemStackHelper;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.item.WritableBookItem;
+import net.minecraft.item.WrittenBookItem;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
 import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.*;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
+import net.minecraftforge.event.ForgeEventFactory;
 import net.torocraft.minecoprocessors.ModContent;
+import net.torocraft.minecoprocessors.ModMinecoprocessors;
+import net.torocraft.minecoprocessors.items.CodeBookItem;
 import net.torocraft.minecoprocessors.processor.Processor;
+import net.torocraft.minecoprocessors.processor.Register;
+import net.torocraft.minecoprocessors.util.ByteUtil;
+import net.torocraft.minecoprocessors.util.InstructionUtil;
+import net.torocraft.minecoprocessors.util.RedstoneUtil;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.regex.Pattern;
 
 
 public class MinecoprocessorTileEntity extends TileEntity implements ITickableTileEntity, INameable, IInventory, INamedContainerProvider
 {
   public static final int NUM_OF_SLOTS = 1;
-
   private NonNullList<ItemStack> inventory = NonNullList.withSize(NUM_OF_SLOTS, ItemStack.EMPTY);
   private final Processor processor = new Processor();
   private final byte[] prevPortValues = new byte[4];
-  private String customName;
+  private final int[] outputPower = new int[Direction.values().length];
+  private byte prevPortsRegister = -1;
+  private byte prevAdcRegister = -1;
+  private boolean inventoryChanged = false;
+  private boolean inputsChanged = false;
+  private boolean outputsChanged = false;
+  private boolean initialized = false;
+  private String customName = "";
   private int loadTime;
-  private boolean loaded;
-  private byte prevPortsRegister = 0x0f;
-  private boolean prevIsInactive;
   private int tickTimer = 0;
+
+  private static void testlog(String s) { System.out.println(s); }
 
   public MinecoprocessorTileEntity()
   { super(ModContent.TET_MINECOPROCESSOR); }
@@ -54,19 +76,18 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     inventory = NonNullList.<ItemStack>withSize(1, ItemStack.EMPTY);  // <<-- this.getSizeInventory() -> 1
     ItemStackHelper.loadAllItems(nbt, inventory);
     loadTime = nbt.getShort("loadTime");
-    if(nbt.contains("CustomName", 8)) {
-      this.customName = nbt.getString("CustomName");
-    }
+    customName = nbt.getString("CustomName");
+    if(customName==null) customName = "";
   }
 
   @Override
   public CompoundNBT write(CompoundNBT nbt)
   {
     super.write(nbt);
+    ItemStackHelper.saveAllItems(nbt, inventory);
+    if(hasCustomName()) nbt.putString("CustomName", customName);
     nbt.put("processor", processor.getNBT());
     nbt.putShort("loadTime", (short)loadTime);
-    ItemStackHelper.saveAllItems(nbt, inventory);
-    if(this.hasCustomName()) nbt.putString("CustomName", this.customName);
     return nbt;
   }
 
@@ -74,15 +95,19 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
 
   @Override
   public ITextComponent getName()
-  { final Block block=getBlockState().getBlock(); return new StringTextComponent((block!=null) ? block.getTranslationKey() : "Minecoprocessor"); }
+  {
+    if(hasCustomName()) return new StringTextComponent(customName);
+    final BlockState state = getBlockState();
+    return new StringTextComponent((state!=null) ? (state.getBlock().getTranslationKey()) : ("Minecoprocessor"));
+  }
 
   @Override
   public boolean hasCustomName()
-  { return false; }
+  { return !customName.isEmpty(); }
 
   @Override
   public ITextComponent getCustomName()
-  { return getName(); }
+  { return new StringTextComponent(customName); }
 
   @Override
   public ITextComponent getDisplayName()
@@ -94,27 +119,53 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
   public Container createMenu(int id, PlayerInventory inventory, PlayerEntity player )
   { return new MinecoprocessorContainer(id, inventory, this, IWorldPosCallable.of(world, pos), fields); }
 
-  public static final int NUM_OF_FIELDS = 1; // Container/GUI synchronization fields
-
-  protected final IIntArray fields = new IntArray(NUM_OF_FIELDS)
+  // Container/GUI synchronization fields
+  public static final class ContainerSyncFields extends IntArray
   {
-    @Override
-    public int get(int id)
+    public static int NUM_OF_FIELDS = 4;  //  [0,1,2]: (sizeof(regs)/sizeof(int))+1 and flags. [3]: ip,sp,fault
+
+    public ContainerSyncFields()
+    { super(NUM_OF_FIELDS); }
+
+    public void writeServerSide(Processor processor)
     {
-      switch(id) {
-        case  0: return 0;
-        default: return 0;
-      }
+      final byte[] regs = processor.getRegisters();
+      set(0, 0 // IP SP FAULT
+        | ((((int)processor.getIp()) & 0xffff)<< 0)
+        | ((((int)processor.getSp()) & 0xff)<<16)
+        | ((((int)processor.getFaultCode()) & 0xff)<<24)
+      );
+      set(1, (((int)regs[0]) & 0xff) | ((((int)regs[1]) & 0xff)<<8) | ((((int)regs[2]) & 0xff)<<16) | ((((int)regs[3]) & 0xff)<<24)); // A B C D
+      set(2, (((int)regs[4]) & 0xff) | ((((int)regs[5]) & 0xff)<<8) | ((((int)regs[6]) & 0xff)<<16) | ((((int)regs[7]) & 0xff)<<24)); // PF PB PL PR
+      set(3, (((int)regs[8]) & 0xff) | ((((int)regs[9]) & 0xff)<<8) | (0 // PORTS ADC FLAGS
+        | (processor.isFault()    ? 0x00010000 : 0)
+        | (processor.isZero()     ? 0x00020000 : 0)
+        | (processor.isOverflow() ? 0x00040000 : 0)
+        | (processor.isCarry()    ? 0x00080000 : 0)
+        | (processor.isWait()     ? 0x00100000 : 0)
+        | (processor.isStep()     ? 0x00200000 : 0)
+        | (processor.hasProgram() ? 0x00400000 : 0)
+      ));
     }
-    @Override
-    public void set(int id, int value)
-    {
-      switch(id) {
-        case  0: break;
-        default: return;
-      }
-    }
-  };
+
+    // Client side getters
+    public short ip()             { return (short)((get(0)>> 0) & 0xffff); }
+    public byte sp()              { return (byte)((get(0)>>16) & 0xff); }
+    public byte fault()           { return (byte)((get(0)>>24) & 0xff); }
+    public byte register(int i)   { return (byte)((get(1+(i/4)) >> (8*(i&0x3))) & 0xff); }
+    public byte port(int i)       { return register(i+4); }
+    public byte ports()           { return register(8); }
+    public byte adc()             { return register(9); }
+    public boolean isFault()      { return (get(3) & 0x00010000) != 0; }
+    public boolean isZero()       { return (get(3) & 0x00020000) != 0; }
+    public boolean isOverflow()   { return (get(3) & 0x00040000) != 0; }
+    public boolean isCarry()      { return (get(3) & 0x00080000) != 0; }
+    public boolean isWait()       { return (get(3) & 0x00100000) != 0; }
+    public boolean isStep()       { return (get(3) & 0x00200000) != 0; }
+    public boolean isLoaded()     { return (get(3) & 0x00400000) != 0; }
+  }
+
+  protected final ContainerSyncFields fields = new ContainerSyncFields();
 
   // IInventory -------------------------------------------------------------------------------------------
 
@@ -168,412 +219,252 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
 
   @Override
   public boolean isItemValidForSlot(int index, ItemStack stack)
-  { return (!stack.isEmpty()) && (stack.getItem() == ModContent.CODE_BOOK); }
+  { return isValidBook(stack); }
 
   @Override
   public void clear()
-  { onInventoryChanged(); inventory.clear(); }
+  { onInventoryChanged(); inventory.clear(); markDirty(); }
 
   // ITickable ---------------------------------------------------------------------------------------------------------
 
   @Override
   public void tick()
   {
-    if((world.isRemote) || (--tickTimer > 0)) return;
-    tickTimer = 2;
-    final BlockState currentBlockState = world.getBlockState(pos);
-    if(!(currentBlockState.getBlock() instanceof MinecoprocessorBlock)) return;
-    final MinecoprocessorBlock block = (MinecoprocessorBlock)currentBlockState.getBlock();
-    if((block.config & MinecoprocessorBlock.CONFIG_OVERCLOCKED)!=0) tickTimer = 1;
-
-    ///------------------------------------------------------------------------------------------------------
-    // test tick
-    tickTimer = 20;
-    if(!inventory.get(0).isEmpty()) {
-      world.setBlockState(getPos(), currentBlockState.cycle(MinecoprocessorBlock.ACTIVE), 2);
-    } else if(currentBlockState.get(MinecoprocessorBlock.ACTIVE)) {
-      world.setBlockState(getPos(), currentBlockState.with(MinecoprocessorBlock.ACTIVE, false), 2);
+    if((world.isRemote()) || (--tickTimer > 0)) return;
+    final BlockState blockState = world.getBlockState(pos); // @todo --> not sure if the cached getBlockState() would be good here.
+    if(!(blockState.getBlock() instanceof MinecoprocessorBlock)) { tickTimer = 20; return; }
+    final MinecoprocessorBlock block = (MinecoprocessorBlock)blockState.getBlock();
+    tickTimer = ((block.config & MinecoprocessorBlock.CONFIG_OVERCLOCKED)!=0) ? 1 : 2;
+    boolean dirty = false;
+    final boolean hasBook = !inventory.get(0).isEmpty();
+    // TE loading initialisation
+    if(!initialized) {
+      // Uncool that this has to be done in tick(), but TE::onLoad() is no help here.
+      initialized = true;
+      // This is needed because otherwise the processor will wakeup from sleep after
+      // loading, because an input change is detected.
+      updateInputPorts(blockState, true);
     }
-    ///------------------------------------------------------------------------------------------------------
-
-
-
-
-    /*
-    boolean isInactive = processor.isWait() || processor.isFault();
-    if(prevIsInactive != isInactive) {
-      prevIsInactive = isInactive;
-      int priority = -1;
-      world.updateBlockTick(pos, BlockMinecoprocessor.INSTANCE, 0, priority);
+    // "Firmware update"
+    if(inventoryChanged) {
+      // @todo: ---> moved book loading/unloading to here to have it in sync with the tick.
+      inventoryChanged = false;
+      customName = loadBook(inventory.get(0), processor);
+      prevPortsRegister = processor.getRegister(Register.PORTS);
+      prevAdcRegister = processor.getRegister(Register.ADC);
+      for(int i=0; i<prevPortValues.length; i++) prevPortValues[i] = 0;
+      for(int i=0; i<outputPower.length; i++) outputPower[i] = 0;
+      inputsChanged = true;
+      outputsChanged = true;
+      dirty = true;
+    } else if(hasBook && (!processor.isFault())) {
+      // Processor run
+      if(processor.tick()) {
+        outputsChanged = true;
+      }
+      // Port config update
+      if((prevPortsRegister != processor.getRegister(Register.PORTS)) ||
+         (prevAdcRegister != processor.getRegister(Register.ADC))) {
+        prevPortsRegister = processor.getRegister(Register.PORTS);
+        prevAdcRegister = processor.getRegister(Register.ADC);
+        for(int i=0; i<prevPortValues.length; i++) prevPortValues[i] = 0;
+        for(int i=0; i<outputPower.length; i++) outputPower[i] = 0;
+        inputsChanged = true;
+        outputsChanged = true;
+      }
+      // Input
+      if(inputsChanged) {
+        inputsChanged = false;
+        updateInputPorts(blockState, false);
+      }
     }
-
-    if (!loaded) {
-      Processor.reset(prevPortValues);
-      prevPortsRegister = 0x0f;
-      BlockMinecoprocessor.updateInputPorts(world, pos, world.getBlockState(pos));
-      loaded = true;
+    if(outputsChanged) {
+      outputsChanged = false;
+      updateOutputs(blockState, block);
     }
-
-    if (processor.tick()) {
-      updatePlayers();
-      detectOutputChanges();
+    BlockState state = blockState.with(MinecoprocessorBlock.ACTIVE, hasBook && (!processor.isWait()) && (!processor.isFault()));
+    if(state != blockState) {
+      world.setBlockState(pos, state, 1|2|16);
     }
-
-    if (prevPortsRegister != processor.getRegisters()[Register.PORTS.ordinal()]) {
-      BlockMinecoprocessor.updateInputPorts(world, pos, world.getBlockState(pos));
-      prevPortsRegister = processor.getRegisters()[Register.PORTS.ordinal()];
-    }
-    */
+    fields.writeServerSide(processor);
+    if(dirty) markDirty();
   }
 
-  // Class private -----------------------------------------------------------------------------------------------------
+  // Class specific methods --------------------------------------------------------------------------------------------
 
-  private void onInventoryChanged() //
-  { tickTimer = 0; }
+  public static boolean isValidBook(ItemStack stack)
+  { return (!stack.isEmpty()) && ((stack.getItem() == ModContent.CODE_BOOK) || (stack.getItem() == Items.WRITTEN_BOOK) || (stack.getItem() == Items.WRITABLE_BOOK)); }
 
+  public static boolean isInInputMode(byte ports, int portIndex)
+  { return (ByteUtil.getBit(ports, portIndex)) && (!ByteUtil.getBit(ports, portIndex + 4)); }
 
-//  private Set<ServerPlayerEntity> playersToUpdate = new HashSet<ServerPlayerEntity>();
-//
-//  public void updatePlayers() {
-//    for (EntityPlayerMP player : playersToUpdate) {
-//      Minecoprocessors.NETWORK.sendTo(new MessageProcessorUpdate(processor.writeToNBT(), pos, getName()), player);
-//    }
-//  }
-//
-//  private void detectOutputChanges() {
-//    detectOutputChange(0);
-//    detectOutputChange(1);
-//    detectOutputChange(2);
-//    detectOutputChange(3);
-//  }
-//
-//  private boolean detectOutputChange(int portIndex) {
-//    byte[] registers = processor.getRegisters();
-//    byte ports = registers[Register.PORTS.ordinal()];
-//
-//    byte curVal = registers[Register.PF.ordinal() + portIndex];
-//
-//    if (isInOutputMode(ports, portIndex) && prevPortValues[portIndex] != curVal) {
-//      prevPortValues[portIndex] = curVal;
-//      BlockMinecoprocessor.INSTANCE.onPortChange(world, pos, world.getBlockState(pos), portIndex);
-//      return true;
-//    }
-//    return false;
-//  }
-//
-//  public boolean updateInputPorts(int[] values) {
-//    boolean updated = false;
-//    for (int i = 0; i < 4; i++) {
-//      updated = updateInputPort(i, values[i]) || updated;
-//    }
-//    if (updated) {
-//      processor.wake();
-//    }
-//    return updated;
-//  }
-//
-//  public static boolean isInInputMode(byte ports, int portIndex) {
-//    return ByteUtil.getBit(ports, portIndex) && !ByteUtil.getBit(ports, portIndex + 4);
-//  }
-//
-//  public static boolean isInOutputMode(byte ports, int portIndex) {
-//    return !ByteUtil.getBit(ports, portIndex) && !ByteUtil.getBit(ports, portIndex + 4);
-//  }
-//
-//  public static boolean isADCMode(byte adc, int portIndex) {
-//    return ByteUtil.getBit(adc, portIndex);
-//  }
-//
-//  public static boolean isInResetMode(byte ports, int portIndex) {
-//    return ByteUtil.getBit(ports, portIndex) && ByteUtil.getBit(ports, portIndex + 4);
-//  }
-//
-//  /**
-//   * return true for positive edge changes
-//   */
-//  private boolean updateInputPort(int portIndex, int powerValue) {
-//    byte[] registers = processor.getRegisters();
-//    byte ports = registers[Register.PORTS.ordinal()];
-//    byte adc = registers[Register.ADC.ordinal()];
-//    byte value;
-//
-//    if (isADCMode(adc, portIndex)) {
-//      value = RedstoneUtil.powerToPort(powerValue);
-//    } else if (powerValue == 0) {
-//      value = 0;
-//    } else {
-//      value = (byte) 0xff;
-//    }
-//
-//    if (isInInputMode(ports, portIndex) && prevPortValues[portIndex] != value) {
-//      prevPortValues[portIndex] = value;
-//      registers[Register.PF.ordinal() + portIndex] = value;
-//      return true;
-//    }
-//
-//    if (isInResetMode(ports, portIndex) && prevPortValues[portIndex] != value) {
-//      prevPortValues[portIndex] = value;
-//
-//      if (value != 0) {
-//        processor.reset();
-//        return true;
-//      }
-//    }
-//
-//    return false;
-//  }
-//
-//  private byte getPortSignal(int portIndex) {
-//    if (!isInOutputMode(processor.getRegisters()[Register.PORTS.ordinal()], portIndex)) {
-//      return 0;
-//    }
-//    byte signal = processor.getRegisters()[Register.PF.ordinal() + portIndex];
-//
-//    if (!isADCMode(processor.getRegisters()[Register.ADC.ordinal()], portIndex)) {
-//      return signal == 0 ? 0 : (byte) 0xff;
-//    }
-//
-//    return signal;
-//  }
-//
-//  public byte getFrontPortSignal() {
-//    return getPortSignal(0);
-//  }
-//
-//  public byte getBackPortSignal() {
-//    return getPortSignal(1);
-//  }
-//
-//  public byte getLeftPortSignal() {
-//    return getPortSignal(2);
-//  }
-//
-//  public byte getRightPortSignal() {
-//    return getPortSignal(3);
-//  }
-//
-//  public void reset() {
-//    if (world.isRemote) {
-//      return;
-//    }
-//    processor.reset();
-//    for (int portIndex = 0; portIndex < 4; portIndex++) {
-//      detectOutputChange(portIndex);
-//    }
-//    loaded = false;
-//  }
-//
-//  @Override
-//  public ItemStack getStackInSlot(int index) {
-//    return index >= 0 && index < codeItemStacks.size() ? codeItemStacks.get(index) : ItemStack.EMPTY;
-//  }
-//
-//  @Override
-//  public ItemStack decrStackSize(int index, int count) {
-//    markDirty();
-//    return ItemStackHelper.getAndSplit(codeItemStacks, index, count);
-//  }
-//
-//  @Override
-//  public ItemStack removeStackFromSlot(int index) {
-//    markDirty();
-//    return ItemStackHelper.getAndRemove(codeItemStacks, index);
-//  }
-//
-//  @Override
-//  public void setInventorySlotContents(int index, ItemStack stack) {
-//    if (index != 0) {
-//      return;
-//    }
-//
-//    codeItemStacks.set(index, stack);
-//
-//    if (stack.isEmpty()) {
-//      unloadBook();
-//    } else {
-//      loadBook(stack);
-//    }
-//
-//    markDirty();
-//
-//  }
-//
-//  private void unloadBook() {
-//    if (world.isRemote) {
-//      return;
-//    }
-//    processor.load(null);
-//    loaded = false;
-//    setName(null);
-//    updatePlayers();
-//  }
-//
-//  private static void addLines(List<String> lines, String toAdd) {
-//    for (String s : toAdd.split("\\n\\r?")) {
-//      lines.add(s);
-//    }
-//  }
-//
-//  private void loadBook(ItemStack stack) {
-//    if (world.isRemote) {
-//      return;
-//    }
-//
-//    if (!isBook(stack.getItem()) || !stack.hasTagCompound()) {
-//      return;
-//    }
-//
-//    NBTTagList pages = stack.getTagCompound().getTagList("pages", 8);
-//
-//    if (pages == null) {
-//      return;
-//    }
-//
-//    boolean signed = stack.getTagCompound().hasKey("author");
-//    JsonParser parser = null;
-//
-//    List<String> code;
-//    if (CodeBookItem.isBookCode(stack)) {
-//      code = CodeBookItem.Data.loadFromStack(stack).getContinuousProgram();
-//    } else {
-//      code = new ArrayList<>(pages.tagCount());
-//      for (int i = 0; i < pages.tagCount(); ++i) {
-//        if (signed) {
-//          if (parser == null) {
-//            parser = new JsonParser();
-//          }
-//          JsonObject o = parser.parse(pages.getStringTagAt(i)).getAsJsonObject();
-//          addLines(code, o.get("text").getAsString());
-//        } else {
-//          addLines(code, pages.getStringTagAt(i));
-//        }
-//      }
-//    }
-//    updateNameFromCode(code);
-//    processor.load(code);
-//    loaded = false;
-//    updatePlayers();
-//  }
-//
-//  private void updateNameFromCode(List<String> code) {
-//    String name = readNameFromHeader(code);
-//    if ("".equals(name)) {
-//      setName(null);
-//    } else {
-//      setName(name);
-//    }
-//  }
-//
-//  public static String readNameFromHeader(List<String> code) {
-//    try {
-//      List<String> nameSearch = InstructionUtil.regex("^\\s*;\\s*(.*)", code.get(0), Pattern.CASE_INSENSITIVE);
-//      if (nameSearch.size() != 1) {
-//        return null;
-//      }
-//      String name = nameSearch.get(0);
-//      if (name != null && !name.isEmpty()) {
-//        return name;
-//      }
-//    } catch (Exception e) {
-//      Minecoprocessors.proxy.handleUnexpectedException(e);
-//    }
-//    return null;
-//  }
-//
-//  @Override
-//  public int getInventoryStackLimit() {
-//    return 64;
-//  }
-//
-//  @Override
-//  public boolean isUsableByPlayer(EntityPlayer player) {
-//    return world.getTileEntity(pos) == this && player.getDistanceSq(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D) <= 64.0D;
-//  }
-//
-//  @Override
-//  public void openInventory(EntityPlayer player) {
-//  }
-//
-//  @Override
-//  public void closeInventory(EntityPlayer player) {
-//  }
-//
-//  public static boolean isBook(Item item) {
-//    return item == CodeBookItem.INSTANCE || item == Items.WRITABLE_BOOK || item == Items.WRITTEN_BOOK;
-//  }
-//
-//  @Override
-//  public boolean isItemValidForSlot(int index, ItemStack stack) {
-//    return isBook(stack.getItem());
-//  }
-//
-//  @Override
-//  public int getField(int id) {
-//    return 0;
-//  }
-//
-//  @Override
-//  public void setField(int id, int value) {
-//
-//  }
-//
-//  @Override
-//  public int getFieldCount() {
-//    return 1;
-//  }
-//
-//  @Override
-//  public String getName() {
-//    return hasCustomName() ? this.customName : "container.minecoprocessor";
-//  }
-//
-//  public void setName(String name) {
-//    this.customName = name;
-//  }
-//
-//    //@Override
-//    public boolean hasCustomName() {
-//      return customName != null && !customName.isEmpty();
-//    }
-//
-//  @Override
-//  public ITextComponent getDisplayName() {
-//    return this.hasCustomName() ? new TextComponentString(this.getName()) : new TextComponentTranslation(this.getName());
-//  }
-//
-//  @Override
-//  public int getSizeInventory() {
-//    return codeItemStacks.size();
-//  }
-//
-//  @Override
-//  public boolean isEmpty() {
-//    for (ItemStack itemstack : codeItemStacks) {
-//      if (!itemstack.isEmpty()) {
-//        return false;
-//      }
-//    }
-//
-//    return true;
-//  }
-//
-//  @Override
-//  public void clear() {
-//    codeItemStacks.clear();
-//    markDirty();
-//  }
-//
-//  public void enablePlayerGuiUpdates(EntityPlayerMP player, boolean enable) {
-//    if (enable) {
-//      playersToUpdate.add(player);
-//      updatePlayers();
-//    } else {
-//      playersToUpdate.remove(player);
-//    }
-//  }
-//
-//  public Processor getProcessor() {
-//    return processor;
-//  }
+  public static boolean isInOutputMode(byte ports, int portIndex)
+  { return (!ByteUtil.getBit(ports, portIndex)) && (!ByteUtil.getBit(ports, portIndex + 4)); }
+
+  public static boolean isADCMode(byte adc, int portIndex)
+  { return ByteUtil.getBit(adc, portIndex); }
+
+  public static boolean isInResetMode(byte ports, int portIndex)
+  { return ByteUtil.getBit(ports, portIndex) && ByteUtil.getBit(ports, portIndex + 4); }
+
+  public Processor getProcessor()
+  { return processor; }
+
+  public void resetProcessor()
+  { inventoryChanged = true; }
+
+  public void setCustomName(ITextComponent name) // Invoked from block
+  { this.customName = name.getString(); }
+
+  public void neighborChanged(BlockPos fromPos) // Invoked from block
+  { inputsChanged = true; } // Update redstone input state
+
+  public int getPower(BlockState state, Direction side, boolean strong) //  Invoked from block
+  {
+    int p = outputPower[side.getIndex()];
+    testlog("getPower("+side+", "+(strong?"strong":"weak")+") = "+p);
+    return p;
+  }
+
+  private void onInventoryChanged() // Invoked from inventory methods
+  { inventoryChanged = true; tickTimer = 0; }
+
+  private byte getPortSignal(int portIndex)
+  {
+    if(!isInOutputMode(processor.getRegister(Register.PORTS), portIndex)) {
+      return 0;
+    }
+    byte signal = processor.getRegisters()[Register.PF.ordinal() + portIndex];
+    return (byte)(isADCMode(processor.getRegister(Register.ADC), portIndex)
+         ? MathHelper.clamp(signal, 0, 15)
+         : ((signal == 0) ? (0) : (15)));
+  }
+
+  private boolean updateOutputs(final BlockState state, final Block block)
+  {
+    //
+    // @review: Combined block methods and detectOutputChange() (were only a few lines in summary after porting).
+    //
+    final Direction front = state.get(MinecoprocessorBlock.HORIZONTAL_FACING).getOpposite();
+    final byte[] registers = processor.getRegisters();
+    final byte ports = processor.getRegister(Register.PORTS);
+    boolean updated = false;
+
+    //
+    // @todo: I'm fishing in dark waters here to find out how to bloody update the neighbours properly -
+    //
+    for(int portIndex=0; portIndex<4; ++portIndex) {
+      byte value = registers[Register.PF.ordinal() + portIndex];
+      if(prevPortValues[portIndex] == value) continue;
+      prevPortValues[portIndex] = value;
+      if(!isInOutputMode(ports, portIndex)) continue;
+      updated = true;
+      Direction side = RedstoneUtil.convertPortIndexToFacing(front, portIndex);
+      outputPower[side.getOpposite().getIndex()] = getPortSignal(portIndex);
+      BlockPos neighborPos = getPos().offset(side);
+      if(ForgeEventFactory.onNeighborNotify(world, getPos(), state, java.util.EnumSet.of(side), true).isCanceled()) continue;
+      world.neighborChanged(neighborPos, block, getPos());
+      world.notifyNeighborsOfStateExcept(neighborPos, block, side.getOpposite());
+      testlog("out["+portIndex+"]=" + (((int)value)&0xff) + "=" + outputPower[side.getOpposite().getIndex()] + " -> " + side + " -> " + neighborPos);
+    }
+    if(updated) {
+      // world.notifyNeighborsOfStateChange(getPos(), block);
+      //
+      //
+      //world.notifyBlockUpdate(pos, state, state, 1|2);
+      //if(!world.getPendingBlockTicks().isTickPending(pos, block)) {
+      //  world.getPendingBlockTicks().scheduleTick(pos, block, block.tickRate(world), TickPriority.HIGH);
+      //}
+    }
+    return updated;
+  }
+
+  private boolean updateInputPorts(BlockState state, boolean initialLoading)
+  {
+    //
+    // @review: included updateInputPort() here to have for reusing local vars on the stack.
+    //
+    final Direction front = state.get(MinecoprocessorBlock.HORIZONTAL_FACING).getOpposite();
+    final byte[] registers = processor.getRegisters();
+    final byte ports = processor.getRegister(Register.PORTS);
+    final byte adc = processor.getRegister(Register.ADC);
+    boolean updated = false;
+    boolean reset = false;
+    for(int portIndex=0; portIndex<4; ++portIndex) {
+      Direction side = RedstoneUtil.convertPortIndexToFacing(front, portIndex);
+      int power = getInputPower(pos.offset(side), side);
+      byte value = (byte)((isADCMode(adc, portIndex)) ? RedstoneUtil.powerToPort(power) : ((power == 0) ? (0) : (0xff)));
+      if(prevPortValues[portIndex] == value) continue; // not changed
+      prevPortValues[portIndex] = value;
+      if(isInInputMode(ports, portIndex)) {
+        registers[Register.PF.ordinal() + portIndex] = value;
+        updated = true;
+      } else if((value != 0) && isInResetMode(ports, portIndex)) {
+        updated = true;
+        reset = true;
+      }
+    }
+    if(!initialLoading) {
+      if(reset) processor.reset();
+      if(updated) processor.wake();
+    }
+    return updated;
+  }
+
+  private int getInputPower(BlockPos pos, Direction side)
+  {
+    BlockState adjacent = world.getBlockState(pos);
+    Block block = adjacent.getBlock();
+    int p = world.getRedstonePower(pos, side);
+    if (p >= 15) return 15;
+    return Math.max(p, ((block instanceof RedstoneWireBlock) ? adjacent.get(RedstoneWireBlock.POWER) : 0));
+  }
+
+  public static String loadBook(ItemStack stack, Processor processor)
+  {
+    processor.reset();
+    if(!isValidBook(stack)) {
+      processor.load(null);
+      return "";
+    } else {
+      String title = "";
+      if(!stack.hasTag()) return title;
+      List<String> code = new ArrayList<>();
+      if(stack.getItem() instanceof CodeBookItem) {
+        code = CodeBookItem.Data.loadFromStack(stack).getContinuousProgram();
+      } else if (stack.getItem() instanceof WritableBookItem) {
+        ListNBT pages = stack.getTag().getList("pages", 8);
+        for(int i = 0; i < pages.size(); ++i) {
+          Collections.addAll(code, pages.getString(i).split("\\r?\\n"));
+        }
+      } else if (stack.getItem() instanceof WrittenBookItem) {
+        ListNBT pages = stack.getTag().getList("pages", 8);
+        for(int i = 0; i < pages.size(); ++i) {
+          try {
+            ITextComponent tc = ITextComponent.Serializer.fromJsonLenient(pages.getString(i));
+            Collections.addAll(code, tc.getUnformattedComponentText().split("\\r?\\n"));
+          } catch(Exception e) {
+            // don't load, will result in a processor fault flag displayed.
+          }
+        }
+      }
+      if(title.isEmpty()) {
+        // Read TE display name from Book header comment
+        try {
+          List<String> nameSearch = InstructionUtil.regex("^\\s*;\\s*(.*)", code.get(0), Pattern.CASE_INSENSITIVE);
+          if(nameSearch.size() == 1) {
+            String name = nameSearch.get(0);
+            if((name != null) && (!name.isEmpty())) {
+              title = name;
+            }
+          }
+        } catch (Exception e) {
+          ModMinecoprocessors.proxy.handleUnexpectedException(e);
+        }
+      }
+      processor.load(code);
+      return title;
+    }
+  }
 
 }
