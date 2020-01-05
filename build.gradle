@@ -65,7 +65,7 @@ dependencies {
 
 processResources {
   outputs.upToDateWhen { false }
-  doLast { file("${sourceSets.main.output.resourcesDir}/.gitversion").text = 'git log "-1" "--format=%h"'.execute().in.text.trim() }
+  doLast { file("${sourceSets.main.output.resourcesDir}/.gitversion-minecoprocessors").text = 'git log "-1" "--format=%h"'.execute().in.text.trim() }
 }
 
 jar {
