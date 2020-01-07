@@ -430,7 +430,7 @@ public class InstructionUtilTest {
   private static void printInstruction(byte[] instruction) {
     System.out.print("Instruction: ");
     for (byte b : instruction) {
-      System.out.print(GuiUtil.toBinary(b));
+      System.out.print(StringUtil.toBinary(b));
       System.out.print("  ");
     }
     System.out.println();

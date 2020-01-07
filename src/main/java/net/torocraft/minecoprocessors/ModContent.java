@@ -8,7 +8,7 @@
 package net.torocraft.minecoprocessors;
 
 import net.torocraft.minecoprocessors.blocks.*;
-import net.torocraft.minecoprocessors.gui.*;
+import net.torocraft.minecoprocessors.items.*;
 import net.minecraft.client.gui.ScreenManager;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.ContainerType;
@@ -23,7 +23,6 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.event.RegistryEvent;
-import net.torocraft.minecoprocessors.items.CodeBookItem;
 
 
 @SuppressWarnings("unused")
@@ -57,7 +56,7 @@ public class ModContent
   ).setRegistryName(ModMinecoprocessors.MODID, "code_book"));
 
   private static final Item MOD_ITEMS[] = {
-    // CODE_BOOK, // @todo Re-enable code book when implemented.
+    CODE_BOOK
   };
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -85,10 +84,12 @@ public class ModContent
   }
 
   public static final ContainerType<MinecoprocessorContainer> CT_MINECOPROCESSOR = register(MinecoprocessorContainer::new, "ct_minecoprocessor");
+  public static final ContainerType<CodeBookContainer> CT_CODEBOOK = register(CodeBookContainer::new, "ct_codebook");
 
   // DON'T FORGET TO REGISTER THE GUI in registerContainerGuis(), no list/map format found yet for that.
   private static final ContainerType<?> CONTAINER_TYPES[] = {
     CT_MINECOPROCESSOR,
+    CT_CODEBOOK
   };
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -122,9 +123,7 @@ public class ModContent
   public static void registerGuis(final FMLClientSetupEvent event)
   {
     ScreenManager.registerFactory(CT_MINECOPROCESSOR, MinecoprocessorGui::new);
-    // @todo: See how book GUIs have to be registered,
-    // Added correspondent line from 1.12 MinecoprocessorGuiHandler:
-    /// Item GUI: {{(ID == MINECOPROCESSOR_BOOK_GUI && CodeBookItem.isBookCode(player.getHeldItem(EnumHand.MAIN_HAND))) return new GuiBookCode(player);}}
+    ScreenManager.registerFactory(CT_CODEBOOK, CodeBookGui::new);
   }
 
 }

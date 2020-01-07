@@ -5,9 +5,15 @@
 package net.torocraft.minecoprocessors.items;
 
 import net.minecraft.block.BlockState;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.util.ITooltipFlag;
+import net.minecraft.client.util.InputMappings;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.inventory.container.Container;
+import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUseContext;
@@ -20,18 +26,21 @@ import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.torocraft.minecoprocessors.util.BookCreator;
+import net.minecraftforge.fml.network.NetworkHooks;
+import net.torocraft.minecoprocessors.util.StringUtil;
+import org.lwjgl.glfw.GLFW;
+
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 
 public final class CodeBookItem extends WrittenBookItem
-       // implements INetworkSynchronisableItem <<-- will replace class MessageBookCodeData as general item NBT sync.
 {
   public CodeBookItem(Item.Properties properties)
   { super(properties); }
@@ -67,7 +76,32 @@ public final class CodeBookItem extends WrittenBookItem
 
   @OnlyIn(Dist.CLIENT)
   public void addInformation(ItemStack stack, @Nullable World world, List<ITextComponent> tooltip, ITooltipFlag flag)
-  { tooltip.add(new TranslationTextComponent("item.minecoprocessors.code_book.tooltip")); }
+  {
+    Data data = Data.loadFromStack(stack);
+    if(data.getProgram().isEmpty()) {
+      // Empty book tooltip
+      tooltip.add(new TranslationTextComponent("item.minecoprocessors.code_book.tooltip.noprogram"));
+      tooltip.add(new TranslationTextComponent("item.minecoprocessors.code_book.tooltip"));
+    } else if(
+      // CTRL+SHIFT -> show first lines
+      (InputMappings.isKeyDown(Minecraft.getInstance().mainWindow.getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT) ||
+       InputMappings.isKeyDown(Minecraft.getInstance().mainWindow.getHandle(), GLFW.GLFW_KEY_RIGHT_SHIFT))
+      &&
+      (InputMappings.isKeyDown(Minecraft.getInstance().mainWindow.getHandle(), GLFW.GLFW_KEY_LEFT_CONTROL) ||
+       InputMappings.isKeyDown(Minecraft.getInstance().mainWindow.getHandle(), GLFW.GLFW_KEY_RIGHT_CONTROL))
+    ) {
+      String txt = data.getPage(0).stream().limit(10).filter(s->!s.isEmpty()).collect(Collectors.joining("\n")).trim();
+      if(!txt.isEmpty()) tooltip.add(new StringTextComponent(txt));
+    } else {
+      // Name and page count.
+      String program_name = data.getProgramName();
+      if(!program_name.isEmpty()) {
+        tooltip.add(new TranslationTextComponent("item.minecoprocessors.code_book.tooltip.program", new Object[]{program_name}));
+      }
+      tooltip.add(new TranslationTextComponent("item.minecoprocessors.code_book.tooltip.numpages", new Object[]{String.format("%d",data.getPageCount())}));
+      tooltip.add(new TranslationTextComponent("item.minecoprocessors.code_book.tooltip"));
+    }
+  }
 
   @Override
   public ActionResultType onItemUse(ItemUseContext context)
@@ -77,25 +111,25 @@ public final class CodeBookItem extends WrittenBookItem
   public ActionResult<ItemStack> onItemRightClick(World world, PlayerEntity player, Hand hand)
   {
     ItemStack stack = player.getHeldItem(hand);
-    if(world.isRemote()) {
-      // "Open Code Book";
-      // player.openGui(Minecoprocessors.INSTANCE, MinecoprocessorGuiHandler.CODE_BOOK_GUI, world, 0, 0, 0);
-    } else {
-      /// TEST MANUAL
-      stack = BookCreator.getManual();
+    if(!world.isRemote()) {
+      NetworkHooks.openGui((ServerPlayerEntity) player, new INamedContainerProvider() {
+        @Override
+        public ITextComponent getDisplayName()
+        { return new TranslationTextComponent(getRegistryName().toString()); }
+
+        @Override
+        public Container createMenu(int id, PlayerInventory inventory, PlayerEntity player)
+        { return new CodeBookContainer(id, inventory, player); }
+      });
     }
     return new ActionResult<>(ActionResultType.SUCCESS, stack);
   }
 
-  // Mod specific ------------------------------------------------------------------------------------------------------
-
-  //public static boolean isBookCode(ItemStack stack)
-  //{ return (!stack.isEmpty()) && (stack.getItem() == this); }
-
   // --------------------------------------------------------------------------------------------------------------
+  // Specific
+  // --------------------------------------------------------------------------------------------------------------
+
   // Data (Wrapper for list of pages stored in the code book.)
-  // --------------------------------------------------------------------------------------------------------------
-
   public static class Data
   {
     private static final String TAG_PAGES = "pages";
@@ -104,6 +138,18 @@ public final class CodeBookItem extends WrittenBookItem
     private int selectedPage = 0;
 
     // --------------------------------------------------------------------- //
+
+    public String getProgramName()
+    {
+      for(List<String> page:pages) {
+        for(String line:page) {
+          String name = line.trim();
+          if(name.isEmpty()) continue;
+          return (name.charAt(0) != ';') ? ("") : (name.substring(1).trim());
+        }
+      }
+      return "";
+    }
 
     /**
      * Get the page currently selected in the book.
@@ -185,8 +231,6 @@ public final class CodeBookItem extends WrittenBookItem
       return program;
     }
 
-    private static final Pattern PATTERN_LINES = Pattern.compile("\r?\n");
-
     /**
      * Load data from the specified NBT tag.
      *
@@ -197,7 +241,7 @@ public final class CodeBookItem extends WrittenBookItem
       pages.clear();
       final ListNBT pagesNbt = nbt.getList(TAG_PAGES, net.minecraftforge.common.util.Constants.NBT.TAG_STRING);
       for(int index = 0; index < pagesNbt.size(); index++) {
-        pages.add(Arrays.asList(PATTERN_LINES.split(pagesNbt.getString(index))));
+        pages.add(Arrays.asList(StringUtil.splitLines(pagesNbt.getString(index))));
       }
       selectedPage = nbt.getInt(TAG_SELECTED);
       validateSelectedPage();
