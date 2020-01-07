@@ -13,7 +13,6 @@ import net.minecraft.client.gui.ScreenManager;
 import net.minecraft.inventory.container.Container;
 import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.tileentity.TileEntityType;
-import net.minecraft.block.material.MaterialColor;
 import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
@@ -36,12 +35,12 @@ public class ModContent
 
   public static final MinecoprocessorBlock MINECOPROCESSOR = (MinecoprocessorBlock)(new MinecoprocessorBlock(
     MinecoprocessorBlock.CONFIG_DEFAULT,
-    Block.Properties.create(Material.MISCELLANEOUS, MaterialColor.STONE).hardnessAndResistance(0f, 10f).sound(SoundType.STONE)
+    Block.Properties.create(Material.MISCELLANEOUS).hardnessAndResistance(0f).sound(SoundType.STONE)
   )).setRegistryName(new ResourceLocation(ModMinecoprocessors.MODID, "processor"));
 
   public static final MinecoprocessorBlock MINECOPROCESSOR_OVERCLOCKED = (MinecoprocessorBlock)(new MinecoprocessorBlock(
     MinecoprocessorBlock.CONFIG_OVERCLOCKED,
-    Block.Properties.create(Material.MISCELLANEOUS, MaterialColor.STONE).hardnessAndResistance(0f, 10f).sound(SoundType.STONE)
+    Block.Properties.create(Material.MISCELLANEOUS).hardnessAndResistance(0f).sound(SoundType.STONE)
   )).setRegistryName(new ResourceLocation(ModMinecoprocessors.MODID, "overclocked_processor"));
 
   private static final Block MOD_BLOCKS[] = {

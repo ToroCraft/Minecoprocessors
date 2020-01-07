@@ -19,6 +19,7 @@ import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.state.BooleanProperty;
 import net.minecraft.state.StateContainer;
+import net.minecraft.state.properties.BlockStateProperties;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
@@ -54,7 +55,7 @@ public class MinecoprocessorBlock extends HorizontalBlock
   // Block -------------------------------------------------------------------------------------------------------------
 
   protected static final VoxelShape SHAPE = Block.makeCuboidShape(0,0,0, 16,3,16);
-  public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
+  public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 
   @Override
   @OnlyIn(Dist.CLIENT)
@@ -92,7 +93,7 @@ public class MinecoprocessorBlock extends HorizontalBlock
 
   @Override
   protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder)
-  { super.fillStateContainer(builder); builder.add(HORIZONTAL_FACING, ACTIVE); }
+  { super.fillStateContainer(builder); builder.add(HORIZONTAL_FACING, POWERED); }
 
   @Override
   @SuppressWarnings("deprecation")
@@ -104,14 +105,14 @@ public class MinecoprocessorBlock extends HorizontalBlock
   public BlockState getStateForPlacement(BlockItemUseContext context)
   {
     Direction facing = context.getPlacementHorizontalFacing();
-    if(!context.getPlayer().isSneaking()) facing = facing.getOpposite();
-    return super.getStateForPlacement(context).with(HORIZONTAL_FACING, facing).with(ACTIVE, false);
+    return super.getStateForPlacement(context).with(HORIZONTAL_FACING, facing).with(POWERED, false);
   }
 
   @Override
   public void onBlockPlacedBy(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack)
   {
     super.onBlockPlacedBy(world, pos, state, placer, stack);
+    if(world.isRemote()) return;
     final TileEntity te = world.getTileEntity(pos);
     if(!(te instanceof MinecoprocessorTileEntity)) return;
     if(stack.hasDisplayName()) {
@@ -124,7 +125,7 @@ public class MinecoprocessorBlock extends HorizontalBlock
   public void onReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean isMoving)
   {
     super.onReplaced(state, world, pos, newState, isMoving);
-    if(newState.getBlock() != state.getBlock()) {
+    if((!world.isRemote()) && (newState.getBlock() != state.getBlock())) {
       world.notifyNeighbors(pos, newState.getBlock());
       for(Direction side: Direction.values()) {
         world.notifyNeighborsOfStateExcept(pos.offset(side), newState.getBlock(), side.getOpposite());
@@ -144,7 +145,7 @@ public class MinecoprocessorBlock extends HorizontalBlock
 
   @Override
   public boolean shouldCheckWeakPower(BlockState state, IWorldReader world, BlockPos pos, Direction side)
-  { return true; }
+  { return false; }
 
   @Override
   @SuppressWarnings("deprecation")
@@ -186,9 +187,10 @@ public class MinecoprocessorBlock extends HorizontalBlock
   @SuppressWarnings("deprecation")
   public void neighborChanged(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving)
   {
+    if(world.isRemote()) return;
     super.neighborChanged(state, world, pos, block, fromPos, isMoving);
     final Vec3i directionVector = fromPos.subtract(pos);
-    if(isMoving || (!state.get(ACTIVE)) || (directionVector.getY() != 0)) return; // nothing to do then.
+    if(isMoving || (!state.get(POWERED)) || (directionVector.getY() != 0)) return; // nothing to do then.
     final TileEntity te = world.getTileEntity(pos);
     if(te instanceof MinecoprocessorTileEntity) ((MinecoprocessorTileEntity)te).neighborChanged(fromPos);
   }
@@ -246,10 +248,10 @@ public class MinecoprocessorBlock extends HorizontalBlock
       if((player==null) || (!player.isCreative())) {
         world.addEntity(new ItemEntity(world, pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5, new ItemStack(state.getBlock().asItem())));
       }
-    }
-    if(world.getTileEntity(pos) instanceof MinecoprocessorTileEntity) {
-      ItemStack book = ((MinecoprocessorTileEntity)world.getTileEntity(pos)).getStackInSlot(0);
-      if(!book.isEmpty()) world.addEntity(new ItemEntity(world, pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5, book));
+      if(world.getTileEntity(pos) instanceof MinecoprocessorTileEntity) {
+        ItemStack book = ((MinecoprocessorTileEntity)world.getTileEntity(pos)).getStackInSlot(0);
+        if(!book.isEmpty()) world.addEntity(new ItemEntity(world, pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5, book));
+      }
     }
     world.removeTileEntity(pos);
     world.removeBlock(pos, false);

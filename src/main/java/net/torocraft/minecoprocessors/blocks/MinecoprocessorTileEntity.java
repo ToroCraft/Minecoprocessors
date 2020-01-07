@@ -25,7 +25,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
-import net.minecraftforge.event.ForgeEventFactory;
 import net.torocraft.minecoprocessors.ModContent;
 import net.torocraft.minecoprocessors.ModMinecoprocessors;
 import net.torocraft.minecoprocessors.items.CodeBookItem;
@@ -57,8 +56,6 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
   private String customName = "";
   private int loadTime;
   private int tickTimer = 0;
-
-  private static void testlog(String s) { System.out.println(s); }
 
   public MinecoprocessorTileEntity()
   { super(ModContent.TET_MINECOPROCESSOR); }
@@ -231,9 +228,9 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
   public void tick()
   {
     if((world.isRemote()) || (--tickTimer > 0)) return;
-    final BlockState blockState = world.getBlockState(pos); // @todo --> not sure if the cached getBlockState() would be good here.
-    if(!(blockState.getBlock() instanceof MinecoprocessorBlock)) { tickTimer = 20; return; }
-    final MinecoprocessorBlock block = (MinecoprocessorBlock)blockState.getBlock();
+    final BlockState state = world.getBlockState(pos);
+    if(!(state.getBlock() instanceof MinecoprocessorBlock)) { tickTimer = 20; return; }
+    final MinecoprocessorBlock block = (MinecoprocessorBlock)state.getBlock();
     tickTimer = ((block.config & MinecoprocessorBlock.CONFIG_OVERCLOCKED)!=0) ? 1 : 2;
     boolean dirty = false;
     final boolean hasBook = !inventory.get(0).isEmpty();
@@ -243,11 +240,10 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
       initialized = true;
       // This is needed because otherwise the processor will wakeup from sleep after
       // loading, because an input change is detected.
-      updateInputPorts(blockState, true);
+      updateInputPorts(state, true);
     }
     // "Firmware update"
     if(inventoryChanged) {
-      // @todo: ---> moved book loading/unloading to here to have it in sync with the tick.
       inventoryChanged = false;
       customName = loadBook(inventory.get(0), processor);
       prevPortsRegister = processor.getRegister(Register.PORTS);
@@ -258,6 +254,11 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
       outputsChanged = true;
       dirty = true;
     } else if(hasBook && (!processor.isFault())) {
+      // Input
+      if(inputsChanged) {
+        inputsChanged = false;
+        updateInputPorts(state, false);
+      }
       // Processor run
       if(processor.tick()) {
         outputsChanged = true;
@@ -272,19 +273,14 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
         inputsChanged = true;
         outputsChanged = true;
       }
-      // Input
-      if(inputsChanged) {
-        inputsChanged = false;
-        updateInputPorts(blockState, false);
-      }
     }
     if(outputsChanged) {
       outputsChanged = false;
-      updateOutputs(blockState, block);
+      updateOutputs(state, block);
     }
-    BlockState state = blockState.with(MinecoprocessorBlock.ACTIVE, hasBook && (!processor.isWait()) && (!processor.isFault()));
-    if(state != blockState) {
-      world.setBlockState(pos, state, 1|2|16);
+    BlockState new_state = state.with(MinecoprocessorBlock.POWERED, hasBook && (!processor.isWait()) && (!processor.isFault()));
+    if(state != new_state) {
+      world.setBlockState(pos, new_state, 1|2);
     }
     fields.writeServerSide(processor);
     if(dirty) markDirty();
@@ -320,11 +316,7 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
   { inputsChanged = true; } // Update redstone input state
 
   public int getPower(BlockState state, Direction side, boolean strong) //  Invoked from block
-  {
-    int p = outputPower[side.getIndex()];
-    testlog("getPower("+side+", "+(strong?"strong":"weak")+") = "+p);
-    return p;
-  }
+  { return outputPower[side.getOpposite().getIndex()]; } // The updated side of the adjacent block is the opposite side here.
 
   private void onInventoryChanged() // Invoked from inventory methods
   { inventoryChanged = true; tickTimer = 0; }
@@ -342,39 +334,31 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
 
   private boolean updateOutputs(final BlockState state, final Block block)
   {
-    //
-    // @review: Combined block methods and detectOutputChange() (were only a few lines in summary after porting).
-    //
-    final Direction front = state.get(MinecoprocessorBlock.HORIZONTAL_FACING).getOpposite();
+    final Direction front = state.get(MinecoprocessorBlock.HORIZONTAL_FACING);
     final byte[] registers = processor.getRegisters();
     final byte ports = processor.getRegister(Register.PORTS);
+    final boolean[] to_update = new boolean[Direction.values().length];
     boolean updated = false;
-
-    //
-    // @todo: I'm fishing in dark waters here to find out how to bloody update the neighbours properly -
-    //
+    // Side power value updates
     for(int portIndex=0; portIndex<4; ++portIndex) {
       byte value = registers[Register.PF.ordinal() + portIndex];
       if(prevPortValues[portIndex] == value) continue;
       prevPortValues[portIndex] = value;
       if(!isInOutputMode(ports, portIndex)) continue;
-      updated = true;
       Direction side = RedstoneUtil.convertPortIndexToFacing(front, portIndex);
-      outputPower[side.getOpposite().getIndex()] = getPortSignal(portIndex);
-      BlockPos neighborPos = getPos().offset(side);
-      if(ForgeEventFactory.onNeighborNotify(world, getPos(), state, java.util.EnumSet.of(side), true).isCanceled()) continue;
-      world.neighborChanged(neighborPos, block, getPos());
-      world.notifyNeighborsOfStateExcept(neighborPos, block, side.getOpposite());
-      testlog("out["+portIndex+"]=" + (((int)value)&0xff) + "=" + outputPower[side.getOpposite().getIndex()] + " -> " + side + " -> " + neighborPos);
+      outputPower[side.getIndex()] = getPortSignal(portIndex);
+      to_update[side.getIndex()] = true;
+      updated = true;
+      // testlog("out["+portIndex+"]=" + (((int)value)&0xff) + "=" + outputPower[side.getIndex()] + " -> " + side + " -> " + getPos().offset(side));
     }
-    if(updated) {
-      // world.notifyNeighborsOfStateChange(getPos(), block);
-      //
-      //
-      //world.notifyBlockUpdate(pos, state, state, 1|2);
-      //if(!world.getPendingBlockTicks().isTickPending(pos, block)) {
-      //  world.getPendingBlockTicks().scheduleTick(pos, block, block.tickRate(world), TickPriority.HIGH);
-      //}
+    // Neighbour block updates
+    for(Direction side: Direction.values()) {
+      if(!to_update[side.getIndex()]) continue;
+      to_update[side.getIndex()] = false;
+      BlockPos neighborPos = pos.offset(side);
+      if(net.minecraftforge.event.ForgeEventFactory.onNeighborNotify(world, pos, state, java.util.EnumSet.of(side), false).isCanceled()) continue;
+      world.neighborChanged(neighborPos, block, pos);
+      world.notifyNeighborsOfStateExcept(neighborPos, block, side.getOpposite());
     }
     return updated;
   }
@@ -384,7 +368,7 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     //
     // @review: included updateInputPort() here to have for reusing local vars on the stack.
     //
-    final Direction front = state.get(MinecoprocessorBlock.HORIZONTAL_FACING).getOpposite();
+    final Direction front = state.get(MinecoprocessorBlock.HORIZONTAL_FACING);
     final byte[] registers = processor.getRegisters();
     final byte ports = processor.getRegister(Register.PORTS);
     final byte adc = processor.getRegister(Register.ADC);

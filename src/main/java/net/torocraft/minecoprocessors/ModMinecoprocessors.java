@@ -7,7 +7,6 @@
 package net.torocraft.minecoprocessors;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.container.ContainerType;
 import net.minecraft.item.ItemGroup;
@@ -31,6 +30,11 @@ import net.torocraft.minecoprocessors.network.Networking;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import javax.annotation.Nullable;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
 
 
 @Mod("minecoprocessors")
@@ -45,6 +49,7 @@ public class ModMinecoprocessors
 
   public ModMinecoprocessors()
   {
+    logGitVersion();
     MinecraftForge.EVENT_BUS.register(this);
     // ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.COMMON, ModConfig.COMMON_CONFIG_SPEC); not needed yet
     ModLoadingContext.get().registerConfig(net.minecraftforge.fml.config.ModConfig.Type.CLIENT, ModConfig.CLIENT_CONFIG_SPEC);
@@ -147,4 +152,20 @@ public class ModMinecoprocessors
     { return new ItemStack(ModContent.MINECOPROCESSOR); }
   });
 
+  // -------------------------------------------------------------------------------------------------------------------
+  // Version info
+  // -------------------------------------------------------------------------------------------------------------------
+
+  public static void logGitVersion()
+  {
+    try {
+      InputStream is = ModMinecoprocessors.class.getResourceAsStream("/.gitversion-" + MODID);
+      if(is==null) return;
+      BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+      String version = br.lines().collect(Collectors.joining("\n"));
+      LOGGER.info(MODNAME + ((version.isEmpty())?(" (dev build)"):(" GIT id #"+version)) + ".");
+    } catch(Throwable e) {
+      return; // don't log resource not there.
+    }
+  }
 }

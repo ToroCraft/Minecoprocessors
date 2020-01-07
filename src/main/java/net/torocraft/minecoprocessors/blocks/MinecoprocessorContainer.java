@@ -37,6 +37,8 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
   private String transl_ = new String();
   private String error_ = new String();
   private CompoundNBT nbt_ = new CompoundNBT();
+  private byte fault_code_ = 0; // Client side cache value
+  private boolean resync_pending_ = false; // safety lock to prevent unneeded network transfer.
 
   public MinecoprocessorContainer(int cid, PlayerInventory player_inventory)
   { this(cid, player_inventory, new Inventory(MinecoprocessorTileEntity.NUM_OF_SLOTS), IWorldPosCallable.DUMMY, new MinecoprocessorTileEntity.ContainerSyncFields()); }
@@ -142,6 +144,7 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
     if(nbt.contains("sleep")) { dirty = true; te.getProcessor().setWait(!te.getProcessor().isWait()); }
     if(nbt.contains("reset")) { dirty = true; te.resetProcessor(); }
     if(nbt.contains("step"))  { dirty = true; te.getProcessor().setStep(true); }
+    if(nbt.contains("sync"))  { Networking.PacketContainerSyncServerToClient.sendToPlayer(player, this.windowId, getSyncData()); }
     if(dirty) te.markDirty();
   }
 
@@ -149,6 +152,7 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
   public void onServerPacketReceived(int windowId, CompoundNBT nbt)
   {
     // Data received from the server for display purposes
+    resync_pending_ = false;
     if(nbt.contains("sync_data")) {
       nbt_ = nbt.getCompound("sync_data");
       if(nbt_.contains("name")) name_ = nbt_.getString("name");
@@ -171,8 +175,9 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
     name_ = MinecoprocessorTileEntity.loadBook(stack, processor_);
     wpc_.consume((world, pos)->{
       // Lambda executed only on server
+      nbt_ = getSyncData();
       nbt_.putString("name", name_);
-      Networking.PacketContainerSyncServerToClient.sendToListeners(world, this, nbt_);
+      Networking.PacketContainerSyncServerToClient.sendToListeners(((MinecoprocessorTileEntity)inventory_).getWorld(), this, nbt_);
     });
   }
 
@@ -200,6 +205,17 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
     CompoundNBT msg = new CompoundNBT();
     msg.put("sync_data", nbt_);
     return msg;
+  }
+
+  @OnlyIn(Dist.CLIENT)
+  public void checkResync()
+  {
+    if((!resync_pending_) && (fields_.fault() != fault_code_)) {
+      fault_code_ = fields_.fault();
+      if(fault_code_ == 0) error_ = "";
+      resync_pending_ = true;
+      onGuiAction("sync", 1); // request the full data set from the server.
+    }
   }
 
 }
