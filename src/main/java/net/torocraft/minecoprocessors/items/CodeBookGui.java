@@ -24,9 +24,7 @@ import net.torocraft.minecoprocessors.util.Label;
 import net.torocraft.minecoprocessors.util.ParseException;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -49,7 +47,7 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
   private static final int CODE_POS_X_IP_HINT_OFFSET = -28;
   private static final int PAGE_NUMBER_X = 92;
   private static final int PAGE_NUMBER_Y = 212;
-  private static final int BUTTON_CLOSE_X = 158;
+  private static final int BUTTON_CLOSE_X = 153;
   private static final int BUTTON_CLOSE_Y = 7;
 
   private ImageButton buttonNextPage;
@@ -58,6 +56,8 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
   private ImageButton buttonClose;
   private final CodeBookItem.Data data;
   private final List<StringBuilder> lines = new ArrayList<>();
+  private final Deque<String> undoBuffer = new ArrayDeque<>();
+  private final List<String> redoBuffer = new ArrayList<>();
   private final List<String> tooltip = new ArrayList<>();
   private final List<ParseException> compileError = new ArrayList<>();
   private final List<Integer> instructionIds = new ArrayList<>();
@@ -86,6 +86,9 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
 
   private static int getInstructionNoColor()
   { return ModConfig.codeBookInstructionNoColor; }
+
+  private static int getMaxUndoSteps()
+  { return ModConfig.maxUndoSteps; }
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -129,7 +132,7 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
     })));
     rebuildLines();
     minecraft.keyboardListener.enableRepeatEvents(true);
-    selectionStart = selectionEnd = Math.max(0, pageCharacterCount(data.getSelectedPage()-1)); // Set cursor at the end of the page text when opening.
+    selectionStart = selectionEnd = Math.max(0, pageCharacterCount()); // Set cursor at the end of the page text when opening.
   }
 
   @Override
@@ -237,6 +240,9 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
     final int line = indexToLine(getSelectionStart());
     final int column = indexToColumn(getSelectionStart());
     if(!Character.isISOControl(typedChar)) {
+      if(!hasControlDown()) {
+        undoPush(lines);
+      }
       deleteSelection();
       if(lines.get(line).length() < getMaxColumns()) {
         lines.get(line).insert(column, String.valueOf(typedChar));
@@ -249,12 +255,50 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
   }
 
   @Override
-  public boolean keyPressed(int keyCode, int scanCode, int no_idea)
+  public boolean keyPressed(int keyCode, int scanCode, int modifiers)
   {
-    if(!isEditingCode) return super.keyPressed(keyCode, scanCode, no_idea);
+    if(!isEditingCode) return super.keyPressed(keyCode, scanCode, modifiers);
     final int line = indexToLine(getSelectionStart());
     final int column = indexToColumn(getSelectionStart());
-    if(keyCode == GLFW.GLFW_KEY_ESCAPE) {
+    final List<StringBuilder> prev_lines = new ArrayList<>(lines);
+    boolean noUndoTracking = false;
+    if(hasControlDown()) {
+      final String key = GLFW.glfwGetKeyName(keyCode, scanCode);
+      if(keyCode==GLFW.GLFW_KEY_A) {
+        selectionStart = 0;
+        selectionEnd = positionToIndex(Integer.MAX_VALUE, Integer.MAX_VALUE);
+      } else if(keyCode==GLFW.GLFW_KEY_C) {
+        setClipboardString(selectionToString());
+      } else if(keyCode==GLFW.GLFW_KEY_X) {
+        Minecraft.getInstance().keyboardListener.setClipboardString(selectionToString());
+        deleteSelection();
+        recompile();
+      } else if(keyCode==GLFW.GLFW_KEY_V) {
+        deleteSelection();
+        final String[] pastedLines = StringUtil.splitLines(getClipboardString());
+        if(!isValidPaste(pastedLines)) {
+          return true;
+        }
+        lines.get(line).insert(indexToColumn(column), pastedLines[0]);
+        lines.addAll(line+1, Arrays.stream(pastedLines).
+          skip(1).
+          map(StringBuilder::new).
+          collect(Collectors.toList()));
+        selectionStart = selectionEnd = selectionEnd+pastedLines[0].length();
+        for(int i = 1; i < pastedLines.length; i++) {
+          selectionStart = selectionEnd = selectionEnd+1+pastedLines[i].length();
+        }
+        recompile();
+      } else if("z".equals(key)) {
+        noUndoTracking = true;
+        undo();
+        recompile();
+      } else if("y".equals(key)) {
+        noUndoTracking = true;
+        redo();
+        recompile();
+      }
+    } else if(keyCode == GLFW.GLFW_KEY_ESCAPE) {
       saveToServer();
       return true;
     } else if(keyCode == GLFW.GLFW_KEY_LEFT) {
@@ -374,7 +418,7 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
       recompile();
     } else if((keyCode == GLFW.GLFW_KEY_ENTER) || (keyCode == GLFW.GLFW_KEY_KP_ENTER)) {
       deleteSelection();
-      if(lines.size() < getMaxLinesPerPage()) {
+      if((lines.size() < getMaxLinesPerPage())) {
         final StringBuilder oldLine = lines.get(line);
         final StringBuilder newLine = new StringBuilder();
         if(column < oldLine.length()) {
@@ -385,33 +429,6 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
         selectionStart = selectionEnd = selectionEnd + 1;
       }
       recompile();
-    } else if(hasControlDown()) {
-      if(keyCode == GLFW.GLFW_KEY_A) {
-        selectionStart = 0;
-        selectionEnd = positionToIndex(Integer.MAX_VALUE, Integer.MAX_VALUE);
-      } else if(keyCode == GLFW.GLFW_KEY_C) {
-        setClipboardString(selectionToString());
-      } else if(keyCode == GLFW.GLFW_KEY_X) {
-        Minecraft.getInstance().keyboardListener.setClipboardString(selectionToString());
-        deleteSelection();
-        recompile();
-      } else if(keyCode == GLFW.GLFW_KEY_V) {
-        deleteSelection();
-        final String[] pastedLines = StringUtil.splitLines(getClipboardString());
-        if(!isValidPaste(pastedLines)) {
-          return true;
-        }
-        lines.get(line).insert(indexToColumn(column), pastedLines[0]);
-        lines.addAll(line + 1, Arrays.stream(pastedLines).
-          skip(1).
-          map(StringBuilder::new).
-          collect(Collectors.toList()));
-        selectionStart = selectionEnd = selectionEnd + pastedLines[0].length();
-        for(int i = 1; i < pastedLines.length; i++) {
-          selectionStart = selectionEnd = selectionEnd + 1 + pastedLines[i].length();
-        }
-        recompile();
-      }
     } else if(keyCode == GLFW.GLFW_KEY_TAB) {
       deleteSelection();
       if(lines.get(line).length() < getMaxColumns() - 1) {
@@ -419,6 +436,11 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
         selectionStart = selectionEnd = selectionEnd + 2;
       }
       recompile();
+    } else {
+      noUndoTracking = true;
+    }
+    if(!noUndoTracking) {
+      undoPush(prev_lines);
     }
     return false;
   }
@@ -492,8 +514,11 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
     }
   }
 
+  private StringBuilder getLine(int index)
+  { return (index < lines.size()) ? (lines.get(index)) : (new StringBuilder()); }
+
   private boolean isCurrentProgramNonEmpty()
-  { return (lines.size() > 1) || ((!lines.isEmpty()) && (lines.get(0).length() > 0)); }
+  { return (lines.size() > 1) || ((!lines.isEmpty()) && (getLine(0).length() > 0)); }
 
   private int getSelectionStart()
   { return Math.min(selectionStart, selectionEnd); }
@@ -509,19 +534,19 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
     final int startLine = indexToLine(getSelectionStart());
     final int endLine = indexToLine(getSelectionEnd());
     if(selectionStart == selectionEnd) {
-      return lines.get(startLine).toString();
+      return getLine(startLine).toString();
     } else {
       final int startColumn = indexToColumn(getSelectionStart());
       final int endColumn = indexToColumn(getSelectionEnd());
       if(startLine == endLine) {
-        return lines.get(startLine).substring(startColumn, endColumn);
+        return getLine(startLine).substring(startColumn, endColumn);
       } else {
         final StringBuilder selection = new StringBuilder();
-        selection.append(lines.get(startLine).subSequence(startColumn, lines.get(startLine).length())).append('\n');
+        selection.append(getLine(startLine).subSequence(startColumn, getLine(startLine).length())).append('\n');
         for(int line = startLine + 1; line < endLine; line++) {
-          selection.append(lines.get(line).toString()).append('\n');
+          selection.append(getLine(line).toString()).append('\n');
         }
-        selection.append(lines.get(endLine).subSequence(0, endColumn)).append('\n');
+        selection.append(getLine(endLine).subSequence(0, endColumn)).append('\n');
         return selection.toString();
       }
     }
@@ -534,16 +559,16 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
   { return xToColumn(x-getGuiLeft()+2, cursorToLine(y)); }
 
   private int xToColumn(final int x, final int line)
-  { return font.trimStringToWidth(lines.get(line).toString(), Math.max(0, x-CODE_POS_X)).length(); }
+  { return font.trimStringToWidth(getLine(line).toString(), Math.max(0, x-CODE_POS_X)).length(); }
 
   private int columnToX(final int line, final int column)
-  { return CODE_POS_X + font.getStringWidth(lines.get(line).substring(0, Math.min(column, lines.get(line).length()))); }
+  { return CODE_POS_X + font.getStringWidth(getLine(line).substring(0, Math.min(column, getLine(line).length()))); }
 
   private int positionToIndex(final int line, final int column)
   {
     int index = 0;
-    for(int l = 0; l < Math.min(line, lines.size()); l++) index += lines.get(l).length() + 1;
-    index += Math.min(column, lines.get(Math.min(line, lines.size() - 1)).length());
+    for(int l = 0; l < Math.min(line, lines.size()); l++) index += getLine(l).length() + 1;
+    index += Math.min(column, getLine(Math.min(line, lines.size() - 1)).length());
     return index;
   }
 
@@ -551,7 +576,7 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
   {
     int position = 0;
     for(int line = 0; line < lines.size(); line++) {
-      position += lines.get(line).length() + 1;
+      position += getLine(line).length() + 1;
       if(position > index) {
         return line;
       }
@@ -569,7 +594,7 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
       }
       position += line.length() + 1;
     }
-    return lines.get(lines.size()-1).length();
+    return getLine(lines.size()-1).length();
   }
 
   private boolean isMouseInCodeArea(final int mouseX, final int mouseY)
@@ -588,11 +613,11 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
     final int startColumn = indexToColumn(getSelectionStart());
     final int endColumn = indexToColumn(getSelectionEnd());
     if(startLine == endLine) {
-      lines.get(startLine).delete(startColumn, endColumn);
+      getLine(startLine).delete(startColumn, endColumn);
     } else {
-      lines.get(startLine).delete(startColumn, lines.get(startLine).length());
-      lines.get(endLine).delete(0, endColumn);
-      lines.get(startLine).append(lines.get(endLine));
+      getLine(startLine).delete(startColumn, getLine(startLine).length());
+      getLine(endLine).delete(0, endColumn);
+      getLine(startLine).append(getLine(endLine));
       for(int line = endLine; line > startLine; --line) lines.remove(line);
     }
     selectionStart = selectionEnd = getSelectionStart();
@@ -604,7 +629,7 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
     final int selectedLine = indexToLine(selectionEnd);
     if(pastedLines.length == 0) return false; // Invalid paste, nothing to paste (this shouldn't even be possible).
     if(pastedLines.length - 1 + lines.size() > getMaxLinesPerPage()) return false; // Invalid paste, too many resulting lines.
-    if(pastedLines[0].length() + lines.get(selectedLine).length() > getMaxColumns()) return false; // Invalid paste, combined first line and current line too long.
+    if(pastedLines[0].length() + getLine(selectedLine).length() > getMaxColumns()) return false; // Invalid paste, combined first line and current line too long.
     for(final String pastedLine : pastedLines) {
       if(pastedLine.length() > getMaxColumns()) return false; // Invalid paste, a line is too long.
     }
@@ -620,13 +645,8 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
     return true;
   }
 
-  private int pageCharacterCount(int pageIndex)
-  {
-    if((pageIndex < 0) || (pageIndex >= data.getPageCount())) return 0;
-    int n = 0;
-    for(String s: data.getPage(pageIndex)) n += s.length(); //... std::accumulate
-    return n;
-  }
+  private int pageCharacterCount()
+  { return lines.stream().mapToInt(l -> l.toString().length()).sum() + lines.size(); }
 
   private void changePage(final int delta)
   {
@@ -636,22 +656,24 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
       if((data.getPageCount() < 2) || (!isEmptyPage(data.getPageCount()-1))) data.addPage();
     }
     data.setSelectedPage(page_index);
-    selectionStart = selectionEnd = 0;
     rebuildLines();
+    selectionStart = selectionEnd = Math.max(0, pageCharacterCount());
+    undoBuffer.clear();
+    redoBuffer.clear();
   }
 
   private void removePage(int index)
   {
     data.removePage(index);
     rebuildLines();
-    selectionStart = selectionEnd = Math.max(0, pageCharacterCount(data.getSelectedPage()-1));
+    selectionStart = selectionEnd = Math.max(0, pageCharacterCount());
   }
 
   private void drawProgram(final int mouseX, final int mouseY)
   {
     int position = 0;
     for(int lineNumber = 0; lineNumber < lines.size(); lineNumber++) {
-      final StringBuilder line = lines.get(lineNumber);
+      final StringBuilder line = getLine(lineNumber);
       final int end = position + line.length();
       final int offsetY = lineNumber * font.FONT_HEIGHT;
       final int lineX = CODE_POS_X;
@@ -715,7 +737,7 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
     if(System.currentTimeMillis() % 800 <= 400) {
       final int line = indexToLine(selectionEnd);
       final int column = indexToColumn(selectionEnd);
-      final StringBuilder sb = lines.get(line);
+      final StringBuilder sb = (line<lines.size()) ? (getLine(line)) : (new StringBuilder());
       final int x = CODE_POS_X + font.getStringWidth(sb.substring(0, column)) - 1;
       final int y = CODE_POS_Y + line * font.FONT_HEIGHT - 1;
       drawRect(x + 1, y + 1, x + 2 + 1, y + font.FONT_HEIGHT + 1, 0xCC333333);
@@ -727,6 +749,33 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
   {
     String pageInfo = String.format("%d/%d", data.getSelectedPage() + 1, data.getPageCount());
     drawString(pageInfo, PAGE_NUMBER_X - (font.getStringWidth(pageInfo)/2), PAGE_NUMBER_Y, getCodeColor());
+  }
+
+  private void undo()
+  {
+    if(!undoBuffer.isEmpty()) {
+      redoBuffer.clear();
+      redoBuffer.add(lines.stream().map(s->s.toString()).collect(Collectors.joining("\n")));
+      lines.clear();
+      lines.addAll( Arrays.stream(StringUtil.splitLines(undoBuffer.pop())).map(s->new StringBuilder(s)).collect(Collectors.toList()));
+    }
+  }
+
+  private void redo()
+  {
+    if(!redoBuffer.isEmpty()) {
+      lines.clear();
+      lines.addAll(Arrays.stream(StringUtil.splitLines(redoBuffer.get(0))).map(s->new StringBuilder(s)).collect(Collectors.toList()));
+      redoBuffer.clear();
+    }
+  }
+
+  private void undoPush(List<StringBuilder> lines)
+  {
+    undoBuffer.addLast(lines.stream().map(s->s.toString()).collect(Collectors.joining("\n")));
+    if(undoBuffer.size() > getMaxUndoSteps()) {
+      undoBuffer.removeFirst();
+    }
   }
 
 }
