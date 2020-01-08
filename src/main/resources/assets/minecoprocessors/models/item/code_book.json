@@ -1,7 +1,7 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "minecoprocessors:item/book_code"
+    "layer0": "minecoprocessors:item/code_book"
   },
   "display": {
     "thirdperson": {

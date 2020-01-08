@@ -190,7 +190,7 @@ public class MinecoprocessorBlock extends HorizontalBlock
     if(world.isRemote()) return;
     super.neighborChanged(state, world, pos, block, fromPos, isMoving);
     final Vec3i directionVector = fromPos.subtract(pos);
-    if(isMoving || (!state.get(POWERED)) || (directionVector.getY() != 0)) return; // nothing to do then.
+    if(isMoving || (directionVector.getY() != 0)) return; // nothing to do then.
     final TileEntity te = world.getTileEntity(pos);
     if(te instanceof MinecoprocessorTileEntity) ((MinecoprocessorTileEntity)te).neighborChanged(fromPos);
   }

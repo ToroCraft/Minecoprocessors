@@ -114,12 +114,13 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
 
   @Override
   public Container createMenu(int id, PlayerInventory inventory, PlayerEntity player )
-  { return new MinecoprocessorContainer(id, inventory, this, IWorldPosCallable.of(world, pos), fields); }
+  { return new MinecoprocessorContainer(id, inventory, this, IWorldPosCallable.of(world, pos), fields, processor); }
 
   // Container/GUI synchronization fields
   public static final class ContainerSyncFields extends IntArray
   {
-    public static int NUM_OF_FIELDS = 4;  //  [0,1,2]: (sizeof(regs)/sizeof(int))+1 and flags. [3]: ip,sp,fault
+    // Note: seems like only s16 values are transferred over network, so stripped field value range from int to short.
+    public static int NUM_OF_FIELDS = 8;
 
     public ContainerSyncFields()
     { super(NUM_OF_FIELDS); }
@@ -127,39 +128,39 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     public void writeServerSide(Processor processor)
     {
       final byte[] regs = processor.getRegisters();
-      set(0, 0 // IP SP FAULT
-        | ((((int)processor.getIp()) & 0xffff)<< 0)
-        | ((((int)processor.getSp()) & 0xff)<<16)
-        | ((((int)processor.getFaultCode()) & 0xff)<<24)
-      );
-      set(1, (((int)regs[0]) & 0xff) | ((((int)regs[1]) & 0xff)<<8) | ((((int)regs[2]) & 0xff)<<16) | ((((int)regs[3]) & 0xff)<<24)); // A B C D
-      set(2, (((int)regs[4]) & 0xff) | ((((int)regs[5]) & 0xff)<<8) | ((((int)regs[6]) & 0xff)<<16) | ((((int)regs[7]) & 0xff)<<24)); // PF PB PL PR
-      set(3, (((int)regs[8]) & 0xff) | ((((int)regs[9]) & 0xff)<<8) | (0 // PORTS ADC FLAGS
-        | (processor.isFault()    ? 0x00010000 : 0)
-        | (processor.isZero()     ? 0x00020000 : 0)
-        | (processor.isOverflow() ? 0x00040000 : 0)
-        | (processor.isCarry()    ? 0x00080000 : 0)
-        | (processor.isWait()     ? 0x00100000 : 0)
-        | (processor.isStep()     ? 0x00200000 : 0)
-        | (processor.hasProgram() ? 0x00400000 : 0)
+      set(0, (int)0|processor.getIp()); // IP
+      set(1, (((int)0|processor.getSp()) & 0xff) | ((((int)0|processor.getFaultCode()) & 0xff)<<8)); // SP FAULT
+      set(2, (((int)0|regs[0]) & 0xff) | ((((int)0|regs[1])<<8))); // A B
+      set(3, (((int)0|regs[2]) & 0xff) | ((((int)0|regs[3])<<8))); // C D
+      set(4, (((int)0|regs[4]) & 0xff) | ((((int)0|regs[5])<<8))); // PF PB
+      set(5, (((int)0|regs[6]) & 0xff) | ((((int)0|regs[7])<<8))); // PL PR
+      set(6, (((int)0|regs[8]) & 0xff) | ((((int)0|regs[9])<<8))); // PORTS ADC
+      set(7, ((int)0 // FLAGS
+        | (processor.isFault()    ? 0x0001 : 0)
+        | (processor.isZero()     ? 0x0002 : 0)
+        | (processor.isOverflow() ? 0x0004 : 0)
+        | (processor.isCarry()    ? 0x0008 : 0)
+        | (processor.isWait()     ? 0x0010 : 0)
+        | (processor.isStep()     ? 0x0020 : 0)
+        | (processor.hasProgram() ? 0x0040 : 0)
       ));
     }
 
     // Client side getters
-    public short ip()             { return (short)((get(0)>> 0) & 0xffff); }
-    public byte sp()              { return (byte)((get(0)>>16) & 0xff); }
-    public byte fault()           { return (byte)((get(0)>>24) & 0xff); }
-    public byte register(int i)   { return (byte)((get(1+(i/4)) >> (8*(i&0x3))) & 0xff); }
+    public short ip()             { return (short)(get(0)); }
+    public byte sp()              { return (byte)((get(0)) & 0xff); }
+    public byte fault()           { return (byte)((get(0)>>8) & 0xff); }
+    public byte register(int i)   { return (byte)((get(2+(i>>1)) >> (8*(i&0x1))) & 0xff); }
     public byte port(int i)       { return register(i+4); }
     public byte ports()           { return register(8); }
     public byte adc()             { return register(9); }
-    public boolean isFault()      { return (get(3) & 0x00010000) != 0; }
-    public boolean isZero()       { return (get(3) & 0x00020000) != 0; }
-    public boolean isOverflow()   { return (get(3) & 0x00040000) != 0; }
-    public boolean isCarry()      { return (get(3) & 0x00080000) != 0; }
-    public boolean isWait()       { return (get(3) & 0x00100000) != 0; }
-    public boolean isStep()       { return (get(3) & 0x00200000) != 0; }
-    public boolean isLoaded()     { return (get(3) & 0x00400000) != 0; }
+    public boolean isFault()      { return (get(7) & 0x0001) != 0; }
+    public boolean isZero()       { return (get(7) & 0x0002) != 0; }
+    public boolean isOverflow()   { return (get(7) & 0x0004) != 0; }
+    public boolean isCarry()      { return (get(7) & 0x0008) != 0; }
+    public boolean isWait()       { return (get(7) & 0x0010) != 0; }
+    public boolean isStep()       { return (get(7) & 0x0020) != 0; }
+    public boolean isLoaded()     { return (get(7) & 0x0040) != 0; }
   }
 
   protected final ContainerSyncFields fields = new ContainerSyncFields();
@@ -415,7 +416,9 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
       if(!stack.hasTag()) return title;
       List<String> code = new ArrayList<>();
       if(stack.getItem() instanceof CodeBookItem) {
-        code = CodeBookItem.Data.loadFromStack(stack).getContinuousProgram();
+        CodeBookItem.Data data = CodeBookItem.Data.loadFromStack(stack);
+        code = data.getContinuousProgram();
+        title = data.getProgramName();
       } else if (stack.getItem() instanceof WritableBookItem) {
         ListNBT pages = stack.getTag().getList("pages", 8);
         for(int i = 0; i < pages.size(); ++i) {

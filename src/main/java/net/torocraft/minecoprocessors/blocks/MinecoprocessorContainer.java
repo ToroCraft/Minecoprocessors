@@ -10,8 +10,6 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.item.ItemStack;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.container.IContainerListener;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.container.Container;
@@ -32,24 +30,26 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
   private final PlayerEntity player_;
   private final IWorldPosCallable wpc_;
   private final MinecoprocessorTileEntity.ContainerSyncFields fields_;
-  private final Processor processor_ = new Processor();
+  private final Processor processor_;
   private String name_ = new String();
   private String transl_ = new String();
   private String error_ = new String();
   private CompoundNBT nbt_ = new CompoundNBT();
   private byte fault_code_ = 0; // Client side cache value
+  private boolean loaded_state_ = false; // Client side cache value
   private boolean resync_pending_ = false; // safety lock to prevent unneeded network transfer.
 
   public MinecoprocessorContainer(int cid, PlayerInventory player_inventory)
-  { this(cid, player_inventory, new Inventory(MinecoprocessorTileEntity.NUM_OF_SLOTS), IWorldPosCallable.DUMMY, new MinecoprocessorTileEntity.ContainerSyncFields()); }
+  { this(cid, player_inventory, new Inventory(MinecoprocessorTileEntity.NUM_OF_SLOTS), IWorldPosCallable.DUMMY, new MinecoprocessorTileEntity.ContainerSyncFields(), new Processor()); }
 
-  public MinecoprocessorContainer(int cid, PlayerInventory player_inventory, IInventory block_inventory, IWorldPosCallable wpc, MinecoprocessorTileEntity.ContainerSyncFields fields)
+  public MinecoprocessorContainer(int cid, PlayerInventory player_inventory, IInventory block_inventory, IWorldPosCallable wpc, MinecoprocessorTileEntity.ContainerSyncFields fields, Processor processor)
   {
     super(ModContent.CT_MINECOPROCESSOR, cid);
     fields_ = fields;
     wpc_ = wpc;
     player_ = player_inventory.player;
     inventory_ = block_inventory;
+    processor_ = processor;
     int i=-1;
     // Book slot
     addSlot(new Slot(inventory_, ++i, 80, 35){
@@ -77,12 +77,6 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
   public boolean canMergeSlot(ItemStack stack, Slot slot)
   { return false; }
 
-  public void putStackInSlot(int slotId, ItemStack stack)
-  {
-    super.putStackInSlot(slotId, stack);
-    if(slotId==0) updateProgram(stack);
-  }
-
   @Override
   public ItemStack transferStackInSlot(PlayerEntity player, int index)
   {
@@ -96,7 +90,6 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
     } else if( (index >= PLAYER_INV_START_SLOTNO) && (index <= PLAYER_INV_START_SLOTNO+36) ) {
       // Player slot
       if(!mergeItemStack(slot_stack, 0, PLAYER_INV_START_SLOTNO, false)) return ItemStack.EMPTY;
-      updateProgram(transferred);
     } else {
       // invalid slot
       return ItemStack.EMPTY;
@@ -109,15 +102,6 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
     if(slot_stack.getCount() == transferred.getCount()) return ItemStack.EMPTY;
     slot.onTake(player, slot_stack);
     return transferred;
-  }
-
-  @Override
-  public void addListener(IContainerListener listener)
-  {
-    super.addListener(listener);
-    if((!(listener instanceof ServerPlayerEntity)) || (!(inventory_ instanceof MinecoprocessorTileEntity))) return;
-    ServerPlayerEntity player = ((ServerPlayerEntity)listener);
-    Networking.PacketContainerSyncServerToClient.sendToPlayer(player, this.windowId, getSyncData());
   }
 
   // INetworkSynchronisableContainer ---------------------------------------------------------
@@ -138,8 +122,8 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
   public void onClientPacketReceived(int windowId, PlayerEntity player, CompoundNBT nbt)
   {
     // Actions executed on the server from received GUI messages
-    if(!(inventory_ instanceof MinecoprocessorTileEntity)) return;
-    MinecoprocessorTileEntity te = (MinecoprocessorTileEntity)inventory_;
+    MinecoprocessorTileEntity te = getTe();
+    if(te==null) return;
     boolean dirty = false;
     if(nbt.contains("sleep")) { dirty = true; te.getProcessor().setWait(!te.getProcessor().isWait()); }
     if(nbt.contains("reset")) { dirty = true; te.resetProcessor(); }
@@ -158,28 +142,17 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
       if(nbt_.contains("name")) name_ = nbt_.getString("name");
       if(nbt_.contains("error")) error_ = nbt_.getString("error");
       if(nbt_.contains("transl")) transl_ = nbt_.getString("transl");
+      if(nbt_.contains("processor")) processor_.setNBT(nbt_.getCompound("processor"));
     }
   }
 
   // ---------------------------------------------------------------------------------------------------------------------
 
+  public MinecoprocessorTileEntity getTe()
+  { return (inventory_ instanceof MinecoprocessorTileEntity) ? ((MinecoprocessorTileEntity)inventory_) : null; }
+
   public MinecoprocessorTileEntity.ContainerSyncFields getFields()
   { return fields_; }
-
-  private void updateProgram(ItemStack stack)
-  {
-    // Allows to load processor data locally on the client and prevent tile entity
-    // sync form server to client. The IP and SP is retrieved in the GUI form the
-    // IntArray fields, which are permanently synced from server to client via this
-    // container.
-    name_ = MinecoprocessorTileEntity.loadBook(stack, processor_);
-    wpc_.consume((world, pos)->{
-      // Lambda executed only on server
-      nbt_ = getSyncData();
-      nbt_.putString("name", name_);
-      Networking.PacketContainerSyncServerToClient.sendToListeners(((MinecoprocessorTileEntity)inventory_).getWorld(), this, nbt_);
-    });
-  }
 
   public String getDisplayName()
   {
@@ -198,24 +171,30 @@ public class MinecoprocessorContainer extends Container implements Networking.IN
   private CompoundNBT getSyncData()
   {
     // Server data composition
-    final MinecoprocessorTileEntity te = ((MinecoprocessorTileEntity)inventory_);
-    nbt_.putString("name", te.hasCustomName() ? te.getCustomName().getString() : "");
-    nbt_.putString("error", te.getProcessor().getError());
-    nbt_.putString("transl", te.getBlockState().getBlock().getTranslationKey());
     CompoundNBT msg = new CompoundNBT();
-    msg.put("sync_data", nbt_);
+    MinecoprocessorTileEntity te = getTe();
+    if(te==null) return msg;
+    CompoundNBT nbt = new CompoundNBT();
+    nbt.putString("name", te.hasCustomName() ? te.getCustomName().getString() : "");
+    nbt.putString("error", te.getProcessor().getError());
+    nbt.putString("transl", te.getBlockState().getBlock().getTranslationKey());
+    nbt.put("processor", processor_.getNBT());
+    msg.put("sync_data", nbt);
     return msg;
   }
 
   @OnlyIn(Dist.CLIENT)
   public void checkResync()
   {
-    if((!resync_pending_) && (fields_.fault() != fault_code_)) {
+    // Basic approach is to actively request data from the clients and not to push bigger
+    // data sets from the server.
+    if(resync_pending_) return;
+    if((fields_.isLoaded() != loaded_state_) || (fields_.fault() != fault_code_)) {
       fault_code_ = fields_.fault();
+      loaded_state_ = fields_.isLoaded();
       if(fault_code_ == 0) error_ = "";
       resync_pending_ = true;
       onGuiAction("sync", 1); // request the full data set from the server.
     }
   }
-
 }

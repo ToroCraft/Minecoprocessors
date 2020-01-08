@@ -88,9 +88,6 @@ public class ModMinecoprocessors
       ModConfig.apply();
       Networking.init();
     }
-    /// @todo THIS WAS CommonProxy.preInit() -----------
-    // MessageProcessorUpdate.init(packetId++);
-    // MessageBookCodeData.init(packetId++);
 
     @SubscribeEvent
     public static void onClientSetup(final FMLClientSetupEvent event)

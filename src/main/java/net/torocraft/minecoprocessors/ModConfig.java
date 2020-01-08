@@ -96,7 +96,13 @@ public class ModConfig
   // Cache fields
   //--------------------------------------------------------------------------------------------------------------------
 
-  public static int maxColumnsPerLine = 18;
+  public static int maxColumnsPerLine = 20;
+  public static int maxLinesPerPage = 20;
+  public static int codeBookTextColor = 0xFF333333;
+  public static int codeBookSelectedTextColor = 0xFFEEEEEE;
+  public static int codeBookSelectedBackgroundColor = 0xCC333399;
+  public static int codeBookInstructionNoColor = 0xffaaaaaa;
+  public static int maxUndoSteps = 8;
 
   public static final void apply()
   {
