@@ -31,6 +31,7 @@ import net.minecraft.world.Explosion;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorldReader;
 import net.minecraft.world.World;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.loot.LootContext;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -58,11 +59,6 @@ public class MinecoprocessorBlock extends HorizontalBlock
   public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
 
   @Override
-  @OnlyIn(Dist.CLIENT)
-  public BlockRenderLayer getRenderLayer()
-  { return BlockRenderLayer.CUTOUT; }
-
-  @Override
   @SuppressWarnings("deprecation")
   public VoxelShape getShape(BlockState state, IBlockReader source, BlockPos pos, ISelectionContext selectionContext)
   { return SHAPE; }
@@ -83,11 +79,6 @@ public class MinecoprocessorBlock extends HorizontalBlock
 
   @Override
   @SuppressWarnings("deprecation")
-  public boolean isSolid(BlockState state)
-  { return true; }
-
-  @Override
-  @SuppressWarnings("deprecation")
   public PushReaction getPushReaction(BlockState state)
   { return PushReaction.DESTROY; }
 
@@ -98,7 +89,7 @@ public class MinecoprocessorBlock extends HorizontalBlock
   @Override
   @SuppressWarnings("deprecation")
   public boolean isValidPosition(BlockState state, IWorldReader world, BlockPos pos)
-  { return func_220064_c(world, pos.down()); } // <-- isTopSolid()
+  { return hasSolidSideOnTop(world, pos.down()); }
 
   @Override
   @Nullable
@@ -197,14 +188,14 @@ public class MinecoprocessorBlock extends HorizontalBlock
 
   @Override
   @SuppressWarnings("deprecation")
-  public boolean onBlockActivated(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockRayTraceResult rayTraceResult)
+  public ActionResultType onBlockActivated(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockRayTraceResult rayTraceResult)
   {
-    if(world.isRemote) return true;
+    if(world.isRemote) return ActionResultType.SUCCESS;
     final TileEntity te = world.getTileEntity(pos);
-    if(!(te instanceof MinecoprocessorTileEntity)) return true;
-    if((!(player instanceof ServerPlayerEntity) && (!(player instanceof FakePlayer)))) return true;
+    if(!(te instanceof MinecoprocessorTileEntity)) return ActionResultType.FAIL;
+    if((!(player instanceof ServerPlayerEntity) && (!(player instanceof FakePlayer)))) return ActionResultType.FAIL;
     NetworkHooks.openGui((ServerPlayerEntity)player,(INamedContainerProvider)te);
-    return true;
+    return ActionResultType.SUCCESS;
   }
 
   @Override
@@ -226,7 +217,7 @@ public class MinecoprocessorBlock extends HorizontalBlock
 
   @Override
   @SuppressWarnings("deprecation")
-  public void tick(BlockState state, World world, BlockPos pos, Random random)
+  public void tick(BlockState state, ServerWorld world, BlockPos pos, Random rand)
   {}
 
   // -------------------------------------------------------------------------------------------------------------------

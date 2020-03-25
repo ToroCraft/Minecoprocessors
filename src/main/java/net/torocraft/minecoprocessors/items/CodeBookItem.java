@@ -84,11 +84,11 @@ public final class CodeBookItem extends WrittenBookItem
       tooltip.add(new TranslationTextComponent("item.minecoprocessors.code_book.tooltip"));
     } else if(
       // CTRL+SHIFT -> show first lines
-      (InputMappings.isKeyDown(Minecraft.getInstance().mainWindow.getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT) ||
-       InputMappings.isKeyDown(Minecraft.getInstance().mainWindow.getHandle(), GLFW.GLFW_KEY_RIGHT_SHIFT))
+      (InputMappings.isKeyDown(Minecraft.getInstance().getMainWindow().getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT) ||
+       InputMappings.isKeyDown(Minecraft.getInstance().getMainWindow().getHandle(), GLFW.GLFW_KEY_RIGHT_SHIFT))
       &&
-      (InputMappings.isKeyDown(Minecraft.getInstance().mainWindow.getHandle(), GLFW.GLFW_KEY_LEFT_CONTROL) ||
-       InputMappings.isKeyDown(Minecraft.getInstance().mainWindow.getHandle(), GLFW.GLFW_KEY_RIGHT_CONTROL))
+      (InputMappings.isKeyDown(Minecraft.getInstance().getMainWindow().getHandle(), GLFW.GLFW_KEY_LEFT_CONTROL) ||
+       InputMappings.isKeyDown(Minecraft.getInstance().getMainWindow().getHandle(), GLFW.GLFW_KEY_RIGHT_CONTROL))
     ) {
       String txt = data.getPage(0).stream().limit(10).filter(s->!s.isEmpty()).collect(Collectors.joining("\n")).trim();
       if(!txt.isEmpty()) tooltip.add(new StringTextComponent(txt));
@@ -259,7 +259,7 @@ public final class CodeBookItem extends WrittenBookItem
       for(int index = 0; index < pages.size(); index++) {
         final List<String> program = pages.get(index);
         if((program.size() > 1) || (program.get(0).length() > 0)) {
-          pagesNbt.add(new StringNBT(String.join("\n", program)));
+          pagesNbt.add(StringNBT.valueOf(String.join("\n", program)));
         } else if(index < selectedPage) {
           removed++;
         }

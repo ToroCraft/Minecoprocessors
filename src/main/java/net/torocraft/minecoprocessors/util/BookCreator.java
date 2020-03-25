@@ -42,9 +42,9 @@ public class BookCreator
     try (BufferedReader reader = openBookReader(name)) {
       while ((line = reader.readLine()) != null) {
         if (lineNumber == 1) {
-          book.setTagInfo("title", new StringNBT(line));
+          book.setTagInfo("title", StringNBT.valueOf(line));
         } else if (lineNumber == 2) {
-          book.setTagInfo("author", new StringNBT(line));
+          book.setTagInfo("author", StringNBT.valueOf(line));
         } else if (PAGE_DELIMITER.equals(line)) {
           writePage(book, page);
           page = newPage();
@@ -83,6 +83,6 @@ public class BookCreator
   { return new StringBuilder(256); }
 
   private static StringNBT createPage(String page)
-  { return new StringNBT(ITextComponent.Serializer.toJson(new StringTextComponent(page))); }
+  { return StringNBT.valueOf(ITextComponent.Serializer.toJson(new StringTextComponent(page))); }
 
 }

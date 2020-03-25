@@ -91,14 +91,17 @@ public class ModMinecoprocessors
 
     @SubscribeEvent
     public static void onClientSetup(final FMLClientSetupEvent event)
-    { ModContent.registerGuis(event); }
+    {
+      ModContent.registerGuis(event);
+      ModContent.processContentClientSide(event);
+    }
 
     @SubscribeEvent
     public static void onConfigLoad(net.minecraftforge.fml.config.ModConfig.Loading event)
     { ModConfig.onLoad(event.getConfig()); }
 
     @SubscribeEvent
-    public static void onConfigChanged(net.minecraftforge.fml.config.ModConfig.ConfigReloading event)
+    public static void onConfigChanged(net.minecraftforge.fml.config.ModConfig.Reloading event)
     { ModConfig.onFileChange(event.getConfig()); }
 
   }

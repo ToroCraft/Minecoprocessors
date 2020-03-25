@@ -7,6 +7,8 @@
  */
 package net.torocraft.minecoprocessors;
 
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderTypeLookup;
 import net.torocraft.minecoprocessors.blocks.*;
 import net.torocraft.minecoprocessors.items.*;
 import net.minecraft.client.gui.ScreenManager;
@@ -34,12 +36,12 @@ public class ModContent
 
   public static final MinecoprocessorBlock MINECOPROCESSOR = (MinecoprocessorBlock)(new MinecoprocessorBlock(
     MinecoprocessorBlock.CONFIG_DEFAULT,
-    Block.Properties.create(Material.MISCELLANEOUS).hardnessAndResistance(0f).sound(SoundType.STONE)
+    Block.Properties.create(Material.MISCELLANEOUS).hardnessAndResistance(0f).sound(SoundType.STONE).notSolid()
   )).setRegistryName(new ResourceLocation(ModMinecoprocessors.MODID, "processor"));
 
   public static final MinecoprocessorBlock MINECOPROCESSOR_OVERCLOCKED = (MinecoprocessorBlock)(new MinecoprocessorBlock(
     MinecoprocessorBlock.CONFIG_OVERCLOCKED,
-    Block.Properties.create(Material.MISCELLANEOUS).hardnessAndResistance(0f).sound(SoundType.STONE)
+    Block.Properties.create(Material.MISCELLANEOUS).hardnessAndResistance(0f).sound(SoundType.STONE).notSolid()
   )).setRegistryName(new ResourceLocation(ModMinecoprocessors.MODID, "overclocked_processor"));
 
   private static final Block MOD_BLOCKS[] = {
@@ -124,6 +126,13 @@ public class ModContent
   {
     ScreenManager.registerFactory(CT_MINECOPROCESSOR, MinecoprocessorGui::new);
     ScreenManager.registerFactory(CT_CODEBOOK, CodeBookGui::new);
+  }
+
+  @OnlyIn(Dist.CLIENT)
+  public static final void processContentClientSide(final FMLClientSetupEvent event)
+  {
+    RenderTypeLookup.setRenderLayer(MINECOPROCESSOR, RenderType.getCutout());
+    RenderTypeLookup.setRenderLayer(MINECOPROCESSOR_OVERCLOCKED, RenderType.getCutout());
   }
 
 }

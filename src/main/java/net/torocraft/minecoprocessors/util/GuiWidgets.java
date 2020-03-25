@@ -5,7 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.fml.client.config.GuiUtils;
+import net.minecraftforge.fml.client.gui.GuiUtils;
 
 @OnlyIn(Dist.CLIENT)
 public class GuiWidgets
@@ -31,7 +31,7 @@ public class GuiWidgets
       final int by = (int)Math.floor((double)y/scale);
       final int bw = (int)Math.ceil((double)width/scale);
       final int bh = (int)Math.ceil((double)height/scale);
-      GuiUtils.drawContinuousTexturedBox(WIDGETS_LOCATION, bx, by, 0, 46+ist*20, bw, bh, 200, 20, 2, 3, 2, 2, blitOffset);
+      GuiUtils.drawContinuousTexturedBox(WIDGETS_LOCATION, bx, by, 0, 46+ist*20, bw, bh, 200, 20, 2, 3, 2, 2, getBlitOffset());
       renderBg(mc, mouseX, mouseY);
       int color = (packedFGColor!=0) ? (packedFGColor) : ((!active) ? (0xa0a0a0) : (isHovered ? 0xffffa0 : 0xe0e0e0));
       String txt = getMessage();
