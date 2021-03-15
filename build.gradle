@@ -1,5 +1,6 @@
 // @file build.gradle
-// minecoprocessors mod gradle build file (mc1.14.4)
+// minecoprocessors mod gradle build file (mc1.15.4/5)
+import net.minecraftforge.gradle.common.task.SignJar
 buildscript {
   repositories {
     maven { url = 'https://files.minecraftforge.net/maven' }
@@ -21,12 +22,12 @@ archivesBaseName = "minecoprocessors-${version_minecraft}"
 
 minecraft {
   mappings channel: 'snapshot', version: "${version_fml_mappings}"
-  // accessTransformer = file('build/resources/main/META-INF/accesstransformer.cfg')
+  // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
   runs {
     client {
       workingDirectory project.file('run')
-      property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-      property 'forge.logging.console.level', 'debug'
+      property 'forge.logging.markers', '' // SCAN,REGISTRIES,REGISTRYDUMP
+      property 'forge.logging.console.level', 'info'
       mods {
         minecoprocessors {
           source sourceSets.main
@@ -35,8 +36,8 @@ minecraft {
     }
     server {
       workingDirectory project.file('run')
-      property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-      property 'forge.logging.console.level', 'debug'
+      property 'forge.logging.markers', '' // SCAN,REGISTRIES,REGISTRYDUMP
+      property 'forge.logging.console.level', 'info'
       mods {
         minecoprocessors {
           source sourceSets.main
@@ -84,6 +85,21 @@ jar {
 
 def reobfFile = file("$buildDir/reobfJar/output.jar")
 def reobfArtifact = artifacts.add('default', reobfFile) { type 'jar'; builtBy 'reobfJar'; }
+
+task signJar(type: SignJar, dependsOn: jar) {
+  onlyIf { project.hasProperty("keystore_file") }
+  if(project.hasProperty("keystore_file")) {
+    keyStore = project.getProperty("keystore_file")
+    alias = project.getProperty("keystore_alias")
+    storePass = project.getProperty("keystore_pass")
+    keyPass = project.getProperty("keystore_keypass")
+    inputFile = jar.archivePath
+    outputFile = jar.archivePath
+  } else {
+    logger.warn("[WARNING] Signing skipped.")
+  }
+}
+build.dependsOn signJar
 
 publishing {
   publications { mavenJava(MavenPublication) { artifact reobfArtifact } }

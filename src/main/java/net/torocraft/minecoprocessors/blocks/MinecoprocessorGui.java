@@ -4,7 +4,8 @@
  */
 package net.torocraft.minecoprocessors.blocks;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.ReadBookScreen;
 import net.minecraft.client.gui.screen.inventory.ContainerScreen;
@@ -13,6 +14,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -27,12 +29,13 @@ import net.torocraft.minecoprocessors.util.InstructionUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @OnlyIn(Dist.CLIENT)
 public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer>
 {
   private static final ResourceLocation BACKGROUND_IMAGE = new ResourceLocation(ModMinecoprocessors.MODID, "textures/gui/minecoprocessor.png");
-  private static final double GUI_SCALE = 0.5;
+  private static final float GUI_SCALE = 0.5f;
   private Button buttonSleep;
   private Button buttonStep;
   private Button buttonReset;
@@ -57,106 +60,108 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
     final int h = 10;
     buttons.clear();
     buttons.add(buttonSleep = addButton(
-      new ScaledButton(GUI_SCALE, x0+8,y0+34+(0*(h+2)), w,h, (new TranslationTextComponent("minecoprocessors.gui.button.sleep")).getFormattedText(),
+      new ScaledButton(GUI_SCALE, x0+8,y0+34+(0*(h+2)), w,h, (new TranslationTextComponent("minecoprocessors.gui.button.sleep")),
         (bt)->getContainer().onGuiAction("sleep",1))
     ));
     buttons.add(buttonReset = addButton(
-      new ScaledButton(GUI_SCALE, x0+8,y0+34+(1*(h+2)), w,h, (new TranslationTextComponent("minecoprocessors.gui.button.reset")).getFormattedText(),
+      new ScaledButton(GUI_SCALE, x0+8,y0+34+(1*(h+2)), w,h, (new TranslationTextComponent("minecoprocessors.gui.button.reset")),
       (bt)->getContainer().onGuiAction("reset",1))
     ));
     buttons.add(buttonStep = addButton(
-      new ScaledButton(GUI_SCALE, x0+8,y0+34+(2*(h+2)), w,h, (new TranslationTextComponent("minecoprocessors.gui.button.step")).getFormattedText(),
+      new ScaledButton(GUI_SCALE, x0+8,y0+34+(2*(h+2)), w,h, (new TranslationTextComponent("minecoprocessors.gui.button.step")),
       (bt)->getContainer().onGuiAction("step", 1))
     ));
     buttons.add(buttonHelp = addButton(
-      new ScaledButton(GUI_SCALE, x0+133,y0+66, 35,h, (new TranslationTextComponent("minecoprocessors.gui.button.help")).getFormattedText(),
+      new ScaledButton(GUI_SCALE, x0+133,y0+66, 35,h, (new TranslationTextComponent("minecoprocessors.gui.button.help")),
       (bt)->{ Minecraft.getInstance().displayGuiScreen(new ReadBookScreen(ReadBookScreen.IBookInfo.func_216917_a(BookCreator.getManual()))); })
     ));
     buttonStep.active = false;
   }
 
   @Override
-  public void render(int mouseX, int mouseY, float partialTicks)
+  public void render(MatrixStack mx, int mouseX, int mouseY, float partialTicks)
   {
-    renderBackground();
-    super.render(mouseX, mouseY, partialTicks);
-    renderHoveredToolTip(mouseX, mouseY);
+    renderBackground(mx);
+    super.render(mx, mouseX, mouseY, partialTicks);
+    renderHoveredTooltip(mx, mouseX, mouseY);
     getContainer().checkResync();
   }
 
   @Override
-  protected void drawGuiContainerBackgroundLayer(float partialTicks, int mouseX, int mouseY)
+  protected void drawGuiContainerBackgroundLayer(MatrixStack mx, float partialTicks, int mouseX, int mouseY)
   {
-    GlStateManager.color4f(1f, 1f, 1f, 1f);
     getMinecraft().getTextureManager().bindTexture(BACKGROUND_IMAGE);
     final int x0=getGuiLeft(), y0=getGuiTop(), w=getXSize(), h=getYSize();
-    blit(x0, y0, 0, 0, w, h);
+    blit(mx, x0, y0, 0, 0, w, h);
   }
 
   @Override
-  protected void drawGuiContainerForegroundLayer(int mouseX, int mouseY)
+  protected void drawGuiContainerForegroundLayer(MatrixStack mx, int mouseX, int mouseY)
   {
     hoveredFeature.clear();
     ContainerSyncFields fields = getContainer().getFields();
-    GlStateManager.pushMatrix();
-    GlStateManager.scaled(GUI_SCALE, GUI_SCALE, GUI_SCALE);
+    mx.push();
+    mx.scale(GUI_SCALE, GUI_SCALE, GUI_SCALE);
     mouseX = (int)((mouseX-getGuiLeft())/GUI_SCALE);
     mouseY = (int)((mouseY-getGuiTop())/GUI_SCALE);
 
     int y;
     y = 50;
-    drawRegister(Register.A, 130 * 2, y, mouseX, mouseY);
-    drawRegister(Register.B, 139 * 2, y, mouseX, mouseY);
-    drawRegister(Register.C, 148 * 2, y, mouseX, mouseY);
-    drawRegister(Register.D, 157 * 2, y, mouseX, mouseY);
+    drawRegister(mx, Register.A, 130 * 2, y, mouseX, mouseY);
+    drawRegister(mx, Register.B, 139 * 2, y, mouseX, mouseY);
+    drawRegister(mx, Register.C, 148 * 2, y, mouseX, mouseY);
+    drawRegister(mx, Register.D, 157 * 2, y, mouseX, mouseY);
 
     y = 82;
-    drawFlag("Z", fields.isZero(), 130 * 2, y, mouseX, mouseY);
-    drawFlag("C", fields.isCarry() || fields.isOverflow(), 139 * 2, y, mouseX, mouseY);
-    drawFlag("F", fields.isFault(), 148 * 2, y, 0xff0000, mouseX, mouseY);
-    drawFlag("S", fields.isWait(), 157 * 2, y, 0x00ff00, mouseX, mouseY);
+    drawFlag(mx, "Z", fields.isZero(), 130 * 2, y, mouseX, mouseY);
+    drawFlag(mx, "C", fields.isCarry() || fields.isOverflow(), 139 * 2, y, mouseX, mouseY);
+    drawFlag(mx, "F", fields.isFault(), 148 * 2, y, 0xff0000, mouseX, mouseY);
+    drawFlag(mx, "S", fields.isWait(), 157 * 2, y, 0x00ff00, mouseX, mouseY);
 
     y = 114;
-    boolean mouseIsOver = drawLabeledValue("IP", StringUtil.toHex(fields.ip()), 128*2, y, null, mouseX, mouseY);
+    boolean mouseIsOver = drawLabeledValue(mx, "IP", StringUtil.toHex(fields.ip()), 128*2, y, null, mouseX, mouseY);
     if(mouseIsOver) hoveredFeature.add("Instruction Pointer");
 
-    drawRegister(Register.ADC, 142 * 2, y, mouseX, mouseY);
-    drawRegister(Register.PORTS, 158 * 2, y, mouseX, mouseY);
-    drawPortRegister(Register.PF, 176, 47, mouseX, mouseY);
-    drawPortRegister(Register.PR, 216, 86, mouseX, mouseY);
-    drawPortRegister(Register.PL, 137, 86, mouseX, mouseY);
-    drawPortRegister(Register.PB, 176, 125, mouseX, mouseY);
-    drawCode();
-    drawGuiTitle();
-    GlStateManager.popMatrix();
+    drawRegister(mx, Register.ADC, 142 * 2, y, mouseX, mouseY);
+    drawRegister(mx, Register.PORTS, 158 * 2, y, mouseX, mouseY);
+    drawPortRegister(mx, Register.PF, 176, 47, mouseX, mouseY);
+    drawPortRegister(mx, Register.PR, 216, 86, mouseX, mouseY);
+    drawPortRegister(mx, Register.PL, 137, 86, mouseX, mouseY);
+    drawPortRegister(mx, Register.PB, 176, 125, mouseX, mouseY);
+    drawCode(mx);
+    drawGuiTitle(mx);
+    mx.scale(1, 1, 1);
+    mx.pop();
     if(fields.isWait()) {
-      buttonSleep.setMessage((new TranslationTextComponent("minecoprocessors.gui.button.wake")).getFormattedText());
+      buttonSleep.setMessage(new TranslationTextComponent("minecoprocessors.gui.button.wake"));
       buttonStep.active = true;
     } else {
-      buttonSleep.setMessage((new TranslationTextComponent("minecoprocessors.gui.button.sleep")).getFormattedText());
+      buttonSleep.setMessage(new TranslationTextComponent("minecoprocessors.gui.button.sleep"));
       buttonStep.active = false;
     }
   }
 
   @Override
-  protected void renderHoveredToolTip(int mouseX, int mouseY)
+  protected void renderHoveredTooltip(MatrixStack mx, int x, int y)
   {
-    super.renderHoveredToolTip(mouseX, mouseY);
+    super.renderHoveredTooltip(mx, x, y);
     if(!hoveredFeature.isEmpty()) {
-      GlStateManager.pushMatrix();
-      GlStateManager.scaled(GUI_SCALE, GUI_SCALE, GUI_SCALE);
-      renderTooltip(hoveredFeature, (int)(mouseX/GUI_SCALE), (int)(mouseY/GUI_SCALE));
-      GlStateManager.popMatrix();
+      List<ITextComponent> tooltips = hoveredFeature.stream().map(f->new StringTextComponent(f)).collect(Collectors.toList());
+      mx.push();
+      mx.scale(GUI_SCALE, GUI_SCALE, 1);
+      renderWrappedToolTip(mx, tooltips,  (int)(x/GUI_SCALE), (int)(y/GUI_SCALE), font);
+      mx.scale(1, 1, 1);
+      mx.pop();
     }
   }
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  private void drawRegister(Register register, int x, int y, int mouseX, int mouseY)
+  private void drawRegister(MatrixStack mx, Register register, int x, int y, int mouseX, int mouseY)
   {
     String label = register.toString();
     byte value = getContainer().getFields().register(register.ordinal()-Register.A.ordinal());
-    boolean mouseIsOver = drawLabeledValue(label, StringUtil.toHex(value), x, y, null, mouseX, mouseY);
+    boolean mouseIsOver = drawLabeledValue(mx, label, StringUtil.toHex(value), x, y, null, mouseX, mouseY);
     if (mouseIsOver) {
       hoveredFeature.add(label + " Register");
       if (Register.PORTS.equals(register)) {
@@ -170,12 +175,12 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
     }
   }
 
-  private void drawPortRegister(Register register, int x, int y, int mouseX, int mouseY)
+  private void drawPortRegister(MatrixStack mx, Register register, int x, int y, int mouseX, int mouseY)
   {
     final ContainerSyncFields fields = getContainer().getFields();
     int portIndex = register.ordinal() - Register.PF.ordinal();
     byte value = fields.port(portIndex);
-    boolean mouseIsOver = centered(StringUtil.toHex(value), x, y, mouseX, mouseY);
+    boolean mouseIsOver = centered(mx, StringUtil.toHex(value), x, y, mouseX, mouseY);
     if(mouseIsOver) {
       switch(register) {
         case PF:
@@ -207,13 +212,13 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
     }
   }
 
-  private void drawFlag(String label, Boolean flag, int x, int y, int mouseX, int mouseY)
-  { drawFlag(label, flag, x, y, null, mouseX, mouseY); }
+  private void drawFlag(MatrixStack mx, String label, Boolean flag, int x, int y, int mouseX, int mouseY)
+  { drawFlag(mx, label, flag, x, y, null, mouseX, mouseY); }
 
-  private void drawFlag(String label, Boolean flag, int x, int y, Integer flashColor, int mouseX, int mouseY)
+  private void drawFlag(MatrixStack mx, String label, Boolean flag, int x, int y, Integer flashColor, int mouseX, int mouseY)
   {
     if(flag == null) flag = false;
-    boolean mouseIsOver = drawLabeledValue(label, flag ? "1" : "0", x, y, flag ? flashColor : null, mouseX, mouseY);
+    boolean mouseIsOver = drawLabeledValue(mx, label, flag ? "1" : "0", x, y, flag ? flashColor : null, mouseX, mouseY);
     if (mouseIsOver) {
       switch (label) {
         case "Z":
@@ -234,7 +239,7 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
     }
   }
 
-  private boolean drawLabeledValue(String label, String value, int x, int y, Integer flashColor, int mouseX, int mouseY)
+  private boolean drawLabeledValue(MatrixStack mx,String label, String value, int x, int y, Integer flashColor, int mouseX, int mouseY)
   {
     int wLabel = font.getStringWidth(label) / 2;
     int wValue = 0;
@@ -245,9 +250,9 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
     if((flashColor != null) && (ModMinecoprocessors.proxy.getWorldClientSide().getGameTime() & 0xf) < 4) {
       color = flashColor;
     }
-    font.drawString(label, x - wLabel, y - 14, 0x404040);
+    font.drawString(mx, label, x - wLabel, y - 14, 0x404040);
     if(!value.isEmpty()) {
-      font.drawString(value, x - wValue, y, color);
+      font.drawString(mx, value, x - wValue, y, color);
     }
     int wMax = Math.max(wLabel, wValue);
     boolean mouseIsOver = (mouseX > (x - wMax)) && (mouseX < (x + wMax));
@@ -255,25 +260,25 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
     return mouseIsOver;
   }
 
-  private boolean centered(String s, float x, float y, int mouseX, int mouseY)
+  private boolean centered(MatrixStack mx, String s, float x, float y, int mouseX, int mouseY)
   {
     int hWidth = font.getStringWidth(s) / 2;
     int hHeight = font.FONT_HEIGHT / 2;
     int xs = (int) x - hWidth;
     int ys = (int) y - hHeight;
-    font.drawString(s, xs, ys, 0xffffff);
+    font.drawString(mx, s, xs, ys, 0xffffff);
     boolean mouseIsOver = mouseX > (x - hWidth) && mouseX < (x + hWidth);
     mouseIsOver = mouseIsOver && mouseY > y - hHeight - 2 && mouseY < y + hHeight + 2;
     return mouseIsOver;
   }
 
-  private void drawGuiTitle()
+  private void drawGuiTitle(MatrixStack mx)
   {
     String s = getContainer().getDisplayName();
-    font.drawString(s, getXSize() - 0.5f * font.getStringWidth(s), 10, 4210752);
+    font.drawString(mx, s, getXSize() - 0.5f * font.getStringWidth(s), 10, 4210752);
   }
 
-  private void drawCode()
+  private void drawCode(MatrixStack mx)
   {
     int x = 22;
     int y = 50;
@@ -302,7 +307,7 @@ public class MinecoprocessorGui extends ContainerScreen<MinecoprocessorContainer
         value = InstructionUtil.compileLine(a, processor.getLabels(), (short) -1);
       }
     }
-    font.drawString(label, x - 4, y - 14, 0x404040);
-    font.drawString(value, x, y, color);
+    font.drawString(mx, label, x - 4, y - 14, 0x404040);
+    font.drawString(mx, value, x, y, color);
   }
 }

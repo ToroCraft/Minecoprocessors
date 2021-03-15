@@ -66,9 +66,9 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
   // TileEntity --------------------------------------------------------------------------------------------------------
 
   @Override
-  public void read(CompoundNBT nbt)
+  public void read(BlockState state, CompoundNBT nbt)
   {
-    super.read(nbt);
+    super.read(state, nbt);
     processor.setNBT(nbt.getCompound("processor"));
     inventory = NonNullList.<ItemStack>withSize(1, ItemStack.EMPTY);  // <<-- this.getSizeInventory() -> 1
     ItemStackHelper.loadAllItems(nbt, inventory);
@@ -428,7 +428,7 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
         ListNBT pages = stack.getTag().getList("pages", 8);
         for(int i = 0; i < pages.size(); ++i) {
           try {
-            ITextComponent tc = ITextComponent.Serializer.fromJsonLenient(pages.getString(i));
+            ITextComponent tc = ITextComponent.Serializer.getComponentFromJsonLenient(pages.getString(i));
             Collections.addAll(code, tc.getUnformattedComponentText().split("\\r?\\n"));
           } catch(Exception e) {
             // don't load, will result in a processor fault flag displayed.

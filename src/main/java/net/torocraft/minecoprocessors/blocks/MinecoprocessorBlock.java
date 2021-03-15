@@ -8,12 +8,11 @@ package net.torocraft.minecoprocessors.blocks;
 
 import net.minecraft.block.*;
 import net.minecraft.block.material.PushReaction;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.fluid.IFluidState;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.ItemStack;
@@ -24,17 +23,15 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.math.Vec3i;
 import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
+import net.minecraft.util.math.vector.Vector3i;
 import net.minecraft.world.Explosion;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.IWorldReader;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraft.world.storage.loot.LootContext;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraft.loot.LootContext;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.fml.network.NetworkHooks;
 import net.torocraft.minecoprocessors.ModContent;
@@ -63,19 +60,19 @@ public class MinecoprocessorBlock extends HorizontalBlock
   public VoxelShape getShape(BlockState state, IBlockReader source, BlockPos pos, ISelectionContext selectionContext)
   { return SHAPE; }
 
-  @Override
-  @SuppressWarnings("deprecation")
-  public boolean isNormalCube(BlockState state, IBlockReader worldIn, BlockPos pos)
-  { return false; }
+//  @Override
+//  @SuppressWarnings("deprecation")
+//  public boolean isNormalCube(BlockState state, IBlockReader worldIn, BlockPos pos)
+//  { return false; }
 
   @Override
   public boolean canSpawnInBlock()
   { return false; }
 
-  @Override
-  @SuppressWarnings("deprecation")
-  public boolean canEntitySpawn(BlockState state, IBlockReader worldIn, BlockPos pos, EntityType<?> type)
-  { return false; }
+//  @Override
+//  @SuppressWarnings("deprecation")
+//  public boolean canEntitySpawn(BlockState state, IBlockReader worldIn, BlockPos pos, EntityType<?> type)
+//  { return false; }
 
   @Override
   @SuppressWarnings("deprecation")
@@ -117,7 +114,7 @@ public class MinecoprocessorBlock extends HorizontalBlock
   {
     super.onReplaced(state, world, pos, newState, isMoving);
     if((!world.isRemote()) && (newState.getBlock() != state.getBlock())) {
-      world.notifyNeighbors(pos, newState.getBlock());
+      world.notifyNeighborsOfStateChange(pos, newState.getBlock());
       for(Direction side: Direction.values()) {
         world.notifyNeighborsOfStateExcept(pos.offset(side), newState.getBlock(), side.getOpposite());
       }
@@ -180,7 +177,7 @@ public class MinecoprocessorBlock extends HorizontalBlock
   {
     if(world.isRemote()) return;
     super.neighborChanged(state, world, pos, block, fromPos, isMoving);
-    final Vec3i directionVector = fromPos.subtract(pos);
+    final Vector3i directionVector = fromPos.subtract(pos);
     if(isMoving || (directionVector.getY() != 0)) return; // nothing to do then.
     final TileEntity te = world.getTileEntity(pos);
     if(te instanceof MinecoprocessorTileEntity) ((MinecoprocessorTileEntity)te).neighborChanged(fromPos);
@@ -199,7 +196,7 @@ public class MinecoprocessorBlock extends HorizontalBlock
   }
 
   @Override
-  public boolean removedByPlayer(BlockState state, World world, BlockPos pos, PlayerEntity player, boolean willHarvest, IFluidState fluid)
+  public boolean removedByPlayer(BlockState state, World world, BlockPos pos, PlayerEntity player, boolean willHarvest, FluidState fluid)
   { return dropBlock(state, world, pos, player); }
 
   @Override
@@ -211,9 +208,9 @@ public class MinecoprocessorBlock extends HorizontalBlock
   public List<ItemStack> getDrops(BlockState state, LootContext.Builder builder)
   { return Collections.singletonList(ItemStack.EMPTY); }
 
-  @Override
-  public int tickRate(IWorldReader world)
-  { return 2; }
+//  @Override
+//  public int tickRate(IWorldReader world)
+//  { return 2; }
 
   @Override
   @SuppressWarnings("deprecation")
