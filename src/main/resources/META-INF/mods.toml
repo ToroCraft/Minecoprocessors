@@ -1,0 +1,31 @@
+# @file mods.toml
+# @spec TOML v0.5.0 (https://github.com/toml-lang/toml)
+modLoader="javafml" # forge FML java
+loaderVersion="[33,)"
+issueTrackerURL="https://github.com/ToroCraft/Minecoprocessors/issues/"
+license="GPL2"
+
+[[mods]]
+modId="minecoprocessors"
+version="${file.jarVersion}"
+displayName="Minecoprocessors"
+description="Adds a programmable block that functions like a microprocessor."
+authors="ToroCraft"
+credits=""
+#updateJSONURL="https://github.com/ToroCraft/Minecoprocessors/meta/update.json"
+displayURL="https://github.com/ToroCraft/Minecoprocessors"
+logoFile="logo.png"
+
+[[dependencies.minecoprocessors]]
+  modId="forge"
+  mandatory=true
+  versionRange="[35.0.2,)"
+  ordering="NONE"
+  side="BOTH"
+
+[[dependencies.minecoprocessors]]
+  modId="minecraft"
+  mandatory=true
+  versionRange="[1.16.4,)"
+  ordering="NONE"
+  side="BOTH"

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.CompoundNBT;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
 import net.torocraft.minecoprocessors.util.ParseException;
@@ -134,16 +134,14 @@ public class ProcessorTest {
     processor.registers[4] = (byte) 0xcc;
     processor.zero = true;
 
-    NBTTagCompound c = processor.writeToNBT();
+    CompoundNBT c = processor.getNBT();
 
     processor.flush();
     Assert.assertFalse(processor.zero);
     Assert.assertEquals(0, processor.labels.size());
     Assert.assertEquals(0, processor.program.size());
-    Processor.reset(processor.registers);
-
-    processor.readFromNBT(c);
-
+    for(int i=0; i<processor.registers.length; ++i) processor.registers[i] = 0;
+    processor.setNBT(c);
     Assert.assertTrue(processor.zero);
     Assert.assertEquals(64, processor.stack.length);
     Assert.assertEquals((byte) 0x99, processor.stack[0]);

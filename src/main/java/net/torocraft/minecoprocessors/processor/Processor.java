@@ -1,28 +1,22 @@
 package net.torocraft.minecoprocessors.processor;
 
-import java.util.ArrayList;
-import java.util.List;
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagByteArray;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.torocraft.minecoprocessors.Minecoprocessors;
-import net.torocraft.minecoprocessors.gui.GuiMinecoprocessor;
+import net.minecraft.nbt.ByteArrayNBT;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.INBT;
+import net.minecraft.nbt.ListNBT;
+import net.torocraft.minecoprocessors.ModMinecoprocessors;
 import net.torocraft.minecoprocessors.util.ByteUtil;
 import net.torocraft.minecoprocessors.util.InstructionUtil;
 import net.torocraft.minecoprocessors.util.Label;
 import net.torocraft.minecoprocessors.util.ParseException;
 
-public class Processor implements IProcessor {
+import java.util.ArrayList;
+import java.util.List;
 
+
+public class Processor
+{
   private static final int MEMORY_SIZE = 64;
-  private static final String NBT_STACK = "stack";
-  private static final String NBT_REGISTERS = "registers";
-  private static final String NBT_PROGRAM = "program";
-  private static final String NBT_LABELS = "labels";
-  private static final String NBT_FLAGS = "flags";
-  private static final String NBT_FAULTCODE = "faultCode";
-  private static final String NBT_ERROR = "error";
 
   /*
    * program
@@ -75,7 +69,7 @@ public class Processor implements IProcessor {
    * tmp
    */
   private boolean step;
-  private String error;
+  private String error = "";
 
   void flush() {
     reset();
@@ -85,27 +79,6 @@ public class Processor implements IProcessor {
     program.clear();
   }
 
-  // TODO move to util class
-  public static void reset(byte[] a) {
-    for (int i = 0; i < a.length; i++) {
-      a[i] = 0;
-    }
-  }
-
-  // TODO move to util class
-  public static void reset(boolean[] a) {
-    for (int i = 0; i < a.length; i++) {
-      a[i] = false;
-    }
-  }
-
-  public static void reset(int[] a) {
-    for (int i = 0; i < a.length; i++) {
-      a[i] = 0;
-    }
-  }
-
-  @Override
   public void reset() {
     fault = false;
     zero = false;
@@ -113,7 +86,7 @@ public class Processor implements IProcessor {
     carry = false;
     wait = false;
     step = false;
-    error = null;
+    error = "";
     ip = 0;
     sp = 0;
     registers = new byte[Register.values().length];
@@ -121,17 +94,16 @@ public class Processor implements IProcessor {
     faultCode = FaultCode.FAULT_STATE_NOMINAL;
   }
 
-  @Override
   public void wake() {
     wait = false;
   }
 
-  @Override
-  public void load(List<String> file) {
+  public boolean load(List<String> file) {
     try {
       flush();
       if (file != null) {
         program = InstructionUtil.parseFile(file, labels);
+        return (!program.isEmpty());
       } else {
         program = new ArrayList<>();
         labels = new ArrayList<>();
@@ -141,6 +113,7 @@ public class Processor implements IProcessor {
       faultCode = FaultCode.FAULT_UNKNOWN_OPCODE;
       fault = true;
     }
+    return false;
   }
 
   long packFlags() {
@@ -177,64 +150,50 @@ public class Processor implements IProcessor {
     return registersNew;
   }
 
-  @Override
-  public void readFromNBT(NBTTagCompound c) {
-    stack = c.getByteArray(NBT_STACK);
-    registers = addRegistersIfMissing(c.getByteArray(NBT_REGISTERS));
-    faultCode = c.getByte(NBT_FAULTCODE);
-    unPackFlags(c.getLong(NBT_FLAGS));
 
-    error = c.getString(NBT_ERROR);
-    if (error != null && error.isEmpty()) {
-      error = null;
-    }
-
+  public void setNBT(CompoundNBT nbt)
+  {
+    stack = nbt.getByteArray("stack");
+    registers = addRegistersIfMissing(nbt.getByteArray("registers"));
+    faultCode = nbt.getByte("faultCode");
+    unPackFlags(nbt.getLong("flags"));
+    error = nbt.getString("error");
     program = new ArrayList<>();
-    NBTTagList programTag = (NBTTagList) c.getTag(NBT_PROGRAM);
-    if (programTag != null) {
-      for (NBTBase tag : programTag) {
-        program.add(((NBTTagByteArray) tag).getByteArray());
+    ListNBT programTag = (ListNBT) nbt.get("program");
+    if(programTag != null) {
+      for(INBT tag: programTag) {
+        program.add(((ByteArrayNBT)tag).getByteArray());
       }
     }
-
     labels = new ArrayList<>();
-    NBTTagList labelTag = (NBTTagList) c.getTag(NBT_LABELS);
-    if (labelTag != null) {
-      for (NBTBase tag : labelTag) {
-        labels.add(Label.fromNbt((NBTTagCompound) tag));
+    ListNBT labelTag = (ListNBT) nbt.get("labels");
+    if(labelTag != null) {
+      for(INBT tag : labelTag) {
+        labels.add(Label.fromNbt((CompoundNBT) tag));
       }
     }
   }
 
-  @Override
-  public NBTTagCompound writeToNBT() {
-    NBTTagCompound c = new NBTTagCompound();
-    c.setByteArray(NBT_STACK, stack);
-    c.setByteArray(NBT_REGISTERS, registers);
-    c.setByte(NBT_FAULTCODE, faultCode);
-    c.setLong(NBT_FLAGS, packFlags());
-    if (error != null) {
-      c.setString(NBT_ERROR, error);
-    }
-    NBTTagList programTag = new NBTTagList();
-    for (byte[] b : program) {
-      programTag.appendTag(new NBTTagByteArray(b));
-    }
-    c.setTag(NBT_PROGRAM, programTag);
-
-    NBTTagList labelTag = new NBTTagList();
-    for (Label label : labels) {
-      labelTag.appendTag(label.toNbt());
-    }
-    c.setTag(NBT_LABELS, labelTag);
-
-    return c;
+  public CompoundNBT getNBT()
+  {
+    CompoundNBT nbt = new CompoundNBT();
+    nbt.putByteArray("stack", stack);
+    nbt.putByteArray("registers", registers);
+    nbt.putByte("faultCode", faultCode);
+    nbt.putLong("flags", packFlags());
+    nbt.putString("error", error);
+    ListNBT programTag = new ListNBT();
+    for(byte[] b: program) programTag.add(new ByteArrayNBT(b));
+    nbt.put("program", programTag);
+    ListNBT labelTag = new ListNBT();
+    for (Label label : labels) labelTag.add(label.toNbt());
+    nbt.put("labels", labelTag);
+    return nbt;
   }
 
   /**
    * returns true if GUI should be updated after this tick
    */
-  @Override
   public boolean tick() {
     if (fault || (wait && !step)) {
       return false;
@@ -245,7 +204,7 @@ public class Processor implements IProcessor {
       process();
       // TODO handle parse exception (actually make a new exception type to use in a running processor)
     } catch (Exception e) {
-      Minecoprocessors.proxy.handleUnexpectedException(e);
+      ModMinecoprocessors.proxy.handleUnexpectedException(e);
       error = getInstructionString();
       fault = true;
     }
@@ -256,7 +215,7 @@ public class Processor implements IProcessor {
     try {
       return InstructionUtil.compileLine(instruction, labels, ip);
     } catch (Exception e) {
-      Minecoprocessors.proxy.handleUnexpectedException(e);
+      ModMinecoprocessors.proxy.handleUnexpectedException(e);
       return "??";
     }
   }
@@ -787,7 +746,12 @@ public class Processor implements IProcessor {
     for (int i = 0; i < 8; i++) {
       for (int j = 0; j < 8; j++) {
         s.append(" ");
-        s.append(GuiMinecoprocessor.toHex(stack[(i * 8) + j]));
+
+
+        // @todo: util.toHex, as GuiMinecoprocessor client only Dist
+        //  s.append(GuiMinecoprocessor.toHex(stack[(i * 8) + j]));
+
+
       }
       s.append("\n");
     }
@@ -801,6 +765,16 @@ public class Processor implements IProcessor {
 
   private static void dumpFlag(StringBuilder s, boolean flag) {
     s.append(flag ? "1 " : "0 ");
+  }
+
+  public String stateLineDump() {
+    return String.format(
+      "{ ip:%04x sp:%02x f:%s regs:%02x%02x%02x%02x io:%02x%02x%02x%02x }",
+      ip, sp,
+      (fault ? "F" : "-") + (zero ? "Z" : "-") + (overflow ? "O" : "-") + (carry ? "C" : "-") + (wait ? "W" : "-"),
+      registers[Register.A.ordinal()], registers[Register.B.ordinal()], registers[Register.C.ordinal()], registers[Register.D.ordinal()],
+      registers[Register.PF.ordinal()], registers[Register.PB.ordinal()], registers[Register.PL.ordinal()], registers[Register.PR.ordinal()]
+    );
   }
 
   byte getVariableOperand(int operandIndex) {
@@ -880,13 +854,21 @@ public class Processor implements IProcessor {
     return s;
   }
 
-  @Override
+
   public byte[] getRegisters() {
     return registers;
   }
 
+  public byte getRegister(Register reg) {
+    return registers[reg.ordinal()];
+  }
+
   public List<byte[]> getProgram() {
     return program;
+  }
+
+  public boolean hasProgram() {
+    return (program!=null) && (!program.isEmpty());
   }
 
   public short getIp() {
@@ -923,6 +905,10 @@ public class Processor implements IProcessor {
 
   public void setStep(boolean step) {
     this.step = step;
+  }
+
+  public boolean isStep() {
+    return step;
   }
 
   public String getError() {

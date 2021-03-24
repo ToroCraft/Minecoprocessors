@@ -4,7 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import net.torocraft.minecoprocessors.Minecoprocessors;
+
+import net.torocraft.minecoprocessors.ModMinecoprocessors;
 import net.torocraft.minecoprocessors.processor.InstructionCode;
 import net.torocraft.minecoprocessors.processor.Processor;
 import net.torocraft.minecoprocessors.processor.Register;
@@ -459,8 +460,7 @@ public class InstructionUtil {
     return operand.replaceAll("^\\[", "").replaceAll("]$", "");
   }
 
-  private static byte[] parseLabelOperand(String line, List<Label> labels)
-      throws ParseException {
+  private static byte[] parseLabelOperand(String line, List<Label> labels) throws ParseException {
     byte[] instruction = new byte[2];
     List<String> l = regex("^\\s*[A-Z]+\\s+([A-Z_-]+)\\s*$", line, Pattern.CASE_INSENSITIVE);
     if (l.size() != 1) {
@@ -470,8 +470,7 @@ public class InstructionUtil {
     return instruction;
   }
 
-  private static byte parseLabel(String line, String label, List<Label> labels)
-      throws ParseException {
+  private static byte parseLabel(String line, String label, List<Label> labels) throws ParseException {
     try {
       for (int i = 0; i < labels.size(); i++) {
         if (labels.get(i).name.equalsIgnoreCase(label)) {
@@ -479,7 +478,7 @@ public class InstructionUtil {
         }
       }
     } catch (Exception e) {
-      Minecoprocessors.proxy.handleUnexpectedException(e);
+      ModMinecoprocessors.proxy.handleUnexpectedException(e);
       throw new ParseException(line, "[" + label + "] is not a valid label", e);
     }
     throw new ParseException(line, "[" + label + "] has not been defined");
