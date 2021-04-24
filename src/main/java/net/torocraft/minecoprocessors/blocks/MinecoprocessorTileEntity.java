@@ -49,6 +49,7 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
   private final int[] outputPower = new int[Direction.values().length];
   private byte prevPortsRegister = -1;
   private byte prevAdcRegister = -1;
+  private byte prevOdrRegister = -1;
   private boolean inventoryChanged = false;
   private boolean inputsChanged = false;
   private boolean outputsChanged = false;
@@ -249,6 +250,7 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
       customName = loadBook(inventory.get(0), processor);
       prevPortsRegister = processor.getRegister(Register.PORTS);
       prevAdcRegister = processor.getRegister(Register.ADC);
+      prevOdrRegister = 0;
       for(int i=0; i<prevPortValues.length; i++) prevPortValues[i] = 0;
       for(int i=0; i<outputPower.length; i++) outputPower[i] = 0;
       inputsChanged = true;
@@ -328,9 +330,13 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
       return 0;
     }
     byte signal = processor.getRegisters()[Register.PF.ordinal() + portIndex];
-    return (byte)(isADCMode(processor.getRegister(Register.ADC), portIndex)
-         ? MathHelper.clamp(signal, 0, 15)
-         : ((signal == 0) ? (0) : (15)));
+    if(isADCMode(processor.getRegister(Register.ADC), portIndex)) {
+      return (byte) MathHelper.clamp(signal, 0, 15);
+    } else if((signal != 0) || ((processor.getRegister(Register.ODR) & (1<<portIndex))!=0)) {
+      return (byte)15;
+    } else {
+      return (byte)0;
+    }
   }
 
   private boolean updateOutputs(final BlockState state, final Block block)
@@ -338,13 +344,31 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
     final Direction front = state.get(MinecoprocessorBlock.HORIZONTAL_FACING);
     final byte[] registers = processor.getRegisters();
     final byte ports = processor.getRegister(Register.PORTS);
+    final byte adc = processor.getRegister(Register.ADC);
+    final byte odr = processor.getRegister(Register.ODR);
     final boolean[] to_update = new boolean[Direction.values().length];
     boolean updated = false;
     // Side power value updates
     for(int portIndex=0; portIndex<4; ++portIndex) {
       byte value = registers[Register.PF.ordinal() + portIndex];
-      if(prevPortValues[portIndex] == value) continue;
-      prevPortValues[portIndex] = value;
+      boolean is_adc = isADCMode(adc, portIndex);
+      if(!is_adc && (value!=0) && (value!=1)) {
+        value = 1; // Force also output regs to be normalized to 0x0 or 0x1.
+        processor.setRegister(Register.PF.ordinal() + portIndex, value);
+      }
+      if(prevPortValues[portIndex] != value) {
+        prevPortValues[portIndex] = value;
+        if(value == 0) {
+          prevOdrRegister &= ~(1<<portIndex);
+        } else {
+          prevOdrRegister |=  (1<<portIndex);
+        }
+      } else if((odr & (1<<portIndex)) != (prevOdrRegister & (1<<portIndex))) {
+        prevPortValues[portIndex] = (byte)(((odr & (1<<portIndex)) == 0) ? (0x0) : (is_adc ? 0xf : 0x1));
+        processor.setRegister(Register.PF.ordinal() + portIndex, prevPortValues[portIndex]);
+      } else {
+        continue;
+      }
       if(!isInOutputMode(ports, portIndex)) continue;
       Direction side = RedstoneUtil.convertPortIndexToFacing(front, portIndex);
       outputPower[side.getIndex()] = getPortSignal(portIndex);
@@ -352,6 +376,7 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
       updated = true;
       // testlog("out["+portIndex+"]=" + (((int)value)&0xff) + "=" + outputPower[side.getIndex()] + " -> " + side + " -> " + getPos().offset(side));
     }
+    prevOdrRegister = odr;
     // Neighbour block updates
     for(Direction side: Direction.values()) {
       if(!to_update[side.getIndex()]) continue;
@@ -366,19 +391,20 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
 
   private boolean updateInputPorts(BlockState state, boolean initialLoading)
   {
-    //
-    // @review: included updateInputPort() here to have for reusing local vars on the stack.
-    //
     final Direction front = state.get(MinecoprocessorBlock.HORIZONTAL_FACING);
     final byte[] registers = processor.getRegisters();
     final byte ports = processor.getRegister(Register.PORTS);
     final byte adc = processor.getRegister(Register.ADC);
     boolean updated = false;
     boolean reset = false;
+    byte idr = 0;
     for(int portIndex=0; portIndex<4; ++portIndex) {
       Direction side = RedstoneUtil.convertPortIndexToFacing(front, portIndex);
       int power = getInputPower(pos.offset(side), side);
-      byte value = (byte)((isADCMode(adc, portIndex)) ? RedstoneUtil.powerToPort(power) : ((power == 0) ? (0) : (0xff)));
+      byte value = (byte)((isADCMode(adc, portIndex)) ? RedstoneUtil.powerToPort(power) : ((power == 0) ? (0x00) : (0x01)));
+      if(value != 0) {
+        idr |= (byte)(1<<portIndex);
+      }
       if(prevPortValues[portIndex] == value) continue; // not changed
       prevPortValues[portIndex] = value;
       if(isInInputMode(ports, portIndex)) {
@@ -389,6 +415,7 @@ public class MinecoprocessorTileEntity extends TileEntity implements ITickableTi
         reset = true;
       }
     }
+    processor.setRegister(Register.IDR, idr);
     if(!initialLoading) {
       if(reset) processor.reset();
       if(updated) processor.wake();

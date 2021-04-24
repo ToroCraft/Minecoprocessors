@@ -1,11 +1,10 @@
 package net.torocraft.minecoprocessors.util;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
@@ -61,7 +60,14 @@ public class BookCreator
   private static BufferedReader openBookReader(String name) throws FileNotFoundException
   {
     String path = PATH + name + ".txt";
-    InputStream is = BookCreator.class.getResourceAsStream(path);
+    InputStream is = null;
+    try {
+      final File writing = new File(name + ".txt"); // For the process or writing the manual as text file:
+      if(writing.isFile() && writing.canRead()) is = new FileInputStream(writing);
+    } catch(Throwable ex) {
+      is = null; // This error shall be ignored in normal use.
+    }
+    if(is == null) is = BookCreator.class.getResourceAsStream(path);
     if(is == null) throw new FileNotFoundException("Book file not found [" + path + "]");
     return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
   }

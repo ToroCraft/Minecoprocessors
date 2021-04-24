@@ -110,7 +110,7 @@ public class ModMinecoprocessors
   // Sided proxy functionality
   // -------------------------------------------------------------------------------------------------------------------
 
-  public static final ISidedProxy proxy = DistExecutor.runForDist(()->ClientProxy::new, ()->ServerProxy::new);
+  public static final ISidedProxy proxy = DistExecutor.unsafeRunForDist(()->ClientProxy::new, ()->ServerProxy::new);
 
   public interface ISidedProxy
   {

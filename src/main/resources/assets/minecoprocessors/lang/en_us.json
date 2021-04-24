@@ -6,7 +6,7 @@
  "block.minecoprocessors.processor":"Redstone Processor",
  "block.minecoprocessors.overclocked_processor":"Overclocked Processor",
  "item.minecoprocessors.code_book":"Processor Code Book",
- "item.minecoprocessors.code_book.tooltip":"§8Specical editing book to facilitate programming the Redstone Processor.§r",
+ "item.minecoprocessors.code_book.tooltip":"§8Specical editing book\n§8to facilitate programming\n§8the Redstone Processor.§r",
  "item.minecoprocessors.code_book.tooltip.noprogram":"§6(empty)",
  "item.minecoprocessors.code_book.tooltip.program":"§6Program: %1$s§r",
  "item.minecoprocessors.code_book.tooltip.numpages":"§6Pages: %1$s§r",
