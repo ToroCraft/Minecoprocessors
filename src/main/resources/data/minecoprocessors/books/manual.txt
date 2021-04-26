@@ -14,12 +14,11 @@ Minecoprocessors
 ~~~
 §nIndex§r
 
-The first pages of this manual are dense "cheat sheets". A more detailed introduction starts at page §l10§r.
+The first pages of this manual are dense "cheat sheets". A more detailed §ointroduction§r starts at page §o10§r.
 
-Some examples are attached as appendix.
+Some §oexamples§r are attached as appendix, starting at page §o33§r.
 
-
-
+Have fun coding!
 ~~~
 §nI/O Registers§r
 
@@ -58,9 +57,9 @@ Bit order for §1ports§r, §1adc§r, §1idr§r, §1odr§r: front (0001b), back 
 
 
 
-
-
-§o(Results stored in §1a§r§o).§r
+§o(Results stored in §1a§r§o,§r
+§ooperations are§r
+§owithout carry).§r
 ~~~
 §nLogical Instructions§r
 
@@ -189,7 +188,7 @@ Signals are accessible primarily through the registers §1pf pb pl pr§r:
 
 Gray annotated are the binary bit values to configure the I/Os in the §1ports§r and §1adc§r registers.
 ~~~
-The first instruction in a listing is normally to write the register §1ports§r, where cleared bit configure outputs and set bits inputs. E.g.
+The first instruction in a listing is normally to write the register §1ports§r, where cleared bits define outputs, and set bits configure inputs. E.g.:
 
   §1MOV ports, 1010b§r
 
@@ -245,9 +244,73 @@ the numeric value is less than zero, and therefore limited to 0.
 
   §1MOV pf, 20§r
 
-... is clamped to 15 without wrap-over, too.
+... is clamped to §415§r without wrap-over, too.
 ~~~
+§nCompare and Carry§r
 
+This CPU has three operations affecting
+the Carry (§1C§r) flag: §1CMP§r, §1SEC§r, and §1CLC§r. The
+latter two explicitly set or clear §1C§rarry.
+§1CMP§r means comparing, which is §osubtracting§r
+without writing back the value, and instead
+changing the flags §1C§rarry and §1Z§rero.
+~~~
+These two flags can then be used to §ojump§r:
+
+  §1CMP a, b§r
+  §1JZ §4equal§r
+  §1JC §4less§r
+ §4greater§r:
+  §1JMP §4done§r
+ §4equal§r:
+  §1JMP §4done§r
+ §4less§r:
+  §1JMP §4done§r
+ §4done§r:
+  §7; Code after cond.§r
+~~~
+§nZero flag§r
+
+The §1Z§r flag is set when an operation result is
+zero. This can also be used to jump:
+
+  §1AND pb, 0xff§r
+  §1JNZ §4powered§r
+ §4unpowered§r:
+  §1JMP §4done§r
+ §4powered§r:
+  §1JMP §4done§r
+ §4done§r:
+~~~
+§nFault flag§r
+
+When a fault occurs, be it from invalid code
+or from arithmetics (e.g. division by zero),
+the processor halts and sets the fault (§1F§r)
+flag. The instruction pointer (§1IP§r) and the
+text in the upper left instruction field tell
+you where and what.
+~~~
+§nSleep flag§r
+
+You can put the CPU manually into sleep mode (§1S§r) for debug stepping (see buttons on the left side).
+
+In normal operation, the CPU can also sleep until something changes at the input sides. This feature
+is very interesting to
+~~~
+read inputs on change and start processing:
+
+ §4loop§r:
+  §1WFE§r
+  §8; Wake on change§r
+  §1MOV d, idr§r
+ §4process§r:
+  §1MOV a, d§r
+  §1AND a, 1110b§r
+  ...
+  ...
+  §1JMP §4loop§r
+~~~
 
 
 
