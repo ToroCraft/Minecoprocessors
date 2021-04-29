@@ -73,7 +73,7 @@ public class CodeBookGui extends ContainerScreen<CodeBookContainer>
   // -------------------------------------------------------------------------------------------------------------------
 
   private static int getMaxColumns()
-  { return MathHelper.clamp(ModConfig.maxColumnsPerLine, 8, 20); }
+  { return MathHelper.clamp(ModConfig.maxColumnsPerLine, 8, 25); }
 
   private static int getMaxLinesPerPage()
   { return MathHelper.clamp(ModConfig.maxLinesPerPage, 12, MAX_LINES_PER_PAGE); }

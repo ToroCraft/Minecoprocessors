@@ -8,6 +8,8 @@ package net.torocraft.minecoprocessors.blocks;
 
 import net.minecraft.block.*;
 import net.minecraft.block.material.PushReaction;
+import net.minecraft.entity.EntitySpawnPlacementRegistry;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -60,19 +62,14 @@ public class MinecoprocessorBlock extends HorizontalBlock
   public VoxelShape getShape(BlockState state, IBlockReader source, BlockPos pos, ISelectionContext selectionContext)
   { return SHAPE; }
 
-//  @Override
-//  @SuppressWarnings("deprecation")
-//  public boolean isNormalCube(BlockState state, IBlockReader worldIn, BlockPos pos)
-//  { return false; }
-
   @Override
   public boolean canSpawnInBlock()
   { return false; }
 
-//  @Override
-//  @SuppressWarnings("deprecation")
-//  public boolean canEntitySpawn(BlockState state, IBlockReader worldIn, BlockPos pos, EntityType<?> type)
-//  { return false; }
+  @Override
+  @SuppressWarnings("deprecation")
+  public boolean canCreatureSpawn(BlockState state, IBlockReader world, BlockPos pos, EntitySpawnPlacementRegistry.PlacementType type, @Nullable EntityType<?> entityType)
+  { return false; }
 
   @Override
   @SuppressWarnings("deprecation")
@@ -207,10 +204,6 @@ public class MinecoprocessorBlock extends HorizontalBlock
   @SuppressWarnings("deprecation")
   public List<ItemStack> getDrops(BlockState state, LootContext.Builder builder)
   { return Collections.singletonList(ItemStack.EMPTY); }
-
-//  @Override
-//  public int tickRate(IWorldReader world)
-//  { return 2; }
 
   @Override
   @SuppressWarnings("deprecation")

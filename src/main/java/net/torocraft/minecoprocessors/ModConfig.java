@@ -45,7 +45,13 @@ public class ModConfig
   }
 
   public static void onFileChange(final net.minecraftforge.fml.config.ModConfig config)
-  {}
+  {
+    try {
+      apply();
+    } catch(Exception ex) {
+      ModMinecoprocessors.logger().error("Failed to apply config file data {}", config.getFileName());
+    }
+  }
 
   //--------------------------------------------------------------------------------------------------------------------
 
@@ -61,7 +67,7 @@ public class ModConfig
         code_book_max_columns_per_line = builder
           .translation(MODID + ".config.code_book_max_columns_per_line")
           .comment("Defines the maximum line length in the Code Book.")
-          .defineInRange("code_book_max_columns_per_line", 18, 10, 80);
+          .defineInRange("code_book_max_columns_per_line", 22, 10, 80);
       }
       builder.pop();
     }
@@ -96,7 +102,7 @@ public class ModConfig
   // Cache fields
   //--------------------------------------------------------------------------------------------------------------------
 
-  public static int maxColumnsPerLine = 20;
+  public static int maxColumnsPerLine = 22;
   public static int maxLinesPerPage = 20;
   public static int codeBookTextColor = 0xFF333333;
   public static int codeBookSelectedTextColor = 0xFFEEEEEE;
