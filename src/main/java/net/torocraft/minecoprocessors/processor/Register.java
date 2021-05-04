@@ -52,5 +52,15 @@ public enum Register {
    *
    * <ul> <li><b>bit 0:</b> front port</li> <li><b>bit 1:</b> back port</li> <li><b>bit 2:</b> left port</li> <li><b>bit 3:</b> right port</li> </ul>
    */
-  ADC
+  ADC,
+  /**
+   * Digital Input Data Register (reads all input ports as nibble).
+   * Bit order: (pf<<0)|(pb<<1)|(pl<<2)|(pr<<3)
+   */
+  IDR,
+  /**
+   * Digital Output Data Register (writes all ports as nibble)
+   * Bit order: (pf<<0)|(pb<<1)|(pl<<2)|(pr<<3)
+   */
+  ODR,
 }

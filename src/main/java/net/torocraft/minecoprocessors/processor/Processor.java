@@ -854,13 +854,20 @@ public class Processor
     return s;
   }
 
-
   public byte[] getRegisters() {
     return registers;
   }
 
   public byte getRegister(Register reg) {
     return registers[reg.ordinal()];
+  }
+
+  public void setRegister(Register reg, byte value) {
+    registers[reg.ordinal()] = value;
+  }
+
+  public void setRegister(int regIndex, byte value) {
+    registers[regIndex] = value;
   }
 
   public List<byte[]> getProgram() {

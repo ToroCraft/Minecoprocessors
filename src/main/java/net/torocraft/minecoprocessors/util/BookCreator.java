@@ -1,11 +1,5 @@
 package net.torocraft.minecoprocessors.util;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
@@ -14,6 +8,15 @@ import net.minecraft.nbt.StringNBT;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.torocraft.minecoprocessors.ModMinecoprocessors;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 
 public class BookCreator
@@ -61,7 +64,14 @@ public class BookCreator
   private static BufferedReader openBookReader(String name) throws FileNotFoundException
   {
     String path = PATH + name + ".txt";
-    InputStream is = BookCreator.class.getResourceAsStream(path);
+    InputStream is = null;
+    try {
+      final File writing = new File(name + ".txt"); // For the process or writing the manual as text file:
+      if(writing.isFile() && writing.canRead()) is = new FileInputStream(writing);
+    } catch(Throwable ex) {
+      is = null; // This error shall be ignored in normal use.
+    }
+    if(is == null) is = BookCreator.class.getResourceAsStream(path);
     if(is == null) throw new FileNotFoundException("Book file not found [" + path + "]");
     return new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
   }

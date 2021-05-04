@@ -1,130 +1,354 @@
 Redstone Processor Manual
 Minecoprocessors
+§r
+§r
+§r   Minecoprocessors
+§r
+§r        Redstone
+§r       Processor
+§r        Manual
+§r
+§r
+§r
+§oVisit the Wiki§r §1https://github.com/ToroCraft/Minecoprocessors/wiki§r
+~~~
+§nIndex§r
 
-  Minecoprocessors
+The first pages of this manual are dense "cheat sheets". A more detailed §ointroduction§r starts at page §o10§r.
 
-       Redstone
-      Processor
-        Manual
+Some §oexamples§r are attached as appendix, starting at page §o33§r.
+
+Have fun coding!
+~~~
+§nI/O Registers§r
+
+§1pf, pb, pl, pr§r: I/Os
+
+§1ports§r: I/O config
+§1adc§r: ADC config
+§1idr§r: Input data reg
+§1odr§r: Output data reg
+
+Bit order for §1ports§r, §1adc§r, §1idr§r, §1odr§r: front (0001b), back (0010b), left (0100b), right (1000b)§r.
+~~~
+§nBasic Instructions§r
+
+§1MOV a, b§r Move/assign
+§1NOP§r No Operation
+§1CLC§r Clear Carry
+§1SEC§r Set Carry
+§1CLZ§r Clear Zero
+§1SEZ§r Set Zero
+
+§1PUSH a§r Push to Stack
+§1POP a§r Pop from Stack
+
+§1WFE§r Wait For Event
+§1HLT§r Halt Processor
+~~~
+§nArithmetic Instructions§r
+
+§1ADD a, b§r Add
+§1SUB a, b§r Subtract
+§1MUL a§r Multiply
+§1DIV a§r Divide
+§1INC a§r Increment by 1
+§1DEC a§r Decrement by 1
+
+
+
+§o(Results stored in §1a§r§o,§r
+§ooperations are§r
+§owithout carry).§r
+~~~
+§nLogical Instructions§r
+
+§1AND a, b§r Bitwise AND
+§1OR a, b§r Bitwise OR
+§1XOR a, b§r Bitwise XOR
+§1NOT a§r Bitwise NOT
+
+
+
+
+
+
+
+§o(Results stored in §1a§r§o).§r
+~~~
+§nShift Instructions§r
+
+§1SHL a§r Shift Left
+§1SHR a§r Shift Right
+§1SAR a§r Arithmetic Right
+§1SAL a§r Arithmetic Left
+§1ROR a§r Rotate Right
+§1ROL a§r Rotate Right
+
+
+
+
+
+§o(Results stored in §1a§r§o).§r
+~~~
+§nFlow Control Instr.§r
+
+§1CMP a, b§r Compare
+§1JMP label§r Jump
+§1JZ label§r Jump if Zero
+§1JNZ label§r not Zero
+§1JC label§r if Carry
+§1JNC label§r if no Carry
+§1DJNZ a, label§r Dec and Jump if not zero
+§1CALL label§r Call
+§1RET§r Return
+~~~
+§nFlags§r
+
+§1Z§r Zero Flag
+§1C§r Carry Flag
+§1F§r Fault Flag
+§1S§r Sleep Flag
+
+
+
+
+
 
 ~~~
-§1Visit the Wiki§r
 
-For more information, visit the wiki:
 
-https://github.com/ToroCraft/Minecoprocessors/wiki
-~~~
-§1Instructions§r
 
-§lMOV a, b§r Move
-§lPUSH a§r Push to Stack
-§lPOP a§r Pop from Stack
-§lNOP§r No Operation
-§lHLT§r Halt Processor
-§lCLC§r Clear Carry
-§lSEC§r Set Carry
-§lCLZ§r Clear Zero
-§lSEZ§r Set Zero
-§lHLT§r Halt Processor
-§lWFE§r Sleep (experimental)
-~~~
-§1Arithmetic Instructions§r
-
-§lADD a, b§r Add
-§lSUB a, b§r Subtract
-§lMUL a§r Multiply
-§lDIV a§r Divide
-§lINC a§r Increment by 1
-§lDEC a§r Decrement by 1
-~~~
-§1Logical Instructions§r
-
-§lAND a, b§r Bitwise AND
-§lOR a, b§r Bitwise OR
-§lXOR a, b§r Bitwise XOR
-§lNOT a§r Bitwise NOT
-~~~
-§1Shift Instructions§r
-
-§lSHL a§r Shift Left
-§lSHR a§r Shift Right
-§lSAR a§r Arithmetic Right
-§lSAL a§r Arithmetic Left
-§lROR a§r Rotate Right
-§lROL a§r Rotate Right
-~~~
-§1Loop Instructions§r
-
-§lJMP label§r Jump
-§lJZ label§r Jump if Zero
-§lJNZ label§r not Zero
-§lJC label§r if Carry
-§lJNC label§r if no Carry
-§lDJNZ a, label§r Dec and Jump if not zero
-§lCALL label§r Call
-§lRET§r Return
-§lCMP a, b§r Compare
-~~~
-§1Number Formats§r
-
-§l-1§r two's complement
-§l0xff§r Hexadecimal
-§l0o377§r Octal
-§l11111111b§r Binary
-~~~
-§1Registers§r
-
-The redstone processor has four one byte general purpose registers:
-§la b c d§r
-along with four port registers:
-§lpf pb pl pr§r
-which control the font, back, left and right ports respectively.
-~~~
-§1Ports§r
-
-There is one additional register, §lports§r, that is used to set mode of the ports. There are three modes that the ports can be set to: input, output or reset.
-~~~
-Put a zero value in corresponding low nibble bit to set a port as an output, or set it to one to use it as an input port.
-
-Set the corresponding bits in both the high and low nibble to use the port as a reset port.
-~~~
-§1Flags§r
-
-§lZ§r Zero Flag
-§lC§r Carry Flag
-§lF§r Fault Flag
-§lS§r Sleep Flag
-~~~
-
- Example Programs
+     §o§lIntroduction§r
 
 ~~~
-§1Repeater§r
+§nSyntax§r
 
-mov ports, 0010b
+In assembly language we do one operation per line. Each line starts with an instruction, followed by arguments, e.g.:
+
+ §1MOV a, 10§r
+
+assigns 10 to the register §1a§r ("§1a = 10§r").
+~~~
+Instructions which calculate something normally store the result back in the first argument, hence,
+
+ §1MOV a, 12§r
+ §1MOV b, 10§r
+ §1SUB a, b§r
+
+will result in register §1a§r containing §12§r as present value.
+
+~~~
+Comments start with a semicolon:
+
+ §1; This is a comment§r
+
+Labels allow to name program addresses. They are used for conditions, loops, or functions:
+
+§4start:§r
+ §1JMP§r §4start§r
+~~~
+Numbers can be hex, decimal, octal, as well as binary. A byte with all bits set (§11§r) can be written as:
+
+Hexadecimal: §10xff§r
+Decimal: §1-1§r
+Octal: §10o377§r
+Binary: §111111111b§r
+
+The decimal value above is equal to §1-1§r because the byte is ...
+~~~
+interpreted as signed value. That means the highest bit §110000000b§r adds §1-128§r to all other bits, which add §11§r, §12§r, §14§r, §18§r, §116§r, §132§r, and §164§r to the value.
+
+In most cases, binary or hexadecimal representations are best, as we are often dealing with the bits in registers.
+~~~
+§nCore Registers§r
+
+The CPU has four one byte registers §1a, b, c,§r and §1d§r to store values and calculate.
+
+These "variables" do not change any of the signals outside the CPU - they are only internal.
+~~~
+§nPorts and Port Config§r
+
+The CPU interacts with the world around via special registers. These are mapped to the four sides of the device, and we need to tell the CPU if we like to read signals from a side, or want to output redstone power there.
+
+Additionally, we can
+~~~
+specify for each I/O if we are interested in the numeric "strength" value of the signal, or only the on/off data.
+§oAlso known as §1analog§r and §1digital§r mode.§r
+
+Lastly, ports can also be used to reset the controller by leaving a side unconfigured or "unconfiguring" it explicitly.
+
+~~~
+Signals are accessible primarily through the registers §1pf pb pl pr§r:
+
+§80001b | §1pf§r : front
+§80010b | §1pb§r : back
+§80100b | §1pl§r  : left
+§81000b | §1pr§r : right
+
+Gray annotated are the binary bit values to configure the I/Os in the §1ports§r and §1adc§r registers.
+~~~
+The first instruction in a listing is normally to write the register §1ports§r, where cleared bits define outputs, and set bits configure inputs. E.g.:
+
+  §1MOV ports, 1010b§r
+
+defines §1pf§r and §1pl§r as outputs, §1pb§r and §1pr§r as inputs. To use an I/O for reset, set its bit
+~~~
+in the low and high nibble:
+
+  §1MOV ports, 0x33§r
+
+configures §1pf§r and §1pb§r as reset, §1pl§r and §1pr§r as output.
+
+By default I/Os are in digital mode. Hence, we read the value §10x00§r if an input signal is §40§r, and §10x01§r for any
+~~~
+strength from §41§r to §415§r.
+Reversely, writing §10§r to an output will result in an unpowered side, while any other value will yield strength §415§r.
+
+  §1MOV pf, 0§r
+  §1MOV pf, 1b§r
+  §1MOV pf, 0x0e§r
+  §1MOV pf, -3§r
+
+Signal §40§r in the first case, others §415§r.
+~~~
+Multiple digital I/Os can be read/written simultaneously using Input/Output Data Registers §1idr§r and §1odr§r:
+
+  §1MOV a, idr§r
+  §1MOV odr, 0110b§r
+
+The §1idr§r reads set bits of output ports as 1. These registers can be useful to latch ports in one tick, and
+
+~~~
+process the data afterwards.
+Analog configuration is done like the port direction setting, but using register §1adc§r:
+
+  §1MOV ports, 0010b§r
+  §1MOV adc  , 1110b§r
+
+§1pf§r is digital output, §1pb§r analog input (ADC), §1pr§r and §1pl§r analog outputs
+(DACs). All ADCs will
+~~~
+read the exact input strength between §40§r (§10x0§r) and §415§r (§10xf§r).
+
+DACs will output the register values limited from §10§r to §115§r.
+
+  §1MOV ports, 0000b§r
+  §1MOV adc  , 0011b§r
+  §1MOV pf    , 10§r
+  §1MOV pb    , -1§r
+
+Front: §410§r, back: §40§r, as
+~~~
+the numeric value is less than zero, and therefore limited to 0.
+
+  §1MOV pf, 20§r
+
+... is clamped to §415§r without wrap-over, too.
+~~~
+§nCompare and Carry§r
+
+This CPU has three operations affecting
+the Carry (§1C§r) flag: §1CMP§r, §1SEC§r, and §1CLC§r. The
+latter two explicitly set or clear §1C§rarry.
+§1CMP§r means comparing, which is §osubtracting§r
+without writing back the value, and instead
+changing the flags §1C§rarry and §1Z§rero.
+~~~
+These two flags can then be used to §ojump§r:
+
+  §1CMP a, b§r
+  §1JZ §4equal§r
+  §1JC §4less§r
+ §4greater§r:
+  §1JMP §4done§r
+ §4equal§r:
+  §1JMP §4done§r
+ §4less§r:
+  §1JMP §4done§r
+ §4done§r:
+  §7; Code after cond.§r
+~~~
+§nZero flag§r
+
+The §1Z§r flag is set when an operation result is
+zero. This can also be used to jump:
+
+  §1AND pb, 0xff§r
+  §1JNZ §4powered§r
+ §4unpowered§r:
+  §1JMP §4done§r
+ §4powered§r:
+  §1JMP §4done§r
+ §4done§r:
+~~~
+§nFault flag§r
+
+When a fault occurs, be it from invalid code
+or from arithmetics (e.g. division by zero),
+the processor halts and sets the fault (§1F§r)
+flag. The instruction pointer (§1IP§r) and the
+text in the upper left instruction field tell
+you where and what.
+~~~
+§nSleep flag§r
+
+You can put the CPU manually into sleep mode (§1S§r) for debug stepping (see buttons on the left side).
+
+In normal operation, the CPU can also sleep until something changes at the input sides. This feature
+is very interesting to
+~~~
+read inputs on change and start processing:
+
+ §4loop§r:
+  §1WFE§r
+  §8; Wake on change§r
+  §1MOV d, idr§r
+ §4process§r:
+  §1MOV a, d§r
+  §1AND a, 1110b§r
+  ...
+  ...
+  §1JMP §4loop§r
+~~~
+
+
+
+ §o§lExample Programs§r
+
+
+~~~
+§nSimple Repeater§r
+
+
+
+ §1MOV ports, 0010b§r
 start:
-mov pf, pb
-jmp start
+ §1MOV pf, pb§r
+ §1JMP§r start
 ~~~
-§13 Input AND Gate§r
+§n3 Input AND Gate§r
 
-mov ports, 1110b
+
+
+ §1MOV ports, 1110b§r
 start:
-mov a, pb
-and a, pl
-and a, pr
-mov pf, a
-jmp start
+ §1MOV a, pb§r
+ §1AND a, pl§r
+ §1AND a, pr§r
+ §1MOV pf, a§r
+§1jmp§r start
 ~~~
-§1Enabled-clock§r
-§1Pulse Multiplier§r
+§nEnabled-clock§r
+§nPulse Multiplier§r
 
-mov ports, 0010b
+
+ §1MOV ports, 0010b§r
 start:
-cmp pb, 0
-jz off
-not pf
-jmp start
+ §1CMP pb, 0§r
+ §1JZ§r off
+ §1NOT pf§r
+ §1JMP§r start
 off:
-mov pf, 0
-jmp start
+ §1MOV pf, 0§r
+ §1JMP§r start
